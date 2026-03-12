@@ -1,17 +1,32 @@
 import { Router } from 'express';
-import axios from 'axios'; // La lib utilisée
+import axios from 'axios';
+import { CheckApiResponse, CheckApiResponseSchema } from '../views/check_api_view';
+import { registry } from '../openapi-registry';
 
 const router = Router();
 
-// Récupération des variables d'environnement
-const core_api_url = process.env.CORE_API_URL;
-const core_api_port = process.env.CORE_API_PORT;
+const CORE_FULL_URL = `http://${process.env.CORE_API_URL}:${process.env.CORE_API_PORT}`;
+const MESSAGE_FULL_URL = `http://${process.env.MESSAGE_API_URL}:${process.env.MESSAGE_API_PORT}`;
 
-const message_api_url = process.env.MESSAGE_API_URL;
-const message_api_port = process.env.MESSAGE_API_PORT;
-
-const CORE_FULL_URL = `http://${core_api_url}:${core_api_port}`;
-const MESSAGE_FULL_URL = `http://${message_api_url}:${message_api_port}`;
+registry.registerPath({
+  method: 'get',
+  path: '/check_apis',
+  tags: ['Connectivity'],
+  summary: "Vérifie la connexion avec l'API Core et Message (Rust)",
+  responses: {
+    200: {
+      description: 'Connexion réussie',
+      content: {
+        'application/json': {
+          schema: CheckApiResponseSchema,
+        },
+      },
+    },
+    502: {
+      description: 'API Core injoignable',
+    },
+  },
+});
 
 router.get('/', async (_, res) => {
   try {
@@ -19,19 +34,15 @@ router.get('/', async (_, res) => {
     console.log(coreResponse);
     const core_is_reachable = coreResponse.status === 200;
     
-    const calendarResponse = await axios.get(`${MESSAGE_FULL_URL}/health`, { timeout: 5000 });
-    console.log(calendarResponse);
-    const message_is_reachable = calendarResponse.status === 200;
-    
-    res.status(200).json({
+    const messageResponse = await axios.get(`${MESSAGE_FULL_URL}/health`, { timeout: 5000 });
+    console.log(messageResponse);
+    const message_is_reachable = messageResponse.status === 200;
+    const result: CheckApiResponse = {
       status: 'OK',
       core_api: core_is_reachable ? 'Connected' : 'Unreachable',
-      message_api: message_is_reachable ? 'Connected' : 'Unreachable',
-      details: {
-        core: coreResponse.data,
-        calendar: calendarResponse.data
-      }
-    });
+      message_api: message_is_reachable ? 'Connected' : 'Unreachable'
+    };
+    res.status(200).json(result);
   } catch (error) {
     res.status(502).json({
       status: 'Error',
