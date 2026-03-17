@@ -8,7 +8,7 @@ networks:
 
 x-common-env: &common-env
   HOST: "0.0.0.0"
-  PORT: 4005 #change port
+  PORT: 4003
   REDIS_URL: redis://redis:6379
   DB_TYPE: postgres
   DB_NAME: mairie_360_database
@@ -23,22 +23,22 @@ x-depends-on: &depends-on
   redis:
     condition: service_healthy
 
-x-healthcheck: &healthcheck
-  test: ["CMD", "curl", "-f", "http://localhost:4005"] #change port
-  interval: 10s
-  timeout: 5s
-  retries: 5
+# x-healthcheck: &healthcheck
+#   test: ["CMD", "curl", "-f", "http://localhost:4003"]
+#   interval: 10s
+#   timeout: 5s
+#   retries: 5
 
 x-service: &service-template
   image: ghcr.io/mairie360/service_name:latest
   pull_policy: always
   restart: always
   expose:
-    - "4005" #change port
+    - "4003"
   networks:
     - backend
-  healthcheck:
-    <<: *healthcheck
+  # healthcheck:
+  #   <<: *healthcheck
 
 services:
   postgres:
@@ -96,7 +96,7 @@ services:
       retries: 5
 
   core:
-    container_name: core-bff-message-developpement
+    container_name: core-message-bff-developpement
     image: ghcr.io/mairie360/core-api:dev-latest
     ports:
       - "3000:3000"
@@ -106,7 +106,15 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     environment:
-      <<: *common-env
+      HOST: "0.0.0.0"
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      DB_TYPE: postgres
+      DB_NAME: mairie_360_database
+      DB_USER: postgres
+      DB_HOST: postgres
+      DB_PASSWORD: password
+      DB_PORT: 5432
       PUBLIC_URL: http://core.development.mairie360.fr
       JWT_SECRET: b"secret"
       JWT_TIMEOUT: 3600
@@ -115,43 +123,34 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"] # <--- Doit être 3000
-      interval: 5s
-      timeout: 2s
-      retries: 3
-      start_period: 10s
-
-  #add other apis if needed
-
-  bff-message: # change bff name
-    container_name: bff-message-developpement #change bff name
-    build:
-      context: .
-      dockerfile: development.Dockerfile
-    develop:
-      watch:
-        - action: sync
-          path: ./src
-          target: /usr/src/message/src #change bff name
-        - action: sync
-          path: ./Cargo.toml
-          target: /usr/src/message/Cargo.toml #change bff name
-        - action: sync
-          path: ./Cargo.lock
-          target: /usr/src/message/Cargo.lock #change bff name
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:3000/health"] # <--- Doit être 3000
+    #   interval: 5s
+    #   timeout: 2s
+    #   retries: 3
+    #   start_period: 10s
+      
+  message-api:
+    container_name: message-api-bff-message-developpement
+    image: ghcr.io/mairie360/message-api:dev-latest
     ports:
-      - "4005:4005" #change port
-    volumes:
-      - bff-message-target:/usr/src/message/target #change bff name
+      - "3003:3003"
     networks:
       - backend
     dns:
       - 8.8.8.8
       - 1.1.1.1
     environment:
-      <<: *common-env
-      PUBLIC_URL: http://message.development.mairie360.fr #change bff name
+      HOST: "0.0.0.0"
+      PORT: 3003
+      REDIS_URL: redis://redis:6379
+      DB_TYPE: postgres
+      DB_NAME: mairie_360_database
+      DB_USER: postgres
+      DB_HOST: postgres
+      DB_PASSWORD: password
+      DB_PORT: 5432
+      PUBLIC_URL: http://message.development.mairie360.fr
       JWT_SECRET: b"secret"
       JWT_TIMEOUT: 3600
     depends_on:
@@ -159,24 +158,59 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://message:4005/health"] #change bff name #change port
-      interval: 5s
-      timeout: 2s
-      retries: 3
-      start_period: 10s
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:3003/health"] # <--- Doit être 3003
+    #   interval: 5s
+    #   timeout: 2s
+    #   retries: 3
+    #   start_period: 10s
+  
+  #add other apis if needed
 
-  nginx:
-    image: nginx:1.27.4-bookworm
-    restart: always
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+  bff-message:
+    container_name: bff-message-developpement
+    build:
+      context: .
+      dockerfile: development.Dockerfile
+    # Mode synchronisation en temps réel (Docker Compose V2)
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: rebuild
+          path: package.json
     ports:
-      - "80:80"
+      - "4003:4003"
     networks:
       - backend
-    depends_on:
-      bff: #change bff name
-        condition: service_healthy
-    extra_hosts:
-      - "message.development.mairie360.fr:127.0.0.1" #change bff name
+    environment:
+      <<: *common-env
+      # IMPORTANT : On utilise le nom du service Docker pour communiquer
+      CORE_API_URL: "core" 
+      CORE_API_PORT: 3000
+      MESSAGE_API_URL: "message-api" 
+      MESSAGE_API_PORT: 3003
+    volumes:
+      - /app/node_modules # Isolation des modules pour éviter les conflits OS (Mac/Windows vs Linux)
+    # depends_on:
+      # core:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # nginx:
+  #   image: nginx:1.27.4-bookworm
+  #   restart: always
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #   ports:
+  #     - "80:80"
+  #   networks:
+  #     - backend
+  #   depends_on:
+  #     bff-message: #change bff name
+  #       condition: service_healthy
