@@ -12,7 +12,8 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "8.5.0",
     "@mairie360/core-api-openapi": "0.4.0",
-    "@mairie360/message-api-openapi": "0.3.0",
+    "@mairie360/message-api-openapi": "0.0.0-dev.922cd9167e89557c6d420d30426b1395f5352a06",
+    
     "axios": "1.18.1",
     "dotenv": "17.4.2",
     "express": "5.2.1",
