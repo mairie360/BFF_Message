@@ -1,11 +1,11 @@
 import {Router, Request, Response} from 'express';
-import { UploadAttachmentBody } from '../../openapi-registry';
 import {
     registry,
     UploadAttachmentBody,
     UploadAttachmentResponse,
     ApiErrorResponse,
 } from '../../openapi-registry';
+import { uploadAttachment } from './message_helpers';
 
 const router = Router();
 
@@ -45,7 +45,8 @@ registry.registerPath({
 });
 
 router.post('/', (req: Request, res: Response) => {
-    // Implémentation du téléchargement de la pièce jointe
+    const result = uploadAttachment(req.body?.files);
+    return res.status(201).json(result);
 });
 
 export default router;

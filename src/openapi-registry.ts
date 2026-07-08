@@ -28,6 +28,25 @@ export const MessageDirectionSchema = z.enum(['incoming', 'outgoing']).openapi({
   example: 'incoming',
 });
 
+export const CurrentUserDtoSchema = z.object({
+  id: IdSchema,
+  name: z.string().max(100).openapi({
+    description: 'Nom complet de l’utilisateur actuel',
+    example: 'Alice Dupont',
+  }),
+  email: z.string().email().optional(),
+  role: z.string().optional(),
+  avatarUrl: z.string().url().optional(),
+  phone: z.string().optional(),
+  service: z.string().optional(),
+  position: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  lastConnection: z.string().optional(),
+}).openapi({
+  description: 'Utilisateur actuellement connecté',
+});
+
 
 export const ConversationDtoSchema = z.object({
   id: IdSchema,
@@ -189,7 +208,7 @@ export const ConversationsQuery = z.object({
     description: 'Terme de recherche pour filtrer les conversations',
     example: 'Marketing',
   }),
-  limit: z.number().int().optional().openapi({
+  limit: z.coerce.number().int().optional().openapi({
     description: 'Nombre maximum de conversations à retourner',
     example: 10,
   }),
@@ -203,7 +222,7 @@ export const ConversationsQuery = z.object({
 
 
 export const MessagesQuery = z.object({
-  limit: z.number().int().optional().openapi({
+  limit: z.coerce.number().int().optional().openapi({
     description: 'Nombre maximum de messages à retourner',
     example: 20,
   }),
@@ -224,7 +243,7 @@ export const ContactsQuery = z.object({
         description: 'Terme de recherche pour filtrer les contacts',
         example: 'Alice'
     }),
-    limit: z.number().int().optional().openapi({
+    limit: z.coerce.number().int().optional().openapi({
         description: 'Nombre maximum de contacts à retourner',
         example: 10
     }),
@@ -239,11 +258,11 @@ export const SendMessageBody = z.object({
     description: 'Contenu du message à envoyer',
     example: 'Bonjour à tous !',
   }),
-  attachmentsIds: z.array(IdSchema).optional().openapi({
+  attachmentIds: z.array(IdSchema).optional().openapi({
     description: 'Liste des identifiants des pièces jointes du message',
     example: [],
   }),
-  mentionsIds: z.array(IdSchema).optional().openapi({
+  mentionIds: z.array(IdSchema).optional().openapi({
     description: 'Liste des identifiants des mentions dans le message',
     example: [],
   }),
@@ -273,7 +292,7 @@ export const CreateGroupBody = z.object({
         description: 'Description du groupe à créer',
         example: 'Groupe pour l’équipe marketing',
     }),
-    membersIds: z.array(IdSchema).openapi({
+    memberIds: z.array(IdSchema).openapi({
         description: 'Liste des identifiants des membres à ajouter au groupe',
         example: ['12345', '67890'],
     }),
@@ -291,7 +310,7 @@ export const MarkConversationAsReadBody = z.object({
 });
 
 export const UploadAttachmentBody = z.object({
-    file: z.any().openapi({
+    files: z.any().openapi({
         description: 'Fichier à télécharger en tant que pièce jointe',
         example: 'fichier.pdf',
     }),
@@ -300,6 +319,27 @@ export const UploadAttachmentBody = z.object({
 });
 
 // Réponse
+
+export const CurrentUserResponse = z.object({
+  currentUser: CurrentUserDtoSchema,
+}).openapi({
+  description: 'Réponse contenant l’utilisateur actuel',
+});
+
+export const UpdateCurrentUserBody = z.object({
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+}).openapi({
+  description: 'Champs éditables du profil utilisateur',
+});
+
+export const UpdateCurrentUserResponse = z.object({
+  currentUser: CurrentUserDtoSchema,
+}).openapi({
+  description: 'Réponse contenant l’utilisateur actuel mis à jour',
+});
 
 
 export const ConversationsResponse = z.object({
@@ -402,16 +442,7 @@ export const UploadAttachmentResponse = z.object({
 });
 
 export const MessagingBootstrapResponse = z.object({
-    currentUser: z.object({
-        id: IdSchema,
-        name: z.string().max(100).openapi({
-            description: 'Nom complet de l’utilisateur actuel',
-            example: 'Alice Dupont',
-        }),
-        email: z.string().email().optional(),
-        role: z.string().optional(),
-        avatarUrl: z.string().url().optional(),
-    }),
+    currentUser: CurrentUserDtoSchema,
     conversations: z.array(ConversationDtoSchema),
     activeConversationId: IdSchema.optional(),
     messages: z.array(MessageDtoSchema),
@@ -439,6 +470,7 @@ export const ApiErrorResponse = z.object({
 });
 
 registry.register('IdSchema', IdSchema);
+registry.register('CurrentUserDtoSchema', CurrentUserDtoSchema);
 registry.register('ContactDtoSchema', ContactDtoSchema);
 registry.register('ConversationDtoSchema', ConversationDtoSchema);
 registry.register('MessageDtoSchema', MessageDtoSchema);
@@ -454,7 +486,10 @@ registry.register('DeleteConversationResponse', DeleteConversationResponse);
 registry.register('MarkConversationAsReadResponse', MarkConversationAsReadResponse);
 registry.register('UploadAttachmentResponse', UploadAttachmentResponse);
 registry.register('MessagingBootstrapResponse', MessagingBootstrapResponse);
+registry.register('CurrentUserResponse', CurrentUserResponse);
+registry.register('UpdateCurrentUserResponse', UpdateCurrentUserResponse);
 registry.register('ApiErrorResponse', ApiErrorResponse);
+registry.register('UpdateCurrentUserBody', UpdateCurrentUserBody);
 registry.register('SendMessageBody', SendMessageBody);
 registry.register('NewDirectMessageBody', NewDirectMessageBody);
 registry.register('CreateGroupBody', CreateGroupBody);
