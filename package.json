@@ -2,7 +2,7 @@
   "name": "bff-message",
   "version": "1.0.0",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "tsx watch src/index.ts",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "8.5.0",
-    "@mairie360/core-api-openapi": "0.4.0",
-    "@mairie360/message-api-openapi": "0.3.0",
+    "@mairie360/message-api-openapi": "0.0.0-dev.c8dfe391920e2e8f6668a237f345b61d1e549679",
     "axios": "1.18.1",
     "dotenv": "17.4.2",
     "express": "5.2.1",
@@ -21,6 +20,7 @@
     "swagger-jsdoc": "6.3.0",
     "swagger-ui-express": "5.0.1",
     "swagger-ui-react": "5.32.8",
+    "tsx": "4.23.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
