@@ -24,7 +24,7 @@ export type BffCurrentUser = z.infer<typeof CurrentUserDtoSchema>;
 export type BffMessage = z.infer<typeof MessageDtoSchema>;
 
 const fallbackCurrentUser: BffCurrentUser = {
-  id: '0',
+  id: 'user-0',
   name: 'Utilisateur courant',
   email: 'user@mairie360.fr',
   role: 'Agent',
@@ -115,8 +115,8 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 
   currentUser = {
-    ...currentUser,
-    id,
+    ...fallbackCurrentUser,
+    id: publicUserId(id),
     name,
     email: user.email ?? undefined,
     lastConnection: new Date().toISOString(),
@@ -125,12 +125,19 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
   return currentUser;
 }
 
-function mapChatToConversation(chat: ChatView | { id: number; name: string; unread_count?: number }, messages: MessageView[] = []): BffConversation {
+function mapChatToConversation(
+  chat: ChatView | { id: number; name: string; unread_count?: number },
+  messages: MessageView[] = [],
+  participantNames: string[] = [],
+): BffConversation {
   const lastMessage = messages[messages.length - 1];
 
   return {
     id: publicChatId(chat.id),
     name: chat.name,
+    department: participantNames.length > 0
+      ? `Avec ${participantNames.join(', ')}`
+      : undefined,
     kind: 'group',
     initials: initials(chat.name),
     lastMessage: lastMessage?.content,
@@ -168,8 +175,54 @@ function mapCoreUserToContact(user: CoreUser): BffContact | null {
   };
 }
 
-function mapMessageToDto(conversationId: string | number, message: MessageView): BffMessage {
+async function fetchConversationParticipantNames(
+  chatId: number,
+  currentUserId: number | undefined,
+  incomingRequestToken?: string,
+): Promise<string[]> {
+  try {
+    const response = await messageClient.getChatUsers(chatId, authOptions(incomingRequestToken));
+    const participantIds = [...new Set(
+      response.data.users
+        .map((user) => user.id)
+        .filter((userId) => userId !== currentUserId),
+    )];
+    const participants = await Promise.all(
+      participantIds.map((participantId) => getContactUser(participantId)),
+    );
+
+    return participants.flatMap((participant) => {
+      if (!participant) return [];
+
+      const contact = mapCoreUserToContact(participant);
+      return contact ? [contact.name] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function fetchChatSummary(
+  chatId: number,
+  incomingRequestToken?: string,
+): Promise<ChatView | undefined> {
+  try {
+    const response = await messageClient.getChats(authOptions(incomingRequestToken));
+    return response.data.chats.find((chat) => chat.id === chatId);
+  } catch {
+    return undefined;
+  }
+}
+
+function mapMessageToDto(
+  conversationId: string | number,
+  message: MessageView,
+  currentUserId?: number,
+): BffMessage {
   const authorId = publicUserId(message.sender_id);
+  const currentAuthorId = currentUserId === undefined
+    ? undefined
+    : publicUserId(currentUserId);
 
   return {
     id: publicMessageId(message.id),
@@ -178,7 +231,7 @@ function mapMessageToDto(conversationId: string | number, message: MessageView):
     sentAt: message.created_at,
     authorId,
     authorName: `Utilisateur ${message.sender_id}`,
-    direction: String(message.sender_id) === currentUser.id ? 'outgoing' : 'incoming',
+    direction: currentAuthorId === authorId ? 'outgoing' : 'incoming',
     attachments: [],
     mentions: [],
   };
@@ -220,12 +273,23 @@ export async function fetchConversations(
 ): Promise<BffConversation[]> {
   const response = await messageClient.getChats(authOptions(incomingRequestToken));
   const chats = response.data.chats as ChatView[];
-  const conversations = chats.map((chat) => mapChatToConversation(chat));
-  const filtered = search
-    ? conversations.filter((conversation) => conversation.name.toLowerCase().includes(search.toLowerCase()))
-    : conversations;
+  const filteredChats = search
+    ? chats.filter((chat) => chat.name.toLowerCase().includes(search.toLowerCase()))
+    : chats;
+  const visibleChats = typeof limit === 'number' ? filteredChats.slice(0, limit) : filteredChats;
+  const currentUserId = numericUserIdFromToken(incomingRequestToken);
 
-  return typeof limit === 'number' ? filtered.slice(0, limit) : filtered;
+  return Promise.all(
+    visibleChats.map(async (chat) => {
+      const participantNames = await fetchConversationParticipantNames(
+        chat.id,
+        currentUserId,
+        incomingRequestToken,
+      );
+
+      return mapChatToConversation(chat, [], participantNames);
+    }),
+  );
 }
 
 export async function fetchConversationMessages(
@@ -238,12 +302,23 @@ export async function fetchConversationMessages(
     throw new Error('Invalid conversation id');
   }
 
-  const response = await messageClient.getChat(chatId, authOptions(incomingRequestToken));
+  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  const [response, participantNames, chat] = await Promise.all([
+    messageClient.getChat(chatId, authOptions(incomingRequestToken)),
+    fetchConversationParticipantNames(chatId, currentUserId, incomingRequestToken),
+    fetchChatSummary(chatId, incomingRequestToken),
+  ]);
   const apiMessages = response.data.messages as MessageView[];
-  const messages = apiMessages.map((message) => mapMessageToDto(conversationId, message));
+  const messages = apiMessages.map((message) => (
+    mapMessageToDto(conversationId, message, currentUserId)
+  ));
 
   return {
-    conversation: mapChatToConversation({ id: chatId, name: `Conversation ${chatId}` }, apiMessages),
+    conversation: mapChatToConversation(
+      chat ?? { id: chatId, name: `Conversation ${chatId}` },
+      apiMessages,
+      participantNames,
+    ),
     messages: typeof limit === 'number' ? messages.slice(-limit) : messages,
   };
 }
@@ -258,17 +333,30 @@ export async function sendMessageToConversation(
     throw new Error('Invalid conversation id');
   }
 
-  const response = await messageClient.postMessage(chatId, { content }, authOptions(incomingRequestToken));
+  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  if (currentUserId === undefined) {
+    throw new Error('Identifiant utilisateur absent du token');
+  }
+
+  const [response, participantNames, chat] = await Promise.all([
+    messageClient.postMessage(chatId, { content }, authOptions(incomingRequestToken)),
+    fetchConversationParticipantNames(chatId, currentUserId, incomingRequestToken),
+    fetchChatSummary(chatId, incomingRequestToken),
+  ]);
   const now = new Date().toISOString();
   const message = mapMessageToDto(conversationId, {
     id: response.data.id,
     content,
     created_at: now,
-    sender_id: Number(currentUser.id),
-  });
+    sender_id: currentUserId,
+  }, currentUserId);
 
   return {
-    conversation: mapChatToConversation({ id: chatId, name: `Conversation ${chatId}` }, []),
+    conversation: mapChatToConversation(
+      chat ?? { id: chatId, name: `Conversation ${chatId}` },
+      [],
+      participantNames,
+    ),
     message,
   };
 }
