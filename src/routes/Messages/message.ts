@@ -132,7 +132,7 @@ router.get('/conversations/:conversationId/messages', (req: Request, res: Respon
         return sendValidationError(res, queryResult.error.issues);
     }
 
-    fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit)
+    fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit, req.headers.authorization)
         .then((result) => res.status(200).json(result))
         .catch((error) => handleUnknownError(res, error));
 });
@@ -149,7 +149,7 @@ router.post('/conversations/:conversationId/messages', (req: Request, res: Respo
         return sendValidationError(res, bodyResult.error.issues);
     }
 
-    sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content)
+    sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content, req.headers.authorization)
         .then((result) => res.status(201).json(result))
         .catch((error) => handleUnknownError(res, error));
 });
@@ -161,7 +161,7 @@ router.post('/direct-messages', (req: Request, res: Response) => {
         return sendValidationError(res, bodyResult.error.issues);
     }
 
-    createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message)
+    createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message, req.headers.authorization)
         .then((result) => res.status(201).json(result))
         .catch((error) => handleUnknownError(res, error));
 });

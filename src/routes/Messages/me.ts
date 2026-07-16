@@ -6,7 +6,7 @@ import {
     UpdateCurrentUserBody,
     UpdateCurrentUserResponse,
 } from '../../openapi-registry';
-import { getCurrentUser, sendValidationError, updateCurrentUser } from './message_helpers';
+import { getCurrentUser, sendValidationError, updateCurrentUser, handleUnknownError } from './message_helpers';
 
 const router = Router();
 
@@ -71,7 +71,9 @@ registry.registerPath({
 });
 
 router.get('/', (req: Request, res: Response) => {
-    return res.status(200).json(getCurrentUser());
+    getCurrentUser(req.headers.authorization)
+        .then((user) => res.status(200).json(user))
+        .catch((error) => handleUnknownError(res, error));
 });
 
 router.patch('/', (req: Request, res: Response) => {

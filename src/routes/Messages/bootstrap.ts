@@ -34,7 +34,7 @@ registry.registerPath({
 });
 
 router.get('/', (req: Request, res: Response) => {
-    fetchMessagingBootstrap()
+    fetchMessagingBootstrap(req.headers.authorization)
         .then((bootstrap) => res.status(200).json(bootstrap))
         .catch((error) => handleUnknownError(res, error));
 });

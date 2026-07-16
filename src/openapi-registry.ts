@@ -173,6 +173,10 @@ export const ContactDtoSchema = z.object({
     description: 'Nom du contact',
     example: 'Alice Dupont',
   }),
+  email: z.string().email().optional().openapi({
+    description: 'Adresse email du contact',
+    example: 'alice.dupont@mairie360.fr',
+  }),
   department: z.string().optional().openapi({
     description: 'Département associé au contact',
     example: 'Marketing',

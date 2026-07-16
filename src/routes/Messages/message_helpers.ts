@@ -1,7 +1,14 @@
 import axios, { AxiosError } from 'axios';
+import type { AxiosRequestConfig } from 'axios';
 import type { Response } from 'express';
 import { z } from 'zod';
 import messageClient from '../../clients/messageClient';
+import { getAuthorizationHeader } from '../../config/token';
+import { getContactUser, listContacts } from '../../repositories/contactsRepository';
+import type {
+  ChatView,
+  MessageView,
+} from '@mairie360/message-api-openapi/model';
 import {
   AttachmentDtoSchema,
   ContactDtoSchema,
@@ -16,48 +23,7 @@ export type BffConversation = z.infer<typeof ConversationDtoSchema>;
 export type BffCurrentUser = z.infer<typeof CurrentUserDtoSchema>;
 export type BffMessage = z.infer<typeof MessageDtoSchema>;
 
-type ApiChat = {
-  id: number;
-  name: string;
-};
-
-type ApiMessage = {
-  id: number;
-  content: string;
-  created_at: string;
-  sender_id: number;
-  sitation?: number | null;
-};
-
-type ApiUser = {
-  id: string;
-  name: string;
-};
-
-type ApiChatsResult = {
-  chats: ApiChat[];
-};
-
-type ApiChatResult = {
-  messages: ApiMessage[];
-};
-
-type ApiUsersResult = {
-  users: ApiUser[];
-};
-
-type ApiCreateChatResult = {
-  id: number;
-  name: string;
-};
-
-type ApiPostMessageResult = {
-  id: number;
-  content: string;
-  sitation?: number | null;
-};
-
-let currentUser: BffCurrentUser = {
+const fallbackCurrentUser: BffCurrentUser = {
   id: '0',
   name: 'Utilisateur courant',
   email: 'user@mairie360.fr',
@@ -66,6 +32,22 @@ let currentUser: BffCurrentUser = {
   position: 'Agent municipal',
   lastConnection: new Date().toISOString(),
 };
+
+let currentUser: BffCurrentUser = fallbackCurrentUser;
+
+function authOptions(incomingRequestToken?: string): AxiosRequestConfig {
+  const authHeader = getAuthorizationHeader(incomingRequestToken);
+
+  if (!authHeader) {
+    return {};
+  }
+
+  return {
+    headers: {
+      Authorization: authHeader,
+    },
+  };
+}
 
 function parseNumericId(value: string | number | undefined): number | null {
   if (value === undefined) {
@@ -102,7 +84,48 @@ function publicUserId(userId: string | number): string {
   return `user-${userId}`;
 }
 
-function mapChatToConversation(chat: ApiChat, messages: ApiMessage[] = []): BffConversation {
+function numericUserIdFromToken(incomingRequestToken?: string): number | undefined {
+  const token = getAuthorizationHeader(incomingRequestToken)?.replace(/^Bearer\s+/i, '');
+
+  if (!token) return undefined;
+
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString()) as {
+      sub?: string | number;
+    };
+    const id = Number(payload.sub);
+    return Number.isInteger(id) && id > 0 ? id : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function fetchCurrentUser(incomingRequestToken?: string): Promise<BffCurrentUser> {
+  const id = numericUserIdFromToken(incomingRequestToken);
+  if (!id) {
+    throw new Error('Identifiant utilisateur absent du token');
+  }
+
+  const user = await getContactUser(id);
+
+  if (!user) {
+    throw new Error('Utilisateur connecté introuvable');
+  }
+
+  const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+
+  currentUser = {
+    ...currentUser,
+    id,
+    name,
+    email: user.email ?? undefined,
+    lastConnection: new Date().toISOString(),
+  };
+
+  return currentUser;
+}
+
+function mapChatToConversation(chat: ChatView | { id: number; name: string; unread_count?: number }, messages: MessageView[] = []): BffConversation {
   const lastMessage = messages[messages.length - 1];
 
   return {
@@ -112,20 +135,40 @@ function mapChatToConversation(chat: ApiChat, messages: ApiMessage[] = []): BffC
     initials: initials(chat.name),
     lastMessage: lastMessage?.content,
     lastMessageAt: lastMessage?.created_at,
-    unreadCount: 0,
+    unreadCount: chat.unread_count ?? 0,
   };
 }
 
-function mapUserToContact(user: ApiUser): BffContact {
+type CoreUser = {
+  id?: string | number;
+  user_id?: string | number;
+  email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  name?: string | null;
+};
+
+function mapCoreUserToContact(user: CoreUser): BffContact | null {
+  const userId = user.id ?? user.user_id;
+  if (userId === undefined || userId === null) {
+    return null;
+  }
+
+  const fullName = [user.first_name, user.last_name]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(' ');
+  const name = fullName || user.name?.trim() || user.email?.trim() || `Utilisateur ${userId}`;
+
   return {
-    id: publicUserId(user.id),
-    name: user.name,
-    initials: initials(user.name),
+    id: publicUserId(userId),
+    name,
+    initials: initials(name),
     presence: 'offline',
+    email: user.email ?? undefined,
   };
 }
 
-function mapMessageToDto(conversationId: string | number, message: ApiMessage): BffMessage {
+function mapMessageToDto(conversationId: string | number, message: MessageView): BffMessage {
   const authorId = publicUserId(message.sender_id);
 
   return {
@@ -166,9 +209,18 @@ export function handleUnknownError(res: Response, error: unknown): Response {
   });
 }
 
-export async function fetchConversations(search?: string, limit?: number): Promise<BffConversation[]> {
-  const response = await messageClient.get<ApiChatsResult>('/v1/');
-  const conversations = response.data.chats.map((chat) => mapChatToConversation(chat));
+function isAxiosStatus(error: unknown, statuses: number[]): boolean {
+  return axios.isAxiosError(error) && statuses.includes(error.response?.status ?? 0);
+}
+
+export async function fetchConversations(
+  search?: string,
+  limit?: number,
+  incomingRequestToken?: string,
+): Promise<BffConversation[]> {
+  const response = await messageClient.getChats(authOptions(incomingRequestToken));
+  const chats = response.data.chats as ChatView[];
+  const conversations = chats.map((chat) => mapChatToConversation(chat));
   const filtered = search
     ? conversations.filter((conversation) => conversation.name.toLowerCase().includes(search.toLowerCase()))
     : conversations;
@@ -179,17 +231,19 @@ export async function fetchConversations(search?: string, limit?: number): Promi
 export async function fetchConversationMessages(
   conversationId: string | number,
   limit?: number,
+  incomingRequestToken?: string,
 ): Promise<{ conversation: BffConversation; messages: BffMessage[] }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new Error('Invalid conversation id');
   }
 
-  const response = await messageClient.get<ApiChatResult>(`/v1/${chatId}/`);
-  const messages = response.data.messages.map((message) => mapMessageToDto(conversationId, message));
+  const response = await messageClient.getChat(chatId, authOptions(incomingRequestToken));
+  const apiMessages = response.data.messages as MessageView[];
+  const messages = apiMessages.map((message) => mapMessageToDto(conversationId, message));
 
   return {
-    conversation: mapChatToConversation({ id: chatId, name: `Conversation ${chatId}` }, response.data.messages),
+    conversation: mapChatToConversation({ id: chatId, name: `Conversation ${chatId}` }, apiMessages),
     messages: typeof limit === 'number' ? messages.slice(-limit) : messages,
   };
 }
@@ -197,20 +251,20 @@ export async function fetchConversationMessages(
 export async function sendMessageToConversation(
   conversationId: string | number,
   content: string,
+  incomingRequestToken?: string,
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new Error('Invalid conversation id');
   }
 
-  const response = await messageClient.post<ApiPostMessageResult>(`/v1/${chatId}/messages/`, { content });
+  const response = await messageClient.postMessage(chatId, { content }, authOptions(incomingRequestToken));
   const now = new Date().toISOString();
   const message = mapMessageToDto(conversationId, {
     id: response.data.id,
-    content: response.data.content,
+    content,
     created_at: now,
     sender_id: Number(currentUser.id),
-    sitation: response.data.sitation,
   });
 
   return {
@@ -222,37 +276,39 @@ export async function sendMessageToConversation(
 export async function createDirectMessage(
   recipientId: string | number,
   message: string,
+  incomingRequestToken?: string,
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const recipientNumericId = parseNumericId(recipientId);
   if (recipientNumericId === null) {
     throw new Error('Invalid recipient id');
   }
 
-  const chat = await messageClient.post<ApiCreateChatResult>('/v1/', {
+  const chat = await messageClient.createChat({
     name: `Direct ${recipientNumericId}`,
     members: [recipientNumericId],
-  });
+  }, authOptions(incomingRequestToken));
 
-  return sendMessageToConversation(chat.data.id, message);
+  return sendMessageToConversation(chat.data.id, message, incomingRequestToken);
 }
 
 export async function createGroupConversation(
   name: string,
   memberIds: Array<string | number>,
+  incomingRequestToken?: string,
 ): Promise<BffConversation> {
   const members = memberIds.map(parseNumericId).filter((id): id is number => id !== null);
-  const response = await messageClient.post<ApiCreateChatResult>('/v1/', { name, members });
+  const response = await messageClient.createChat({ name, members }, authOptions(incomingRequestToken));
 
-  return mapChatToConversation(response.data);
+  return mapChatToConversation({ id: response.data.id, name });
 }
 
-export async function deleteConversation(conversationId: string | number): Promise<void> {
+export async function deleteConversation(conversationId: string | number, incomingRequestToken?: string): Promise<void> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new Error('Invalid conversation id');
   }
 
-  await messageClient.delete(`/v1/${chatId}/`);
+  await messageClient.deleteChat(chatId, authOptions(incomingRequestToken));
 }
 
 export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
@@ -262,55 +318,53 @@ export async function markConversationAsRead(conversationId: string | number): P
   };
 }
 
-export async function fetchContacts(search?: string, limit?: number): Promise<BffContact[]> {
-  const conversations = await fetchConversations();
-  const contactsById = new Map<string | number, BffContact>();
-
-  await Promise.all(
-    conversations.map(async (conversation) => {
-      const chatId = parseNumericId(conversation.id);
-      if (chatId === null) {
-        return;
-      }
-
-      const response = await messageClient.get<ApiUsersResult>(`/v1/${chatId}/users/`);
-      for (const user of response.data.users) {
-        const contact = mapUserToContact(user);
-        contactsById.set(contact.id, contact);
-      }
-    }),
+export async function fetchContacts(
+  search?: string,
+  limit?: number,
+  incomingRequestToken?: string,
+): Promise<BffContact[]> {
+  const user = await fetchCurrentUser(incomingRequestToken);
+  const currentUserId = Number(String(user.id).replace(/^user-/, ''));
+  const users = await listContacts(
+    search,
+    limit,
+    Number.isInteger(currentUserId) ? currentUserId : undefined,
   );
+  const contacts = users
+    .map((user) => mapCoreUserToContact(user as CoreUser))
+    .filter((contact): contact is BffContact => contact !== null);
 
-  const contacts = [...contactsById.values()];
-  const filtered = search
-    ? contacts.filter((contact) => contact.name.toLowerCase().includes(search.toLowerCase()))
-    : contacts;
-
-  return typeof limit === 'number' ? filtered.slice(0, limit) : filtered;
+  return contacts;
 }
 
-export async function fetchMessagingBootstrap(): Promise<{
+export async function fetchMessagingBootstrap(incomingRequestToken?: string): Promise<{
   currentUser: BffCurrentUser;
   conversations: BffConversation[];
+  contacts: BffContact[];
   activeConversationId?: string | number;
   messages: BffMessage[];
 }> {
-  const conversations = await fetchConversations(undefined, 20);
+  const [user, conversations, contacts] = await Promise.all([
+    fetchCurrentUser(incomingRequestToken),
+    fetchConversations(undefined, 20, incomingRequestToken),
+    fetchContacts(undefined, undefined, incomingRequestToken),
+  ]);
   const activeConversationId = conversations[0]?.id;
   const activeConversation = activeConversationId
-    ? await fetchConversationMessages(activeConversationId, 30)
+    ? await fetchConversationMessages(activeConversationId, 30, incomingRequestToken)
     : undefined;
 
   return {
-    currentUser,
+    currentUser: user,
     conversations,
+    contacts,
     activeConversationId,
     messages: activeConversation?.messages ?? [],
   };
 }
 
-export function getCurrentUser(): { currentUser: BffCurrentUser } {
-  return { currentUser };
+export async function getCurrentUser(incomingRequestToken?: string): Promise<{ currentUser: BffCurrentUser }> {
+  return { currentUser: await fetchCurrentUser(incomingRequestToken) };
 }
 
 export function updateCurrentUser(input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>): {

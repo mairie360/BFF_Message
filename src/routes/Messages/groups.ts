@@ -56,7 +56,7 @@ router.post('/', (req: Request, res: Response) => {
         return sendValidationError(res, bodyResult.error.issues);
     }
 
-    createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds)
+    createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds, req.headers.authorization)
         .then((conversation) => res.status(201).json({ conversation }))
         .catch((error) => handleUnknownError(res, error));
 });

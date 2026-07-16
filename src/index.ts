@@ -15,6 +15,28 @@ const PORT = process.env.PORT;
 
 app.use(express.json());
 
+function accessTokenFromCookie(cookieHeader?: string): string | undefined {
+  const token = cookieHeader
+    ?.split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('accessToken='))
+    ?.slice('accessToken='.length);
+
+  return token ? decodeURIComponent(token) : undefined;
+}
+
+app.use((req, _res, next) => {
+  if (!req.headers.authorization) {
+    const accessToken = accessTokenFromCookie(req.headers.cookie);
+
+    if (accessToken) {
+      req.headers.authorization = `Bearer ${accessToken}`;
+    }
+  }
+
+  next();
+});
+
 const generator = new OpenApiGeneratorV31(registry.definitions);
 
 const openApiSpec = generator.generateDocument({

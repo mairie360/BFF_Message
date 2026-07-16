@@ -104,7 +104,11 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     try {
-        const conversations = await fetchConversations(queryResult.data.search, queryResult.data.limit);
+        const conversations = await fetchConversations(
+            queryResult.data.search,
+            queryResult.data.limit,
+            req.headers.authorization,
+        );
         return res.status(200).json({ conversations });
     } catch (error) {
         return handleUnknownError(res, error);
@@ -119,7 +123,7 @@ router.delete('/:conversationId', async (req: Request, res: Response) => {
     }
 
     try {
-        await deleteConversation(paramsResult.data.conversationId);
+        await deleteConversation(paramsResult.data.conversationId, req.headers.authorization);
         return res.status(200).json({
             deleted: true,
             conversationId: paramsResult.data.conversationId,
