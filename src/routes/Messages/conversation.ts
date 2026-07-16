@@ -10,6 +10,13 @@ import {
     MarkConversationAsReadResponse,
     ApiErrorResponse,
 } from '../../openapi-registry';
+import {
+    deleteConversation,
+    fetchConversations,
+    handleUnknownError,
+    markConversationAsRead,
+    sendValidationError,
+} from './message_helpers';
 
 const router = Router();
 
@@ -18,7 +25,9 @@ registry.registerPath({
     path: '/conversations',
     tags: ['Conversations'],
     summary: 'Récupère la liste des conversations de l’utilisateur actuel',
-    query: ConversationsQuery,
+    request: {
+        query: ConversationsQuery,
+    },
     responses: {
         200: {
             description: 'Liste des conversations de l’utilisateur actuel',
@@ -44,7 +53,9 @@ registry.registerPath({
     path: '/conversations/{conversationId}',
     tags: ['Conversations'],
     summary: 'Supprime une conversation',
-    params: ConversationIdParams,
+    request: {
+        params: ConversationIdParams,
+    },
     responses: {
         200: {
             description: 'Conversation supprimée avec succès',
@@ -86,15 +97,60 @@ registry.registerPath({
 });
 
 router.get('/', async (req: Request, res: Response) => {
-    // Implémentation de la récupération des conversations
+    const queryResult = ConversationsQuery.safeParse(req.query);
+
+    if (!queryResult.success) {
+        return sendValidationError(res, queryResult.error.issues);
+    }
+
+    try {
+        const conversations = await fetchConversations(
+            queryResult.data.search,
+            queryResult.data.limit,
+            req.headers.authorization,
+        );
+        return res.status(200).json({ conversations });
+    } catch (error) {
+        return handleUnknownError(res, error);
+    }
 });
 
 router.delete('/:conversationId', async (req: Request, res: Response) => {
-    // Implémentation de la suppression d'une conversation
+    const paramsResult = ConversationIdParams.safeParse(req.params);
+
+    if (!paramsResult.success) {
+        return sendValidationError(res, paramsResult.error.issues);
+    }
+
+    try {
+        await deleteConversation(paramsResult.data.conversationId, req.headers.authorization);
+        return res.status(200).json({
+            deleted: true,
+            conversationId: paramsResult.data.conversationId,
+        });
+    } catch (error) {
+        return handleUnknownError(res, error);
+    }
 });
 
 router.post('/:conversationId/read', async (req: Request, res: Response) => {
-    // Implémentation de la mise à jour de l'état de lecture d'une conversation
+    const paramsResult = ConversationIdParams.safeParse(req.params);
+    const bodyResult = MarkConversationAsReadBody.safeParse(req.body);
+
+    if (!paramsResult.success) {
+        return sendValidationError(res, paramsResult.error.issues);
+    }
+
+    if (!bodyResult.success) {
+        return sendValidationError(res, bodyResult.error.issues);
+    }
+
+    try {
+        const result = await markConversationAsRead(paramsResult.data.conversationId);
+        return res.status(200).json(result);
+    } catch (error) {
+        return handleUnknownError(res, error);
+    }
 });
 
 export default router;

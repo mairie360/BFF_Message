@@ -4,6 +4,7 @@ import {
     MessagingBootstrapResponse,
     ApiErrorResponse,
 } from '../../openapi-registry';
+import { fetchMessagingBootstrap, handleUnknownError } from './message_helpers';
 
 const router = Router();
 
@@ -33,7 +34,9 @@ registry.registerPath({
 });
 
 router.get('/', (req: Request, res: Response) => {
-    // Implementation
+    fetchMessagingBootstrap(req.headers.authorization)
+        .then((bootstrap) => res.status(200).json(bootstrap))
+        .catch((error) => handleUnknownError(res, error));
 });
 
 export default router;

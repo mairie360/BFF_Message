@@ -6,6 +6,11 @@ import {
     ConversationDtoSchema,
     ApiErrorResponse,
 } from '../../openapi-registry';
+import {
+    createGroupConversation,
+    handleUnknownError,
+    sendValidationError,
+} from './message_helpers';
 
 const router = Router();
 
@@ -45,7 +50,15 @@ registry.registerPath({
 });
 
 router.post('/', (req: Request, res: Response) => {
-    // Implementation
+    const bodyResult = CreateGroupBody.safeParse(req.body);
+
+    if (!bodyResult.success) {
+        return sendValidationError(res, bodyResult.error.issues);
+    }
+
+    createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds, req.headers.authorization)
+        .then((conversation) => res.status(201).json({ conversation }))
+        .catch((error) => handleUnknownError(res, error));
 });
 
 export default router;

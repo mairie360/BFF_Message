@@ -5,6 +5,8 @@ import {
     ContactsResponse,
     ApiErrorResponse,
 } from '../../openapi-registry';
+import { getAuthorizationHeader } from '../../config/token';
+import { fetchContacts, handleUnknownError, sendValidationError } from './message_helpers';
 
 const router = Router();
 
@@ -13,7 +15,9 @@ registry.registerPath({
     path: '/contacts',
     tags: ['Contacts'],
     summary: 'Récupère la liste des contacts',
-    query: ContactsQuery,
+    request: {
+        query: ContactsQuery,
+    },
     responses: {
         200: {
             description: 'Liste des contacts',
@@ -35,5 +39,22 @@ registry.registerPath({
 });
 
 router.get('/', (req: Request, res: Response) => {
-    // Implementation
+    if (!getAuthorizationHeader(req.headers.authorization)) {
+        return res.status(401).json({
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+        });
+    }
+
+    const queryResult = ContactsQuery.safeParse(req.query);
+
+    if (!queryResult.success) {
+        return sendValidationError(res, queryResult.error.issues);
+    }
+
+    fetchContacts(queryResult.data.search, queryResult.data.limit, req.headers.authorization)
+        .then((contacts) => res.status(200).json({ contacts }))
+        .catch((error) => handleUnknownError(res, error));
 });
+
+export default router;
