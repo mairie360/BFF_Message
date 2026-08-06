@@ -22,13 +22,13 @@
     "swagger-jsdoc": "6.3.0",
     "swagger-ui-express": "5.0.1",
     "swagger-ui-react": "5.32.12",
-    "tsx": "4.23.5",
+    "tsx": "4.23.9",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
-    "@types/pg": "8.20.3",
+    "@types/pg": "8.20.4",
     "@types/supertest": "6.0.3",
     "@types/swagger-jsdoc": "6.0.4",
     "@types/swagger-ui-express": "4.1.8",
