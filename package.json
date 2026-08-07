@@ -22,7 +22,7 @@
     "swagger-jsdoc": "6.3.0",
     "swagger-ui-express": "5.0.1",
     "swagger-ui-react": "5.32.12",
-    "tsx": "4.23.9",
+    "tsx": "4.23.10",
     "zod": "4.4.3"
   },
   "devDependencies": {
