@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "8.5.0",
+    "@asteasolutions/zod-to-openapi": "9.1.0",
     "@mairie360/core-api-openapi": "0.0.0-dev.ed2b56975977ab0799613a8197b5b3c9eea5fbd0",
     "@mairie360/message-api-openapi": "0.5.0",
     "axios": "1.20.0",
