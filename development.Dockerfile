@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.27
-FROM node:20-alpine
+FROM node:24-alpine
 
 # Installation de curl pour le healthcheck Docker
 RUN apk add --no-cache curl
