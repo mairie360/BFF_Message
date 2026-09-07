@@ -1,3 +1,4 @@
+import businessReferencesRouter from './business_references';
 import { Router } from 'express';
 import attachmentsRoutes from './attachments';
 import bootstrapRoutes from './bootstrap';
@@ -8,6 +9,7 @@ import meRoutes from './me';
 import messageRoutes from './message';
 
 const router = Router();
+router.use('/business-references', businessReferencesRouter);
 
 router.use('/attachments', attachmentsRoutes);
 router.use('/messaging/bootstrap', bootstrapRoutes);
