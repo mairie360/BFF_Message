@@ -2,6 +2,7 @@ name: BFF Message CICD
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -13,6 +14,6 @@ jobs:
     uses: mairie360/CICD/.github/workflows/BFFs-cicd.yml@v1.13.2
     with:
       package_name: bff-message
-      node_version: 20
-      cicd_version: v1.7.9
+      node_version: "22"
+      cicd_version: v1.13.2
     secrets: inherit
