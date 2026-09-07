@@ -446,7 +446,8 @@ export const UploadAttachmentResponse = z.object({
 });
 
 export const MessagingBootstrapResponse = z.object({
-    currentUser: CurrentUserDtoSchema,
+    contacts: z.array(ContactDtoSchema),
+  currentUser: CurrentUserDtoSchema,
     conversations: z.array(ConversationDtoSchema),
     activeConversationId: IdSchema.optional(),
     messages: z.array(MessageDtoSchema),

@@ -1,0 +1,5121 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BFF Message API",
+    "version": "1.0.0"
+  },
+  "components": {
+    "schemas": {
+      "IdSchema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+        "example": "12345"
+      },
+      "CurrentUserDtoSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Nom complet de l’utilisateur actuel",
+            "example": "Alice Dupont"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "lastConnection": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Utilisateur actuellement connecté"
+      },
+      "ContactDtoSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom du contact",
+            "example": "Alice Dupont"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Adresse email du contact",
+            "example": "alice.dupont@mairie360.fr"
+          },
+          "department": {
+            "type": "string",
+            "description": "Département associé au contact",
+            "example": "Marketing"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL de l’avatar du contact",
+            "example": "https://example.com/avatar.png"
+          },
+          "initials": {
+            "type": "string",
+            "description": "Initiales du contact",
+            "example": "AD"
+          },
+          "presence": {
+            "type": "string",
+            "enum": [
+              "online",
+              "offline",
+              "away"
+            ],
+            "description": "Présence du contact, en ligne, hors ligne ou absent",
+            "example": "online"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Représentation d’un contact"
+      },
+      "ConversationDtoSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom de la conversation",
+            "example": "Discussion de groupe"
+          },
+          "department": {
+            "type": "string",
+            "description": "Département associé à la conversation",
+            "example": "Marketing"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "group"
+            ],
+            "description": "Type de conversation, direct ou groupe",
+            "example": "direct"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL de l’avatar de la conversation",
+            "example": "https://example.com/avatar.png"
+          },
+          "initials": {
+            "type": "string",
+            "description": "Initiales de la conversation",
+            "example": "DG"
+          },
+          "presence": {
+            "type": "string",
+            "enum": [
+              "online",
+              "offline",
+              "away"
+            ],
+            "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+            "example": "online"
+          },
+          "lastMessage": {
+            "type": "string",
+            "description": "Dernier message de la conversation",
+            "example": "Bonjour à tous !"
+          },
+          "lastMessageAt": {
+            "type": "string",
+            "description": "Date et heure du dernier message (format ISO)",
+            "example": "2026-06-23T12:32:00Z"
+          },
+          "unreadCount": {
+            "type": "integer",
+            "description": "Nombre de messages non lus dans la conversation",
+            "example": 5
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Représentation d’une conversation"
+      },
+      "MessageDtoSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "conversationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenu du message",
+            "example": "Bonjour à tous !"
+          },
+          "sentAt": {
+            "type": "string",
+            "description": "Date et heure d’envoi du message (format ISO)",
+            "example": "2026-06-23T12:32:00Z"
+          },
+          "authorId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "authorName": {
+            "type": "string",
+            "description": "Nom de l’auteur du message",
+            "example": "Alice Dupont"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "incoming",
+              "outgoing"
+            ],
+            "description": "Direction du message, entrant ou sortant",
+            "example": "incoming"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom de la pièce jointe",
+                  "example": "document.pdf"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Taille de la pièce jointe en octets",
+                  "example": 102400
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Type MIME de la pièce jointe",
+                  "example": "application/pdf"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL pour accéder à la pièce jointe",
+                  "example": "https://example.com/document.pdf"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’une pièce jointe"
+            },
+            "description": "Liste des pièces jointes du message",
+            "example": []
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom de la mention",
+                  "example": "Alice Dupont"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "direct",
+                    "group"
+                  ],
+                  "description": "Type de conversation associé à la mention",
+                  "example": "direct"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Description de la mention",
+                  "example": "Mention d’un utilisateur dans un message"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’une mention"
+            },
+            "description": "Liste des mentions dans le message",
+            "example": []
+          }
+        },
+        "required": [
+          "id",
+          "conversationId",
+          "content",
+          "sentAt",
+          "authorId"
+        ],
+        "description": "Représentation d’un message"
+      },
+      "AttachmentDtoSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom de la pièce jointe",
+            "example": "document.pdf"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Taille de la pièce jointe en octets",
+            "example": 102400
+          },
+          "type": {
+            "type": "string",
+            "description": "Type MIME de la pièce jointe",
+            "example": "application/pdf"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL pour accéder à la pièce jointe",
+            "example": "https://example.com/document.pdf"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Représentation d’une pièce jointe"
+      },
+      "MentionDtoSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom de la mention",
+            "example": "Alice Dupont"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "group"
+            ],
+            "description": "Type de conversation associé à la mention",
+            "example": "direct"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description de la mention",
+            "example": "Mention d’un utilisateur dans un message"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Représentation d’une mention"
+      },
+      "ConversationsResponse": {
+        "type": "object",
+        "properties": {
+          "conversations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom de la conversation",
+                  "example": "Discussion de groupe"
+                },
+                "department": {
+                  "type": "string",
+                  "description": "Département associé à la conversation",
+                  "example": "Marketing"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "direct",
+                    "group"
+                  ],
+                  "description": "Type de conversation, direct ou groupe",
+                  "example": "direct"
+                },
+                "avatarUrl": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL de l’avatar de la conversation",
+                  "example": "https://example.com/avatar.png"
+                },
+                "initials": {
+                  "type": "string",
+                  "description": "Initiales de la conversation",
+                  "example": "DG"
+                },
+                "presence": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline",
+                    "away"
+                  ],
+                  "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                  "example": "online"
+                },
+                "lastMessage": {
+                  "type": "string",
+                  "description": "Dernier message de la conversation",
+                  "example": "Bonjour à tous !"
+                },
+                "lastMessageAt": {
+                  "type": "string",
+                  "description": "Date et heure du dernier message (format ISO)",
+                  "example": "2026-06-23T12:32:00Z"
+                },
+                "unreadCount": {
+                  "type": "integer",
+                  "description": "Nombre de messages non lus dans la conversation",
+                  "example": 5
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’une conversation"
+            },
+            "description": "Liste des conversations"
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Curseur pour la pagination des résultats",
+            "example": "abc123"
+          }
+        },
+        "required": [
+          "conversations"
+        ],
+        "description": "Réponse contenant la liste des conversations et un curseur pour la pagination"
+      },
+      "MessagesResponse": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "description": "Nom de la conversation",
+                "example": "Discussion de groupe"
+              },
+              "department": {
+                "type": "string",
+                "description": "Département associé à la conversation",
+                "example": "Marketing"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "group"
+                ],
+                "description": "Type de conversation, direct ou groupe",
+                "example": "direct"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL de l’avatar de la conversation",
+                "example": "https://example.com/avatar.png"
+              },
+              "initials": {
+                "type": "string",
+                "description": "Initiales de la conversation",
+                "example": "DG"
+              },
+              "presence": {
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline",
+                  "away"
+                ],
+                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "example": "online"
+              },
+              "lastMessage": {
+                "type": "string",
+                "description": "Dernier message de la conversation",
+                "example": "Bonjour à tous !"
+              },
+              "lastMessageAt": {
+                "type": "string",
+                "description": "Date et heure du dernier message (format ISO)",
+                "example": "2026-06-23T12:32:00Z"
+              },
+              "unreadCount": {
+                "type": "integer",
+                "description": "Nombre de messages non lus dans la conversation",
+                "example": 5
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Détails de la conversation associée aux messages"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "conversationId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Contenu du message",
+                  "example": "Bonjour à tous !"
+                },
+                "sentAt": {
+                  "type": "string",
+                  "description": "Date et heure d’envoi du message (format ISO)",
+                  "example": "2026-06-23T12:32:00Z"
+                },
+                "authorId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "authorName": {
+                  "type": "string",
+                  "description": "Nom de l’auteur du message",
+                  "example": "Alice Dupont"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "incoming",
+                    "outgoing"
+                  ],
+                  "description": "Direction du message, entrant ou sortant",
+                  "example": "incoming"
+                },
+                "attachments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Nom de la pièce jointe",
+                        "example": "document.pdf"
+                      },
+                      "size": {
+                        "type": "integer",
+                        "description": "Taille de la pièce jointe en octets",
+                        "example": 102400
+                      },
+                      "type": {
+                        "type": "string",
+                        "description": "Type MIME de la pièce jointe",
+                        "example": "application/pdf"
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL pour accéder à la pièce jointe",
+                        "example": "https://example.com/document.pdf"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "description": "Représentation d’une pièce jointe"
+                  },
+                  "description": "Liste des pièces jointes du message",
+                  "example": []
+                },
+                "mentions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Nom de la mention",
+                        "example": "Alice Dupont"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "direct",
+                          "group"
+                        ],
+                        "description": "Type de conversation associé à la mention",
+                        "example": "direct"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Description de la mention",
+                        "example": "Mention d’un utilisateur dans un message"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "description": "Représentation d’une mention"
+                  },
+                  "description": "Liste des mentions dans le message",
+                  "example": []
+                }
+              },
+              "required": [
+                "id",
+                "conversationId",
+                "content",
+                "sentAt",
+                "authorId"
+              ],
+              "description": "Représentation d’un message"
+            },
+            "description": "Liste des messages"
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Curseur pour la pagination des résultats",
+            "example": "def456"
+          }
+        },
+        "required": [
+          "conversation",
+          "messages"
+        ],
+        "description": "Réponse contenant la liste des messages et un curseur pour la pagination"
+      },
+      "ContactsResponse": {
+        "type": "object",
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom du contact",
+                  "example": "Alice Dupont"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Adresse email du contact",
+                  "example": "alice.dupont@mairie360.fr"
+                },
+                "department": {
+                  "type": "string",
+                  "description": "Département associé au contact",
+                  "example": "Marketing"
+                },
+                "avatarUrl": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL de l’avatar du contact",
+                  "example": "https://example.com/avatar.png"
+                },
+                "initials": {
+                  "type": "string",
+                  "description": "Initiales du contact",
+                  "example": "AD"
+                },
+                "presence": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline",
+                    "away"
+                  ],
+                  "description": "Présence du contact, en ligne, hors ligne ou absent",
+                  "example": "online"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’un contact"
+            },
+            "description": "Liste des contacts"
+          }
+        },
+        "required": [
+          "contacts"
+        ],
+        "description": "Réponse contenant la liste des contacts"
+      },
+      "SendMessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "conversationId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "content": {
+                "type": "string",
+                "description": "Contenu du message",
+                "example": "Bonjour à tous !"
+              },
+              "sentAt": {
+                "type": "string",
+                "description": "Date et heure d’envoi du message (format ISO)",
+                "example": "2026-06-23T12:32:00Z"
+              },
+              "authorId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "authorName": {
+                "type": "string",
+                "description": "Nom de l’auteur du message",
+                "example": "Alice Dupont"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "incoming",
+                  "outgoing"
+                ],
+                "description": "Direction du message, entrant ou sortant",
+                "example": "incoming"
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nom de la pièce jointe",
+                      "example": "document.pdf"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "Taille de la pièce jointe en octets",
+                      "example": 102400
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Type MIME de la pièce jointe",
+                      "example": "application/pdf"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "URL pour accéder à la pièce jointe",
+                      "example": "https://example.com/document.pdf"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "description": "Représentation d’une pièce jointe"
+                },
+                "description": "Liste des pièces jointes du message",
+                "example": []
+              },
+              "mentions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nom de la mention",
+                      "example": "Alice Dupont"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "direct",
+                        "group"
+                      ],
+                      "description": "Type de conversation associé à la mention",
+                      "example": "direct"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description de la mention",
+                      "example": "Mention d’un utilisateur dans un message"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "description": "Représentation d’une mention"
+                },
+                "description": "Liste des mentions dans le message",
+                "example": []
+              }
+            },
+            "required": [
+              "id",
+              "conversationId",
+              "content",
+              "sentAt",
+              "authorId"
+            ],
+            "description": "Message envoyé"
+          },
+          "conversation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "description": "Nom de la conversation",
+                "example": "Discussion de groupe"
+              },
+              "department": {
+                "type": "string",
+                "description": "Département associé à la conversation",
+                "example": "Marketing"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "group"
+                ],
+                "description": "Type de conversation, direct ou groupe",
+                "example": "direct"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL de l’avatar de la conversation",
+                "example": "https://example.com/avatar.png"
+              },
+              "initials": {
+                "type": "string",
+                "description": "Initiales de la conversation",
+                "example": "DG"
+              },
+              "presence": {
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline",
+                  "away"
+                ],
+                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "example": "online"
+              },
+              "lastMessage": {
+                "type": "string",
+                "description": "Dernier message de la conversation",
+                "example": "Bonjour à tous !"
+              },
+              "lastMessageAt": {
+                "type": "string",
+                "description": "Date et heure du dernier message (format ISO)",
+                "example": "2026-06-23T12:32:00Z"
+              },
+              "unreadCount": {
+                "type": "integer",
+                "description": "Nombre de messages non lus dans la conversation",
+                "example": 5
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Détails de la conversation associée au message envoyé"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "description": "Réponse contenant le message envoyé et les détails de la conversation associée"
+      },
+      "NewDirectMessageResponse": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "description": "Nom de la conversation",
+                "example": "Discussion de groupe"
+              },
+              "department": {
+                "type": "string",
+                "description": "Département associé à la conversation",
+                "example": "Marketing"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "group"
+                ],
+                "description": "Type de conversation, direct ou groupe",
+                "example": "direct"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL de l’avatar de la conversation",
+                "example": "https://example.com/avatar.png"
+              },
+              "initials": {
+                "type": "string",
+                "description": "Initiales de la conversation",
+                "example": "DG"
+              },
+              "presence": {
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline",
+                  "away"
+                ],
+                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "example": "online"
+              },
+              "lastMessage": {
+                "type": "string",
+                "description": "Dernier message de la conversation",
+                "example": "Bonjour à tous !"
+              },
+              "lastMessageAt": {
+                "type": "string",
+                "description": "Date et heure du dernier message (format ISO)",
+                "example": "2026-06-23T12:32:00Z"
+              },
+              "unreadCount": {
+                "type": "integer",
+                "description": "Nombre de messages non lus dans la conversation",
+                "example": 5
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Détails de la conversation directe créée"
+          },
+          "message": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "conversationId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "content": {
+                "type": "string",
+                "description": "Contenu du message",
+                "example": "Bonjour à tous !"
+              },
+              "sentAt": {
+                "type": "string",
+                "description": "Date et heure d’envoi du message (format ISO)",
+                "example": "2026-06-23T12:32:00Z"
+              },
+              "authorId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "authorName": {
+                "type": "string",
+                "description": "Nom de l’auteur du message",
+                "example": "Alice Dupont"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "incoming",
+                  "outgoing"
+                ],
+                "description": "Direction du message, entrant ou sortant",
+                "example": "incoming"
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nom de la pièce jointe",
+                      "example": "document.pdf"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "Taille de la pièce jointe en octets",
+                      "example": 102400
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Type MIME de la pièce jointe",
+                      "example": "application/pdf"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "URL pour accéder à la pièce jointe",
+                      "example": "https://example.com/document.pdf"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "description": "Représentation d’une pièce jointe"
+                },
+                "description": "Liste des pièces jointes du message",
+                "example": []
+              },
+              "mentions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nom de la mention",
+                      "example": "Alice Dupont"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "direct",
+                        "group"
+                      ],
+                      "description": "Type de conversation associé à la mention",
+                      "example": "direct"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description de la mention",
+                      "example": "Mention d’un utilisateur dans un message"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "description": "Représentation d’une mention"
+                },
+                "description": "Liste des mentions dans le message",
+                "example": []
+              }
+            },
+            "required": [
+              "id",
+              "conversationId",
+              "content",
+              "sentAt",
+              "authorId"
+            ],
+            "description": "Message direct envoyé"
+          }
+        },
+        "required": [
+          "conversation",
+          "message"
+        ],
+        "description": "Réponse contenant les détails de la conversation directe créée et le message envoyé"
+      },
+      "CreateGroupResponse": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "description": "Nom de la conversation",
+                "example": "Discussion de groupe"
+              },
+              "department": {
+                "type": "string",
+                "description": "Département associé à la conversation",
+                "example": "Marketing"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "group"
+                ],
+                "description": "Type de conversation, direct ou groupe",
+                "example": "direct"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL de l’avatar de la conversation",
+                "example": "https://example.com/avatar.png"
+              },
+              "initials": {
+                "type": "string",
+                "description": "Initiales de la conversation",
+                "example": "DG"
+              },
+              "presence": {
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline",
+                  "away"
+                ],
+                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "example": "online"
+              },
+              "lastMessage": {
+                "type": "string",
+                "description": "Dernier message de la conversation",
+                "example": "Bonjour à tous !"
+              },
+              "lastMessageAt": {
+                "type": "string",
+                "description": "Date et heure du dernier message (format ISO)",
+                "example": "2026-06-23T12:32:00Z"
+              },
+              "unreadCount": {
+                "type": "integer",
+                "description": "Nombre de messages non lus dans la conversation",
+                "example": 5
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Détails du groupe créé"
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "description": "Réponse contenant les détails du groupe créé"
+      },
+      "DeleteConversationResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Indique si la conversation a été supprimée avec succès",
+            "example": true
+          },
+          "conversationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant de la conversation supprimée",
+            "example": "12345"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "description": "Réponse indiquant si la conversation a été supprimée avec succès"
+      },
+      "MarkConversationAsReadResponse": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant de la conversation marquée comme lue",
+            "example": "12345"
+          },
+          "unreadCount": {
+            "type": "integer",
+            "description": "Nombre de messages non lus restant dans la conversation après la mise à jour",
+            "example": 0
+          }
+        },
+        "required": [
+          "conversationId",
+          "unreadCount"
+        ],
+        "description": "Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour"
+      },
+      "UploadAttachmentResponse": {
+        "type": "object",
+        "properties": {
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom de la pièce jointe",
+                  "example": "document.pdf"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Taille de la pièce jointe en octets",
+                  "example": 102400
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Type MIME de la pièce jointe",
+                  "example": "application/pdf"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL pour accéder à la pièce jointe",
+                  "example": "https://example.com/document.pdf"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’une pièce jointe"
+            },
+            "description": "Liste des pièces jointes téléchargées"
+          }
+        },
+        "required": [
+          "attachments"
+        ],
+        "description": "Réponse contenant la liste des pièces jointes téléchargées"
+      },
+      "MessagingBootstrapResponse": {
+        "type": "object",
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom du contact",
+                  "example": "Alice Dupont"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Adresse email du contact",
+                  "example": "alice.dupont@mairie360.fr"
+                },
+                "department": {
+                  "type": "string",
+                  "description": "Département associé au contact",
+                  "example": "Marketing"
+                },
+                "avatarUrl": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL de l’avatar du contact",
+                  "example": "https://example.com/avatar.png"
+                },
+                "initials": {
+                  "type": "string",
+                  "description": "Initiales du contact",
+                  "example": "AD"
+                },
+                "presence": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline",
+                    "away"
+                  ],
+                  "description": "Présence du contact, en ligne, hors ligne ou absent",
+                  "example": "online"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’un contact"
+            }
+          },
+          "currentUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Nom complet de l’utilisateur actuel",
+                "example": "Alice Dupont"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "role": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "position": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "lastConnection": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Utilisateur actuellement connecté"
+          },
+          "conversations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Nom de la conversation",
+                  "example": "Discussion de groupe"
+                },
+                "department": {
+                  "type": "string",
+                  "description": "Département associé à la conversation",
+                  "example": "Marketing"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "direct",
+                    "group"
+                  ],
+                  "description": "Type de conversation, direct ou groupe",
+                  "example": "direct"
+                },
+                "avatarUrl": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL de l’avatar de la conversation",
+                  "example": "https://example.com/avatar.png"
+                },
+                "initials": {
+                  "type": "string",
+                  "description": "Initiales de la conversation",
+                  "example": "DG"
+                },
+                "presence": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline",
+                    "away"
+                  ],
+                  "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                  "example": "online"
+                },
+                "lastMessage": {
+                  "type": "string",
+                  "description": "Dernier message de la conversation",
+                  "example": "Bonjour à tous !"
+                },
+                "lastMessageAt": {
+                  "type": "string",
+                  "description": "Date et heure du dernier message (format ISO)",
+                  "example": "2026-06-23T12:32:00Z"
+                },
+                "unreadCount": {
+                  "type": "integer",
+                  "description": "Nombre de messages non lus dans la conversation",
+                  "example": 5
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Représentation d’une conversation"
+            }
+          },
+          "activeConversationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "example": "12345"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "conversationId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Contenu du message",
+                  "example": "Bonjour à tous !"
+                },
+                "sentAt": {
+                  "type": "string",
+                  "description": "Date et heure d’envoi du message (format ISO)",
+                  "example": "2026-06-23T12:32:00Z"
+                },
+                "authorId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "example": "12345"
+                },
+                "authorName": {
+                  "type": "string",
+                  "description": "Nom de l’auteur du message",
+                  "example": "Alice Dupont"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "incoming",
+                    "outgoing"
+                  ],
+                  "description": "Direction du message, entrant ou sortant",
+                  "example": "incoming"
+                },
+                "attachments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Nom de la pièce jointe",
+                        "example": "document.pdf"
+                      },
+                      "size": {
+                        "type": "integer",
+                        "description": "Taille de la pièce jointe en octets",
+                        "example": 102400
+                      },
+                      "type": {
+                        "type": "string",
+                        "description": "Type MIME de la pièce jointe",
+                        "example": "application/pdf"
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL pour accéder à la pièce jointe",
+                        "example": "https://example.com/document.pdf"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "description": "Représentation d’une pièce jointe"
+                  },
+                  "description": "Liste des pièces jointes du message",
+                  "example": []
+                },
+                "mentions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Nom de la mention",
+                        "example": "Alice Dupont"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "direct",
+                          "group"
+                        ],
+                        "description": "Type de conversation associé à la mention",
+                        "example": "direct"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Description de la mention",
+                        "example": "Mention d’un utilisateur dans un message"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "description": "Représentation d’une mention"
+                  },
+                  "description": "Liste des mentions dans le message",
+                  "example": []
+                }
+              },
+              "required": [
+                "id",
+                "conversationId",
+                "content",
+                "sentAt",
+                "authorId"
+              ],
+              "description": "Représentation d’un message"
+            }
+          }
+        },
+        "required": [
+          "contacts",
+          "currentUser",
+          "conversations",
+          "messages"
+        ],
+        "description": "Réponse contenant les données de base pour le démarrage de la messagerie"
+      },
+      "CurrentUserResponse": {
+        "type": "object",
+        "properties": {
+          "currentUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Nom complet de l’utilisateur actuel",
+                "example": "Alice Dupont"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "role": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "position": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "lastConnection": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Utilisateur actuellement connecté"
+          }
+        },
+        "required": [
+          "currentUser"
+        ],
+        "description": "Réponse contenant l’utilisateur actuel"
+      },
+      "UpdateCurrentUserResponse": {
+        "type": "object",
+        "properties": {
+          "currentUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Nom complet de l’utilisateur actuel",
+                "example": "Alice Dupont"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "role": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "position": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "lastConnection": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Utilisateur actuellement connecté"
+          }
+        },
+        "required": [
+          "currentUser"
+        ],
+        "description": "Réponse contenant l’utilisateur actuel mis à jour"
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Code d’erreur unique",
+            "example": "USER_NOT_FOUND"
+          },
+          "message": {
+            "type": "string",
+            "description": "Message d’erreur détaillé",
+            "example": "L’utilisateur spécifié est introuvable."
+          },
+          "details": {
+            "description": "Détails supplémentaires sur l’erreur",
+            "example": {
+              "userId": "12345"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "description": "Réponse contenant les informations sur l’erreur de l’API"
+      },
+      "UpdateCurrentUserBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          }
+        },
+        "description": "Champs éditables du profil utilisateur"
+      },
+      "SendMessageBody": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Contenu du message à envoyer",
+            "example": "Bonjour à tous !"
+          },
+          "attachmentIds": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+              "example": "12345"
+            },
+            "description": "Liste des identifiants des pièces jointes du message",
+            "example": []
+          },
+          "mentionIds": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+              "example": "12345"
+            },
+            "description": "Liste des identifiants des mentions dans le message",
+            "example": []
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "description": "Corps de la requête pour envoyer un message"
+      },
+      "NewDirectMessageBody": {
+        "type": "object",
+        "properties": {
+          "recipientId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique du destinataire du message direct",
+            "example": "67890"
+          },
+          "message": {
+            "type": "string",
+            "description": "Contenu du message direct à envoyer",
+            "example": "Salut ! Comment ça va ?"
+          }
+        },
+        "required": [
+          "recipientId",
+          "message"
+        ],
+        "description": "Corps de la requête pour créer un nouveau message direct"
+      },
+      "CreateGroupBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nom du groupe à créer",
+            "example": "Équipe Marketing"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description du groupe à créer",
+            "example": "Groupe pour l’équipe marketing"
+          },
+          "memberIds": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+              "example": "12345"
+            },
+            "description": "Liste des identifiants des membres à ajouter au groupe",
+            "example": [
+              "12345",
+              "67890"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "memberIds"
+        ],
+        "description": "Corps de la requête pour créer un nouveau groupe"
+      },
+      "MarkConversationAsReadBody": {
+        "type": "object",
+        "properties": {
+          "readUntilMessageId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant du dernier message lu dans la conversation",
+            "example": "54321"
+          }
+        },
+        "description": "Corps de la requête pour marquer une conversation comme lue"
+      },
+      "UploadAttachmentBody": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "description": "Fichier à télécharger en tant que pièce jointe",
+            "example": "fichier.pdf"
+          }
+        },
+        "description": "Corps de la requête pour télécharger une pièce jointe"
+      },
+      "ConversationsQuery": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Terme de recherche pour filtrer les conversations",
+            "example": "Marketing"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Nombre maximum de conversations à retourner",
+            "example": 10
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Curseur pour la pagination des résultats",
+            "example": "abc123"
+          }
+        },
+        "description": "Paramètres de requête pour filtrer et paginer les conversations"
+      },
+      "MessagesQuery": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Nombre maximum de messages à retourner",
+            "example": 20
+          },
+          "before": {
+            "type": "string",
+            "description": "Curseur pour récupérer les messages avant un certain point",
+            "example": "2026-06-23T12:32:00Z"
+          },
+          "after": {
+            "type": "string",
+            "description": "Curseur pour récupérer les messages après un certain point",
+            "example": "2026-06-23T12:32:00Z"
+          }
+        },
+        "description": "Paramètres de requête pour filtrer et paginer les messages"
+      },
+      "ContactsQuery": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Terme de recherche pour filtrer les contacts",
+            "example": "Alice"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Nombre maximum de contacts à retourner",
+            "example": 10
+          }
+        },
+        "description": "Paramètres de requête pour filtrer les contacts"
+      },
+      "ConversationIdParams": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Identifiant unique de la conversation",
+            "example": "12345"
+          }
+        },
+        "required": [
+          "conversationId"
+        ],
+        "description": "Paramètres pour identifier une conversation"
+      },
+      "CheckApiResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "OK"
+          },
+          "core_api": {
+            "type": "string",
+            "example": "Connected"
+          },
+          "message_api": {
+            "type": "string",
+            "example": "Connected"
+          }
+        },
+        "required": [
+          "status",
+          "core_api",
+          "message_api"
+        ]
+      },
+      "BusinessReferencesResponse": {
+        "type": "object",
+        "properties": {
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "project",
+                    "task",
+                    "event"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind"
+              ]
+            }
+          },
+          "sources": {
+            "type": "object",
+            "properties": {
+              "projects": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "unavailable"
+                ]
+              },
+              "calendar": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "unavailable"
+                ]
+              }
+            },
+            "required": [
+              "projects",
+              "calendar"
+            ]
+          }
+        },
+        "required": [
+          "references",
+          "sources"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Connectivity"
+        ],
+        "summary": "Vérifie la santé du BFF",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/check_apis": {
+      "get": {
+        "tags": [
+          "Connectivity"
+        ],
+        "summary": "Vérifie la connexion avec l'API Core et Message (Rust)",
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckApiResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "API Core injoignable"
+          }
+        }
+      }
+    },
+    "/business-references": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Références des BFF Projets et Calendrier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessReferencesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session invalide"
+          }
+        }
+      }
+    },
+    "/attachments": {
+      "post": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Télécharge une pièce jointe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "description": "Fichier à télécharger en tant que pièce jointe",
+                    "example": "fichier.pdf"
+                  }
+                },
+                "description": "Corps de la requête pour télécharger une pièce jointe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pièce jointe téléchargée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attachments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nom de la pièce jointe",
+                            "example": "document.pdf"
+                          },
+                          "size": {
+                            "type": "integer",
+                            "description": "Taille de la pièce jointe en octets",
+                            "example": 102400
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "Type MIME de la pièce jointe",
+                            "example": "application/pdf"
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL pour accéder à la pièce jointe",
+                            "example": "https://example.com/document.pdf"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "description": "Représentation d’une pièce jointe"
+                      },
+                      "description": "Liste des pièces jointes téléchargées"
+                    }
+                  },
+                  "required": [
+                    "attachments"
+                  ],
+                  "description": "Réponse contenant la liste des pièces jointes téléchargées"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/messaging/bootstrap": {
+      "get": {
+        "tags": [
+          "Messaging"
+        ],
+        "summary": "Récupère les informations de démarrage pour l’utilisateur actuel",
+        "responses": {
+          "200": {
+            "description": "Informations de démarrage pour l’utilisateur actuel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contacts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nom du contact",
+                            "example": "Alice Dupont"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Adresse email du contact",
+                            "example": "alice.dupont@mairie360.fr"
+                          },
+                          "department": {
+                            "type": "string",
+                            "description": "Département associé au contact",
+                            "example": "Marketing"
+                          },
+                          "avatarUrl": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL de l’avatar du contact",
+                            "example": "https://example.com/avatar.png"
+                          },
+                          "initials": {
+                            "type": "string",
+                            "description": "Initiales du contact",
+                            "example": "AD"
+                          },
+                          "presence": {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "offline",
+                              "away"
+                            ],
+                            "description": "Présence du contact, en ligne, hors ligne ou absent",
+                            "example": "online"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "description": "Représentation d’un contact"
+                      }
+                    },
+                    "currentUser": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "description": "Nom complet de l’utilisateur actuel",
+                          "example": "Alice Dupont"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "service": {
+                          "type": "string"
+                        },
+                        "position": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "lastConnection": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "Utilisateur actuellement connecté"
+                    },
+                    "conversations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nom de la conversation",
+                            "example": "Discussion de groupe"
+                          },
+                          "department": {
+                            "type": "string",
+                            "description": "Département associé à la conversation",
+                            "example": "Marketing"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "direct",
+                              "group"
+                            ],
+                            "description": "Type de conversation, direct ou groupe",
+                            "example": "direct"
+                          },
+                          "avatarUrl": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL de l’avatar de la conversation",
+                            "example": "https://example.com/avatar.png"
+                          },
+                          "initials": {
+                            "type": "string",
+                            "description": "Initiales de la conversation",
+                            "example": "DG"
+                          },
+                          "presence": {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "offline",
+                              "away"
+                            ],
+                            "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                            "example": "online"
+                          },
+                          "lastMessage": {
+                            "type": "string",
+                            "description": "Dernier message de la conversation",
+                            "example": "Bonjour à tous !"
+                          },
+                          "lastMessageAt": {
+                            "type": "string",
+                            "description": "Date et heure du dernier message (format ISO)",
+                            "example": "2026-06-23T12:32:00Z"
+                          },
+                          "unreadCount": {
+                            "type": "integer",
+                            "description": "Nombre de messages non lus dans la conversation",
+                            "example": 5
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "description": "Représentation d’une conversation"
+                      }
+                    },
+                    "activeConversationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "conversationId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "Contenu du message",
+                            "example": "Bonjour à tous !"
+                          },
+                          "sentAt": {
+                            "type": "string",
+                            "description": "Date et heure d’envoi du message (format ISO)",
+                            "example": "2026-06-23T12:32:00Z"
+                          },
+                          "authorId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "description": "Nom de l’auteur du message",
+                            "example": "Alice Dupont"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "incoming",
+                              "outgoing"
+                            ],
+                            "description": "Direction du message, entrant ou sortant",
+                            "example": "incoming"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "example": "12345"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Nom de la pièce jointe",
+                                  "example": "document.pdf"
+                                },
+                                "size": {
+                                  "type": "integer",
+                                  "description": "Taille de la pièce jointe en octets",
+                                  "example": 102400
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "description": "Type MIME de la pièce jointe",
+                                  "example": "application/pdf"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "URL pour accéder à la pièce jointe",
+                                  "example": "https://example.com/document.pdf"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "description": "Représentation d’une pièce jointe"
+                            },
+                            "description": "Liste des pièces jointes du message",
+                            "example": []
+                          },
+                          "mentions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "example": "12345"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Nom de la mention",
+                                  "example": "Alice Dupont"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "direct",
+                                    "group"
+                                  ],
+                                  "description": "Type de conversation associé à la mention",
+                                  "example": "direct"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "description": "Description de la mention",
+                                  "example": "Mention d’un utilisateur dans un message"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "description": "Représentation d’une mention"
+                            },
+                            "description": "Liste des mentions dans le message",
+                            "example": []
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "conversationId",
+                          "content",
+                          "sentAt",
+                          "authorId"
+                        ],
+                        "description": "Représentation d’un message"
+                      }
+                    }
+                  },
+                  "required": [
+                    "contacts",
+                    "currentUser",
+                    "conversations",
+                    "messages"
+                  ],
+                  "description": "Réponse contenant les données de base pour le démarrage de la messagerie"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contacts": {
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Récupère la liste des contacts",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Terme de recherche pour filtrer les contacts",
+              "example": "Alice"
+            },
+            "required": false,
+            "description": "Terme de recherche pour filtrer les contacts",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Nombre maximum de contacts à retourner",
+              "example": 10
+            },
+            "required": false,
+            "description": "Nombre maximum de contacts à retourner",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des contacts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contacts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nom du contact",
+                            "example": "Alice Dupont"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Adresse email du contact",
+                            "example": "alice.dupont@mairie360.fr"
+                          },
+                          "department": {
+                            "type": "string",
+                            "description": "Département associé au contact",
+                            "example": "Marketing"
+                          },
+                          "avatarUrl": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL de l’avatar du contact",
+                            "example": "https://example.com/avatar.png"
+                          },
+                          "initials": {
+                            "type": "string",
+                            "description": "Initiales du contact",
+                            "example": "AD"
+                          },
+                          "presence": {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "offline",
+                              "away"
+                            ],
+                            "description": "Présence du contact, en ligne, hors ligne ou absent",
+                            "example": "online"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "description": "Représentation d’un contact"
+                      },
+                      "description": "Liste des contacts"
+                    }
+                  },
+                  "required": [
+                    "contacts"
+                  ],
+                  "description": "Réponse contenant la liste des contacts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Récupère la liste des conversations de l’utilisateur actuel",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Terme de recherche pour filtrer les conversations",
+              "example": "Marketing"
+            },
+            "required": false,
+            "description": "Terme de recherche pour filtrer les conversations",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Nombre maximum de conversations à retourner",
+              "example": 10
+            },
+            "required": false,
+            "description": "Nombre maximum de conversations à retourner",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Curseur pour la pagination des résultats",
+              "example": "abc123"
+            },
+            "required": false,
+            "description": "Curseur pour la pagination des résultats",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des conversations de l’utilisateur actuel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nom de la conversation",
+                            "example": "Discussion de groupe"
+                          },
+                          "department": {
+                            "type": "string",
+                            "description": "Département associé à la conversation",
+                            "example": "Marketing"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "direct",
+                              "group"
+                            ],
+                            "description": "Type de conversation, direct ou groupe",
+                            "example": "direct"
+                          },
+                          "avatarUrl": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL de l’avatar de la conversation",
+                            "example": "https://example.com/avatar.png"
+                          },
+                          "initials": {
+                            "type": "string",
+                            "description": "Initiales de la conversation",
+                            "example": "DG"
+                          },
+                          "presence": {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "offline",
+                              "away"
+                            ],
+                            "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                            "example": "online"
+                          },
+                          "lastMessage": {
+                            "type": "string",
+                            "description": "Dernier message de la conversation",
+                            "example": "Bonjour à tous !"
+                          },
+                          "lastMessageAt": {
+                            "type": "string",
+                            "description": "Date et heure du dernier message (format ISO)",
+                            "example": "2026-06-23T12:32:00Z"
+                          },
+                          "unreadCount": {
+                            "type": "integer",
+                            "description": "Nombre de messages non lus dans la conversation",
+                            "example": 5
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "description": "Représentation d’une conversation"
+                      },
+                      "description": "Liste des conversations"
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "description": "Curseur pour la pagination des résultats",
+                      "example": "abc123"
+                    }
+                  },
+                  "required": [
+                    "conversations"
+                  ],
+                  "description": "Réponse contenant la liste des conversations et un curseur pour la pagination"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{conversationId}": {
+      "delete": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Supprime une conversation",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique de la conversation",
+              "example": "12345"
+            },
+            "required": true,
+            "description": "Identifiant unique de la conversation",
+            "name": "conversationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation supprimée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "description": "Indique si la conversation a été supprimée avec succès",
+                      "example": true
+                    },
+                    "conversationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant de la conversation supprimée",
+                      "example": "12345"
+                    }
+                  },
+                  "required": [
+                    "deleted"
+                  ],
+                  "description": "Réponse indiquant si la conversation a été supprimée avec succès"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{conversationId}/read": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Marquer une conversation comme lue",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique de la conversation",
+              "example": "12345"
+            },
+            "required": true,
+            "description": "Identifiant unique de la conversation",
+            "name": "conversationId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "readUntilMessageId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "Identifiant du dernier message lu dans la conversation",
+                    "example": "54321"
+                  }
+                },
+                "description": "Corps de la requête pour marquer une conversation comme lue"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant de la conversation marquée comme lue",
+                      "example": "12345"
+                    },
+                    "unreadCount": {
+                      "type": "integer",
+                      "description": "Nombre de messages non lus restant dans la conversation après la mise à jour",
+                      "example": 0
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "unreadCount"
+                  ],
+                  "description": "Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groups": {
+      "post": {
+        "tags": [
+          "Groups"
+        ],
+        "summary": "Crée un nouveau groupe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Nom du groupe à créer",
+                    "example": "Équipe Marketing"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description du groupe à créer",
+                    "example": "Groupe pour l’équipe marketing"
+                  },
+                  "memberIds": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "description": "Liste des identifiants des membres à ajouter au groupe",
+                    "example": [
+                      "12345",
+                      "67890"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "memberIds"
+                ],
+                "description": "Corps de la requête pour créer un nouveau groupe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Groupe créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Nom de la conversation",
+                          "example": "Discussion de groupe"
+                        },
+                        "department": {
+                          "type": "string",
+                          "description": "Département associé à la conversation",
+                          "example": "Marketing"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "direct",
+                            "group"
+                          ],
+                          "description": "Type de conversation, direct ou groupe",
+                          "example": "direct"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "URL de l’avatar de la conversation",
+                          "example": "https://example.com/avatar.png"
+                        },
+                        "initials": {
+                          "type": "string",
+                          "description": "Initiales de la conversation",
+                          "example": "DG"
+                        },
+                        "presence": {
+                          "type": "string",
+                          "enum": [
+                            "online",
+                            "offline",
+                            "away"
+                          ],
+                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "example": "online"
+                        },
+                        "lastMessage": {
+                          "type": "string",
+                          "description": "Dernier message de la conversation",
+                          "example": "Bonjour à tous !"
+                        },
+                        "lastMessageAt": {
+                          "type": "string",
+                          "description": "Date et heure du dernier message (format ISO)",
+                          "example": "2026-06-23T12:32:00Z"
+                        },
+                        "unreadCount": {
+                          "type": "integer",
+                          "description": "Nombre de messages non lus dans la conversation",
+                          "example": 5
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "Détails du groupe créé"
+                    }
+                  },
+                  "required": [
+                    "conversation"
+                  ],
+                  "description": "Réponse contenant les détails du groupe créé"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Récupère le profil de l’utilisateur actuel",
+        "responses": {
+          "200": {
+            "description": "Profil utilisateur actuel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currentUser": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "description": "Nom complet de l’utilisateur actuel",
+                          "example": "Alice Dupont"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "service": {
+                          "type": "string"
+                        },
+                        "position": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "lastConnection": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "Utilisateur actuellement connecté"
+                    }
+                  },
+                  "required": [
+                    "currentUser"
+                  ],
+                  "description": "Réponse contenant l’utilisateur actuel"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Met à jour les champs éditables du profil utilisateur",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "description": "Champs éditables du profil utilisateur"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil utilisateur mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currentUser": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "description": "Nom complet de l’utilisateur actuel",
+                          "example": "Alice Dupont"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "service": {
+                          "type": "string"
+                        },
+                        "position": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "lastConnection": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "Utilisateur actuellement connecté"
+                    }
+                  },
+                  "required": [
+                    "currentUser"
+                  ],
+                  "description": "Réponse contenant l’utilisateur actuel mis à jour"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{conversationId}/messages": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Récupère la liste des messages d’une conversation",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique de la conversation",
+              "example": "12345"
+            },
+            "required": true,
+            "description": "Identifiant unique de la conversation",
+            "name": "conversationId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Nombre maximum de messages à retourner",
+              "example": 20
+            },
+            "required": false,
+            "description": "Nombre maximum de messages à retourner",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Curseur pour récupérer les messages avant un certain point",
+              "example": "2026-06-23T12:32:00Z"
+            },
+            "required": false,
+            "description": "Curseur pour récupérer les messages avant un certain point",
+            "name": "before",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Curseur pour récupérer les messages après un certain point",
+              "example": "2026-06-23T12:32:00Z"
+            },
+            "required": false,
+            "description": "Curseur pour récupérer les messages après un certain point",
+            "name": "after",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des messages de la conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string",
+                      "description": "Contenu du message à envoyer",
+                      "example": "Bonjour à tous !"
+                    },
+                    "attachmentIds": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "description": "Liste des identifiants des pièces jointes du message",
+                      "example": []
+                    },
+                    "mentionIds": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "description": "Liste des identifiants des mentions dans le message",
+                      "example": []
+                    }
+                  },
+                  "required": [
+                    "content"
+                  ],
+                  "description": "Corps de la requête pour envoyer un message"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Crée un nouveau message dans une conversation",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Identifiant unique de la conversation",
+              "example": "12345"
+            },
+            "required": true,
+            "description": "Identifiant unique de la conversation",
+            "name": "conversationId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "conversationId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "Contenu du message",
+                        "example": "Bonjour à tous !"
+                      },
+                      "sentAt": {
+                        "type": "string",
+                        "description": "Date et heure d’envoi du message (format ISO)",
+                        "example": "2026-06-23T12:32:00Z"
+                      },
+                      "authorId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "authorName": {
+                        "type": "string",
+                        "description": "Nom de l’auteur du message",
+                        "example": "Alice Dupont"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "incoming",
+                          "outgoing"
+                        ],
+                        "description": "Direction du message, entrant ou sortant",
+                        "example": "incoming"
+                      },
+                      "attachments": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                              "example": "12345"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Nom de la pièce jointe",
+                              "example": "document.pdf"
+                            },
+                            "size": {
+                              "type": "integer",
+                              "description": "Taille de la pièce jointe en octets",
+                              "example": 102400
+                            },
+                            "type": {
+                              "type": "string",
+                              "description": "Type MIME de la pièce jointe",
+                              "example": "application/pdf"
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri",
+                              "description": "URL pour accéder à la pièce jointe",
+                              "example": "https://example.com/document.pdf"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "description": "Représentation d’une pièce jointe"
+                        },
+                        "description": "Liste des pièces jointes du message",
+                        "example": []
+                      },
+                      "mentions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                              "example": "12345"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Nom de la mention",
+                              "example": "Alice Dupont"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "direct",
+                                "group"
+                              ],
+                              "description": "Type de conversation associé à la mention",
+                              "example": "direct"
+                            },
+                            "description": {
+                              "type": "string",
+                              "description": "Description de la mention",
+                              "example": "Mention d’un utilisateur dans un message"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "description": "Représentation d’une mention"
+                        },
+                        "description": "Liste des mentions dans le message",
+                        "example": []
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "conversationId",
+                      "content",
+                      "sentAt",
+                      "authorId"
+                    ],
+                    "description": "Message envoyé"
+                  },
+                  "conversation": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "example": "12345"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Nom de la conversation",
+                        "example": "Discussion de groupe"
+                      },
+                      "department": {
+                        "type": "string",
+                        "description": "Département associé à la conversation",
+                        "example": "Marketing"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "direct",
+                          "group"
+                        ],
+                        "description": "Type de conversation, direct ou groupe",
+                        "example": "direct"
+                      },
+                      "avatarUrl": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL de l’avatar de la conversation",
+                        "example": "https://example.com/avatar.png"
+                      },
+                      "initials": {
+                        "type": "string",
+                        "description": "Initiales de la conversation",
+                        "example": "DG"
+                      },
+                      "presence": {
+                        "type": "string",
+                        "enum": [
+                          "online",
+                          "offline",
+                          "away"
+                        ],
+                        "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                        "example": "online"
+                      },
+                      "lastMessage": {
+                        "type": "string",
+                        "description": "Dernier message de la conversation",
+                        "example": "Bonjour à tous !"
+                      },
+                      "lastMessageAt": {
+                        "type": "string",
+                        "description": "Date et heure du dernier message (format ISO)",
+                        "example": "2026-06-23T12:32:00Z"
+                      },
+                      "unreadCount": {
+                        "type": "integer",
+                        "description": "Nombre de messages non lus dans la conversation",
+                        "example": 5
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "description": "Détails de la conversation associée au message envoyé"
+                  }
+                },
+                "required": [
+                  "message"
+                ],
+                "description": "Réponse contenant le message envoyé et les détails de la conversation associée"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Nom de la conversation",
+                          "example": "Discussion de groupe"
+                        },
+                        "department": {
+                          "type": "string",
+                          "description": "Département associé à la conversation",
+                          "example": "Marketing"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "direct",
+                            "group"
+                          ],
+                          "description": "Type de conversation, direct ou groupe",
+                          "example": "direct"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "URL de l’avatar de la conversation",
+                          "example": "https://example.com/avatar.png"
+                        },
+                        "initials": {
+                          "type": "string",
+                          "description": "Initiales de la conversation",
+                          "example": "DG"
+                        },
+                        "presence": {
+                          "type": "string",
+                          "enum": [
+                            "online",
+                            "offline",
+                            "away"
+                          ],
+                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "example": "online"
+                        },
+                        "lastMessage": {
+                          "type": "string",
+                          "description": "Dernier message de la conversation",
+                          "example": "Bonjour à tous !"
+                        },
+                        "lastMessageAt": {
+                          "type": "string",
+                          "description": "Date et heure du dernier message (format ISO)",
+                          "example": "2026-06-23T12:32:00Z"
+                        },
+                        "unreadCount": {
+                          "type": "integer",
+                          "description": "Nombre de messages non lus dans la conversation",
+                          "example": 5
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "Détails de la conversation associée aux messages"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "conversationId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "Contenu du message",
+                            "example": "Bonjour à tous !"
+                          },
+                          "sentAt": {
+                            "type": "string",
+                            "description": "Date et heure d’envoi du message (format ISO)",
+                            "example": "2026-06-23T12:32:00Z"
+                          },
+                          "authorId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "description": "Nom de l’auteur du message",
+                            "example": "Alice Dupont"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "incoming",
+                              "outgoing"
+                            ],
+                            "description": "Direction du message, entrant ou sortant",
+                            "example": "incoming"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "example": "12345"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Nom de la pièce jointe",
+                                  "example": "document.pdf"
+                                },
+                                "size": {
+                                  "type": "integer",
+                                  "description": "Taille de la pièce jointe en octets",
+                                  "example": 102400
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "description": "Type MIME de la pièce jointe",
+                                  "example": "application/pdf"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "URL pour accéder à la pièce jointe",
+                                  "example": "https://example.com/document.pdf"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "description": "Représentation d’une pièce jointe"
+                            },
+                            "description": "Liste des pièces jointes du message",
+                            "example": []
+                          },
+                          "mentions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "example": "12345"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Nom de la mention",
+                                  "example": "Alice Dupont"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "direct",
+                                    "group"
+                                  ],
+                                  "description": "Type de conversation associé à la mention",
+                                  "example": "direct"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "description": "Description de la mention",
+                                  "example": "Mention d’un utilisateur dans un message"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "description": "Représentation d’une mention"
+                            },
+                            "description": "Liste des mentions dans le message",
+                            "example": []
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "conversationId",
+                          "content",
+                          "sentAt",
+                          "authorId"
+                        ],
+                        "description": "Représentation d’un message"
+                      },
+                      "description": "Liste des messages"
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "description": "Curseur pour la pagination des résultats",
+                      "example": "def456"
+                    }
+                  },
+                  "required": [
+                    "conversation",
+                    "messages"
+                  ],
+                  "description": "Réponse contenant la liste des messages et un curseur pour la pagination"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/direct-messages": {
+      "post": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Crée un nouveau message direct",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipientId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "Identifiant unique du destinataire du message direct",
+                    "example": "67890"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Contenu du message direct à envoyer",
+                    "example": "Salut ! Comment ça va ?"
+                  }
+                },
+                "required": [
+                  "recipientId",
+                  "message"
+                ],
+                "description": "Corps de la requête pour créer un nouveau message direct"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message direct créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Nom de la conversation",
+                          "example": "Discussion de groupe"
+                        },
+                        "department": {
+                          "type": "string",
+                          "description": "Département associé à la conversation",
+                          "example": "Marketing"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "direct",
+                            "group"
+                          ],
+                          "description": "Type de conversation, direct ou groupe",
+                          "example": "direct"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "URL de l’avatar de la conversation",
+                          "example": "https://example.com/avatar.png"
+                        },
+                        "initials": {
+                          "type": "string",
+                          "description": "Initiales de la conversation",
+                          "example": "DG"
+                        },
+                        "presence": {
+                          "type": "string",
+                          "enum": [
+                            "online",
+                            "offline",
+                            "away"
+                          ],
+                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "example": "online"
+                        },
+                        "lastMessage": {
+                          "type": "string",
+                          "description": "Dernier message de la conversation",
+                          "example": "Bonjour à tous !"
+                        },
+                        "lastMessageAt": {
+                          "type": "string",
+                          "description": "Date et heure du dernier message (format ISO)",
+                          "example": "2026-06-23T12:32:00Z"
+                        },
+                        "unreadCount": {
+                          "type": "integer",
+                          "description": "Nombre de messages non lus dans la conversation",
+                          "example": 5
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "Détails de la conversation directe créée"
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "conversationId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "content": {
+                          "type": "string",
+                          "description": "Contenu du message",
+                          "example": "Bonjour à tous !"
+                        },
+                        "sentAt": {
+                          "type": "string",
+                          "description": "Date et heure d’envoi du message (format ISO)",
+                          "example": "2026-06-23T12:32:00Z"
+                        },
+                        "authorId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "authorName": {
+                          "type": "string",
+                          "description": "Nom de l’auteur du message",
+                          "example": "Alice Dupont"
+                        },
+                        "direction": {
+                          "type": "string",
+                          "enum": [
+                            "incoming",
+                            "outgoing"
+                          ],
+                          "description": "Direction du message, entrant ou sortant",
+                          "example": "incoming"
+                        },
+                        "attachments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "example": "12345"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Nom de la pièce jointe",
+                                "example": "document.pdf"
+                              },
+                              "size": {
+                                "type": "integer",
+                                "description": "Taille de la pièce jointe en octets",
+                                "example": 102400
+                              },
+                              "type": {
+                                "type": "string",
+                                "description": "Type MIME de la pièce jointe",
+                                "example": "application/pdf"
+                              },
+                              "url": {
+                                "type": "string",
+                                "format": "uri",
+                                "description": "URL pour accéder à la pièce jointe",
+                                "example": "https://example.com/document.pdf"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "description": "Représentation d’une pièce jointe"
+                          },
+                          "description": "Liste des pièces jointes du message",
+                          "example": []
+                        },
+                        "mentions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "example": "12345"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Nom de la mention",
+                                "example": "Alice Dupont"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "direct",
+                                  "group"
+                                ],
+                                "description": "Type de conversation associé à la mention",
+                                "example": "direct"
+                              },
+                              "description": {
+                                "type": "string",
+                                "description": "Description de la mention",
+                                "example": "Mention d’un utilisateur dans un message"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "description": "Représentation d’une mention"
+                          },
+                          "description": "Liste des mentions dans le message",
+                          "example": []
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "conversationId",
+                        "content",
+                        "sentAt",
+                        "authorId"
+                      ],
+                      "description": "Message direct envoyé"
+                    }
+                  },
+                  "required": [
+                    "conversation",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les détails de la conversation directe créée et le message envoyé"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Utilisateur non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

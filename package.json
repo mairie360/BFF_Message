@@ -7,7 +7,9 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "openapi:extract": "ts-node scripts/export-swagger.ts",
-    "test": "jest"
+    "test": "jest",
+    "contracts:generate": "npm run openapi:extract && node scripts/contracts.mjs --generate",
+    "contracts:check": "npm run openapi:extract -- --check && node scripts/contracts.mjs --check"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "8.5.0",
