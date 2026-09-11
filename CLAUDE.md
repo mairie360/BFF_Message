@@ -16,7 +16,7 @@ owns the data contract; the web service owns the screens. Docs live in `docs/{en
 npm ci                          # install (needs NODE_AUTH_TOKEN, see below)
 npm run start                   # ts-node src/index.ts (PORT env var is REQUIRED)
 npm run build                   # tsc -> dist/
-npm run lint                    # eslint src/**/*.ts   (lint:fix to autofix)
+npm run lint                    # eslint . --ext .ts    (lint:fix to autofix; only src/**/*.ts is actually linted, see eslint.config.cjs)
 npm test                        # jest (all tests/**/*.test.ts)
 npx jest tests/contracts.test.ts        # single file
 npx jest -t "business references"       # single test by name
@@ -31,6 +31,11 @@ Node **22** is required to reproduce the contract job / CI (`.github/workflows/c
 
 Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `NODE_AUTH_TOKEN` from
 the environment; set it to a token with read access to those packages before `npm ci`.
+
+Env vars for local runs (all optional, each client falls back to a `localhost` default):
+`PORT` (required), `DEFAULT_JWT_TOKEN`, `CORE_API_BASE_URL`/`CORE_API_URL` + `CORE_API_PORT`,
+`MESSAGE_API_BASE_PATH`, `PROJECT_BFF_URL`, `CALENDAR_BFF_URL`, `DB_HOST`/`DB_PORT`/`DB_NAME`/
+`DB_USER`/`DB_PASSWORD` (Postgres `users` table for contacts).
 
 ## Architecture
 
