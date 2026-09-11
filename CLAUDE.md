@@ -32,6 +32,16 @@ Node **22** is required to reproduce the contract job / CI (`.github/workflows/c
 Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `NODE_AUTH_TOKEN` from
 the environment; set it to a token with read access to those packages before `npm ci`.
 
+## Environment variables
+
+`PORT` is required to start the server; everything else falls back to a `localhost`-based default in
+code (see `src/clients/*.ts`, `src/repositories/contactsRepository.ts`, `src/routes/check_apis.ts`).
+`MESSAGE_API_BASE_PATH` (falls back to `localhost:8080/api`), `CORE_API_BASE_URL` (preferred) /
+`CORE_API_URL` + `CORE_API_PORT`, `MESSAGE_API_URL` + `MESSAGE_API_PORT` (used by `/check_apis` only),
+`PROJECT_BFF_URL` / `CALENDAR_BFF_URL` (business references), and `DB_HOST` / `DB_PORT` / `DB_NAME` /
+`DB_USER` / `DB_PASSWORD` (contacts Postgres connection). See `docs/en/technical.md` for a full example
+`.env`.
+
 ## Architecture
 
 **Entry point** `src/index.ts` builds `app` (exported for tests), mounts an auth middleware, the
@@ -49,7 +59,9 @@ verification** (`numericUserIdFromToken` in `message_helpers.ts`).
 (`conversation.ts`, `me.ts`, `contacts.ts`, `groups.ts`, `message.ts`, `bootstrap.ts`,
 `attachments.ts`, `business_references.ts`). Nearly all business logic lives in
 `src/routes/Messages/message_helpers.ts`; route files are thin (zod `safeParse` → call helper →
-`handleUnknownError`).
+`handleUnknownError`). `GET /messaging/bootstrap` is a fixed aggregate for initial page load: up to
+20 conversations, then up to 30 messages from the first of those conversations — not a general list
+endpoint.
 
 **Upstream clients.** `src/clients/coreClient.ts` and `messageClient.ts` are hand-written axios
 wrappers over the generated `@mairie360/*-openapi` model types (base URLs assembled from env with
@@ -84,3 +96,11 @@ service pulls the contract on its side, and related branches ship together.
 `eslint.config.cjs` (flat config) is the active one; `.eslintrc.js` is legacy and unused. Only
 `src/**/*.ts` is linted. `@typescript-eslint/no-explicit-any` is an **error** — use `unknown` +
 narrowing. Unused args must be `_`-prefixed.
+
+## Performance and security test stacks
+
+`performance_test.sh` and `security_test.sh` each bring up an isolated `docker compose` stack
+(`docker-compose-performance.yml` running k6 against `load-test.js`; `docker-compose-security.yml`
+running an OWASP ZAP scan with rules in `.zap/rules.tsv`), wait for the run to finish, print logs,
+then tear the stack down. Not wired into `npm test`/CI — run them directly when asked to check
+performance or security regressions.
