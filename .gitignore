@@ -8,4 +8,12 @@ coverage/
 src/services/generated/
 openapi.json
 dist_pkg/
+
+# Rapports générés par les tests de sécurité / performance
+.zap/*.html
+.zap/*.json
+.zap/*.md
+zap.yaml
+summary.json
+
 !contracts/openapi.json
