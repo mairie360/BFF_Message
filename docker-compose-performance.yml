@@ -30,7 +30,7 @@ x-db-env: &db-env
 
 services:
   postgres:
-    image: ${DB_IMAGE:-ghcr.io/mairie360/database:1.0.0}
+    image: ${DB_IMAGE:-ghcr.io/mairie360/database:1.1.0}
     container_name: bff-message-perf-db
     environment:
       POSTGRES_USER: postgres
@@ -49,7 +49,7 @@ services:
       retries: 10
 
   liquibase:
-    image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:1.0.0}
+    image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:1.1.0}
     container_name: bff-message-perf-liquibase
     depends_on:
       postgres:
@@ -169,7 +169,7 @@ services:
       - backend
 
   bff-user:
-    image: ${BFF_USER_IMAGE:-ghcr.io/mairie360/bff-user:0.3.0}
+    image: ${BFF_USER_IMAGE:-ghcr.io/mairie360/bff-user:0.4.0}
     container_name: bff-message-perf-bff-user
     depends_on:
       seeder:
