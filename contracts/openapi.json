@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "BFF Message API",
+    "title": "bff_message",
     "version": "1.0.0"
   },
   "components": {
