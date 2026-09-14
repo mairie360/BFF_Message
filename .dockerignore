@@ -1,5 +1,6 @@
 .git
 .gitignore
+.github
 .idea
 .vscode
 
@@ -12,3 +13,10 @@ coverage
 .env.*
 !.env.example
 .npmrc
+
+# Stacks de test isolées (non nécessaires à l'image)
+.zap
+load-test.js
+init-test.sql
+docker-compose*.yml
+*_test.sh
