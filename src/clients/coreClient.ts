@@ -8,7 +8,7 @@ import type {
     GetUserResponseView,
     PatchMeView,
     PatchUserView,
-} from '@mairie360/core-api-openapi/models';
+} from '@mairie360/core-api-openapi/model';
 
 type UsersResponse = unknown;
 

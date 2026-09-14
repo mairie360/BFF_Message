@@ -100,16 +100,22 @@ function numericUserIdFromToken(incomingRequestToken?: string): number | undefin
   }
 }
 
+export class HttpError extends Error {
+  constructor(public readonly status: number, public readonly code: string, message: string) {
+    super(message);
+  }
+}
+
 export async function fetchCurrentUser(incomingRequestToken?: string): Promise<BffCurrentUser> {
   const id = numericUserIdFromToken(incomingRequestToken);
   if (!id) {
-    throw new Error('Identifiant utilisateur absent du token');
+    throw new HttpError(401, 'UNAUTHORIZED', 'Identifiant utilisateur absent du token');
   }
 
   const user = await getContactUser(id);
 
   if (!user) {
-    throw new Error('Utilisateur connecté introuvable');
+    throw new HttpError(401, 'UNAUTHORIZED', 'Utilisateur connecté introuvable');
   }
 
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
@@ -246,19 +252,32 @@ export function sendValidationError(res: Response, details: unknown): Response {
 }
 
 export function handleUnknownError(res: Response, error: unknown): Response {
+  if (error instanceof HttpError) {
+    return res.status(error.status).json({ code: error.code, message: error.message });
+  }
+
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError;
     const status = axiosError.response?.status ?? 502;
-    return res.status(status >= 500 ? 502 : status).json({
-      code: status >= 500 ? 'BAD_GATEWAY' : 'UPSTREAM_ERROR',
+
+    // Une erreur 5xx (ou réseau) du service amont est une défaillance amont : 502.
+    if (status >= 500) {
+      console.error('[BFF] Upstream error', status, axiosError.message);
+      return res.status(502).json({ code: 'BAD_GATEWAY', message: 'Service amont indisponible' });
+    }
+
+    return res.status(status).json({
+      code: 'UPSTREAM_ERROR',
       message: axiosError.message,
       details: axiosError.response?.data,
     });
   }
 
+  // Ne jamais exposer le message d'une erreur interne (fuite d'information).
+  console.error('[BFF] Unexpected error', error);
   return res.status(500).json({
     code: 'INTERNAL_SERVER_ERROR',
-    message: error instanceof Error ? error.message : 'Unexpected error',
+    message: 'Erreur interne du service',
   });
 }
 
@@ -299,7 +318,7 @@ export async function fetchConversationMessages(
 ): Promise<{ conversation: BffConversation; messages: BffMessage[] }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
-    throw new Error('Invalid conversation id');
+    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
   }
 
   const currentUserId = numericUserIdFromToken(incomingRequestToken);
@@ -330,12 +349,12 @@ export async function sendMessageToConversation(
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
-    throw new Error('Invalid conversation id');
+    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
   }
 
   const currentUserId = numericUserIdFromToken(incomingRequestToken);
   if (currentUserId === undefined) {
-    throw new Error('Identifiant utilisateur absent du token');
+    throw new HttpError(401, 'UNAUTHORIZED', 'Identifiant utilisateur absent du token');
   }
 
   const [response, participantNames, chat] = await Promise.all([
@@ -368,7 +387,7 @@ export async function createDirectMessage(
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const recipientNumericId = parseNumericId(recipientId);
   if (recipientNumericId === null) {
-    throw new Error('Invalid recipient id');
+    throw new HttpError(400, 'BAD_REQUEST', 'Invalid recipient id');
   }
 
   const chat = await messageClient.createChat({
@@ -393,7 +412,7 @@ export async function createGroupConversation(
 export async function deleteConversation(conversationId: string | number, incomingRequestToken?: string): Promise<void> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
-    throw new Error('Invalid conversation id');
+    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
   }
 
   await messageClient.deleteChat(chatId, authOptions(incomingRequestToken));
