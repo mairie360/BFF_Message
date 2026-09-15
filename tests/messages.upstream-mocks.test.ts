@@ -362,6 +362,27 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
     });
   });
 
+  describe('request validation', () => {
+    test.each([
+      ['patch', '/me', { email: 'pas-un-email' }],
+      ['get', '/contacts?limit=beaucoup', undefined],
+      ['post', '/groups', { memberIds: [8] }],
+      ['get', '/conversations/conversation-4/messages?limit=1.5', undefined],
+      ['post', '/conversations/conversation-4/messages', { content: 42 }],
+      ['post', '/direct-messages', { recipientId: 'user-8' }],
+      ['post', '/conversations/conversation-4/read', { readUntilMessageId: true }],
+    ] as const)('%s %s rejects an invalid payload with 400 before any upstream call', async (method, url, body) => {
+      mockMessageApi();
+
+      const call = request(app)[method](url).set('Authorization', authorizationFor(agent.id));
+      const response = await (body === undefined ? call : call.send(body));
+
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expect(messageApi.requests).toEqual([]);
+      expect(contactsRepository.listContacts).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Message API failures', () => {
     test('keeps a Message API 401 as a 401 upstream error', async () => {
       mockMessageApi();
