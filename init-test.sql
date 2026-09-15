@@ -10,11 +10,3 @@ VALUES
   (2, 'Perf', 'Tester', 'perf-tester@mairie360.fr', 'dummy', 'active'),
   (3, 'Contact', 'Sample', 'contact-sample@mairie360.fr', 'dummy', 'active')
 ON CONFLICT (id) DO NOTHING;
-
--- Core API >= 1.1.1 exige au moins un rôle sur l'utilisateur pour GET /user/me
--- (sinon panic "index out of bounds" côté Core). Le rôle "User" ne donne pas
--- l'accès admin.
-INSERT INTO user_roles (user_id, role_id)
-SELECT u.id, r.id FROM users u CROSS JOIN roles r
-WHERE u.id IN (2, 3) AND lower(r.name) = 'user'
-ON CONFLICT DO NOTHING;

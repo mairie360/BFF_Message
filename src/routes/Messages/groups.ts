@@ -3,7 +3,6 @@ import {
     registry,
     CreateGroupBody,
     CreateGroupResponse,
-    ConversationDtoSchema,
     ApiErrorResponse,
 } from '../../openapi-registry';
 import {

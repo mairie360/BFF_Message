@@ -11,7 +11,5 @@ if (process.argv.includes('--check')) {
 } else {
 fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, serialized);
-// Preserve the artifact path consumed by the OpenAPI publishing workflow.
-fs.writeFileSync(path.resolve(process.cwd(), 'openapi.json'), serialized);
 }
 console.log(`Exported ${Object.keys(openApiDocument.paths ?? {}).length} paths to ${output}`);

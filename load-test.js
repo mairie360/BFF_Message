@@ -7,7 +7,7 @@ import encoding from 'k6/encoding';
 // Test de charge k6 pour le BFF Message.
 // Cible les routes réellement servies par le BFF : /health (sans auth) et les
 // lectures /me, /contacts, /conversations, /messaging/bootstrap (avec un JWT
-// HS256 signé comme le fait Core / Message API).
+// HS256 signé comme l'attend Message API).
 // ---------------------------------------------------------------------------
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:4003';
@@ -33,7 +33,7 @@ function b64url(value) {
   return encoding.b64encode(value, 'rawurl');
 }
 
-// JWT HS256 minimal accepté par Core / Message API (claims sub + role + exp).
+// JWT HS256 minimal accepté par Message API (claims sub + role + exp).
 function mintJwt() {
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);

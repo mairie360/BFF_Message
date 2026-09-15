@@ -34,7 +34,7 @@ registry.registerPath({
             description: 'Liste des messages de la conversation',
             content: {
                 'application/json': {
-                    schema: SendMessageBody,
+                    schema: MessagesResponse,
                 },
             },
         },
@@ -60,7 +60,7 @@ registry.registerPath({
             required: true,
             content: {
                 'application/json': {
-                    schema: SendMessageResponse,
+                    schema: SendMessageBody,
                 },
             },
         },
@@ -70,7 +70,7 @@ registry.registerPath({
             description: 'Message créé avec succès',
             content: {
                 'application/json': {
-                    schema: MessagesResponse,
+                    schema: SendMessageResponse,
                 },
             },
         },

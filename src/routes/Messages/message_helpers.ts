@@ -281,10 +281,6 @@ export function handleUnknownError(res: Response, error: unknown): Response {
   });
 }
 
-function isAxiosStatus(error: unknown, statuses: number[]): boolean {
-  return axios.isAxiosError(error) && statuses.includes(error.response?.status ?? 0);
-}
-
 export async function fetchConversations(
   search?: string,
   limit?: number,

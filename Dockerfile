@@ -32,6 +32,5 @@ USER node
 ENV NODE_OPTIONS="--max-old-space-size=180"
 
 EXPOSE 4003
-# dist/index.js importe les clients Orval publiés en .ts : tsx les transpile au vol.
-# Binaire local plutôt que npx pour ne jamais télécharger de paquet au démarrage.
-CMD ["/app/node_modules/.bin/tsx", "dist/index.js"]
+# dist/ n'importe que des types @mairie360 (effacés à la compilation) : Node exécute le JS directement.
+CMD ["node", "dist/index.js"]
