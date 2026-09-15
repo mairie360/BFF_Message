@@ -10,7 +10,7 @@ Express 5.2.1 server written in TypeScript. Zod schemas and their OpenAPI regist
 
 ## Data and persistence
 
-Conversations and messages use Message API. Contacts are read directly from the SQL `users` table; the user context is adapted from Core. Business references are aggregated from BFF Project and BFF Calendar. Local profile edits, attachment metadata and the read acknowledgement do not provide complete persistence.
+Conversations and messages use Message API. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Local profile edits, attachment metadata and the read acknowledgement do not provide complete persistence.
 
 Attachment upload currently creates metadata and does not provide durable binary storage. Mark-as-read returns a zero counter without writing to Message API. Conversation groups use the API, while some profile data remains local to the process.
 
@@ -29,9 +29,6 @@ Create `.env` in the repository root. Local HTTP configuration example to adapt 
 ```dotenv
 PORT=4003
 MESSAGE_API_BASE_PATH=http://localhost:3003/api
-CORE_API_BASE_URL=http://localhost:3000
-CORE_API_URL=localhost
-CORE_API_PORT=3000
 MESSAGE_API_URL=localhost
 MESSAGE_API_PORT=3003
 PROJECT_BFF_URL=http://localhost:4001
@@ -62,8 +59,6 @@ Values below are local examples or explicitly described behavior, not production
 | --- | --- | --- |
 | `PORT` | 4003 | Port used by this local example. |
 | `MESSAGE_API_BASE_PATH` | http://localhost:3003/api | Explicit business address; the code fallback is `http://localhost:8080/api`. |
-| `CORE_API_BASE_URL` | http://localhost:3000 | Takes precedence over `CORE_API_URL` for the Core client. |
-| `CORE_API_URL` / `CORE_API_PORT` | localhost / 3000 | Alternative Core configuration and diagnostics. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Diagnostic host and port. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source of project and task references. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source of event references. |
@@ -106,6 +101,8 @@ npm run lint
 npm run build
 ```
 
+The tests in `tests/messages.upstream-mocks.test.ts` run the real Message API client and the real `fetch` against local HTTP mocks driven by the Message API, BFF Project and BFF Calendar contracts, rebuilt from the installed `@mairie360/*-openapi` packages (orval types, versions pinned in `package.json`): every request (path, parameters, JSON body) and every mocked success response is validated against those contracts, and BFF responses against `contracts/openapi.json`. Bumping a package version is enough to test the new contract; error statuses are not typed by orval and are mocked explicitly. The `users` table (contacts) stays mocked with `jest.mock`.
+
 `contracts:generate` exports the runtime registry to `contracts/openapi.json` and regenerates `contracts/bff.d.ts`. `contracts:check` fails when the contract or types are stale. Then run `npm run contracts:sync` in each associated web service and deliver contract changes together.
 
 The type generator is pinned to `openapi-typescript@7.10.1` in `scripts/contracts.mjs` and runs through npm. For documentation-only changes, check links, accuracy in both languages and `git diff --check`; do not regenerate contracts without changing their source.
@@ -116,7 +113,7 @@ The `contracts.yml` job uses Node.js 22, `actions/checkout@v7` and `actions/setu
 
 `cicd.yml` calls `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v1.13.2`, with `cicd_version: v1.13.2` and `node_version: "22"`. Reusable steps and GitHub environments determine actual checks, publications and deployments.
 
-The Dockerfile currently uses `node:20-alpine` for build and runtime; the image command is `["npx", "tsx", "dist/index.js"]`. That version is separate from the Node.js 22 contract job.
+The Dockerfile uses `node:24-alpine` for build and runtime; the image command is `["node", "dist/index.js"]` (the code only imports types from the `@mairie360/*` packages). That version is separate from the Node.js 22 contract job.
 
 Before running Docker, check service variables, build secrets and networks in the repository files. Green CI validates its jobs; it does not prove business-service availability in a remote environment.
 
@@ -132,7 +129,6 @@ If conversations work but contacts do not, check PostgreSQL. If only business re
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)
 - [src/repositories/contactsRepository.ts](../../src/repositories/contactsRepository.ts)
 - [src/clients/messageClient.ts](../../src/clients/messageClient.ts)
-- [src/clients/coreClient.ts](../../src/clients/coreClient.ts)
 - [contracts/openapi.json](../../contracts/openapi.json)
 - [contracts/bff.d.ts](../../contracts/bff.d.ts)
 - [scripts/contracts.mjs](../../scripts/contracts.mjs)

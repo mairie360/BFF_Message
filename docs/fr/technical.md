@@ -10,7 +10,7 @@ Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre Op
 
 ## Données et persistance
 
-Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`; le contexte utilisateur est adapté depuis Core. Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil, les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète.
+Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil, les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète.
 
 L’upload de pièces jointes fabrique actuellement des métadonnées et ne fournit pas un stockage binaire durable. Le marquage lu renvoie un compteur nul sans écrire dans Message API. Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
 
@@ -29,9 +29,6 @@ Créer `.env` à la racine. Exemple de configuration HTTP locale à adapter aux 
 ```dotenv
 PORT=4003
 MESSAGE_API_BASE_PATH=http://localhost:3003/api
-CORE_API_BASE_URL=http://localhost:3000
-CORE_API_URL=localhost
-CORE_API_PORT=3000
 MESSAGE_API_URL=localhost
 MESSAGE_API_PORT=3003
 PROJECT_BFF_URL=http://localhost:4001
@@ -62,8 +59,6 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 | --- | --- | --- |
 | `PORT` | 4003 | Port de cet exemple local. |
 | `MESSAGE_API_BASE_PATH` | http://localhost:3003/api | Adresse métier explicite; le repli du code est `http://localhost:8080/api`. |
-| `CORE_API_BASE_URL` | http://localhost:3000 | Prioritaire sur `CORE_API_URL` pour le client Core. |
-| `CORE_API_URL` / `CORE_API_PORT` | localhost / 3000 | Configuration alternative Core et diagnostic. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Hôte et port du diagnostic. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source des références projets et tâches. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source des références événements. |
@@ -106,6 +101,8 @@ npm run lint
 npm run build
 ```
 
+Les tests de `tests/messages.upstream-mocks.test.ts` exécutent le vrai client Message API et le vrai `fetch` contre des mocks HTTP locaux pilotés par les contrats Message API, BFF Project et BFF Calendar, reconstruits depuis les paquets `@mairie360/*-openapi` installés (types orval, versions épinglées dans `package.json`): chaque requête (chemin, paramètres, corps JSON) et chaque réponse de succès simulée est validée contre ces contrats, et les réponses du BFF contre `contracts/openapi.json`. Monter la version d'un paquet suffit à tester le nouveau contrat; les statuts d'erreur ne sont pas typés par orval et sont simulés explicitement. La table `users` (contacts) reste simulée par `jest.mock`.
+
 `contracts:generate` exporte le registre runtime dans `contracts/openapi.json` et régénère `contracts/bff.d.ts`. `contracts:check` échoue si le contrat ou les types sont périmés. Exécuter ensuite `npm run contracts:sync` dans chaque web service associé et livrer les modifications de contrat ensemble.
 
 Le générateur de types est fixé à `openapi-typescript@7.10.1` dans `scripts/contracts.mjs` et s’exécute via npm. Pour une modification uniquement documentaire, vérifier les liens, l’exactitude des deux langues et `git diff --check`; ne pas régénérer les contrats sans modification de leur source.
@@ -116,7 +113,7 @@ Le job `contracts.yml` utilise Node.js 22, `actions/checkout@v7` et `actions/set
 
 `cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v1.13.2`, avec `cicd_version: v1.13.2` et `node_version: "22"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs.
 
-Le Dockerfile utilise encore `node:20-alpine` pour la construction et l’exécution; la commande de l’image est `["npx", "tsx", "dist/index.js"]`. Cette version est distincte du job de contrats Node.js 22.
+Le Dockerfile utilise `node:24-alpine` pour la construction et l’exécution; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). Cette version est distincte du job de contrats Node.js 22.
 
 Avant un lancement Docker, vérifier les variables de service, les secrets de build et les réseaux dans les fichiers du dépôt. Une CI verte valide ses jobs; elle ne prouve pas la disponibilité des services métier dans un environnement distant.
 
@@ -132,7 +129,6 @@ Si les conversations fonctionnent mais pas les contacts, vérifier PostgreSQL. S
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)
 - [src/repositories/contactsRepository.ts](../../src/repositories/contactsRepository.ts)
 - [src/clients/messageClient.ts](../../src/clients/messageClient.ts)
-- [src/clients/coreClient.ts](../../src/clients/coreClient.ts)
 - [contracts/openapi.json](../../contracts/openapi.json)
 - [contracts/bff.d.ts](../../contracts/bff.d.ts)
 - [scripts/contracts.mjs](../../scripts/contracts.mjs)
