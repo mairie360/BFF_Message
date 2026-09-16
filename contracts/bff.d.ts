@@ -45,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Vérifie la connexion avec l'API Message (Rust) */
+        /** Vérifie la connexion avec l'API Message et Core API (annuaire) */
         get: {
             parameters: {
                 query?: never;
@@ -3287,6 +3287,8 @@ export interface components {
             status: string;
             /** @example Connected */
             message_api: string;
+            /** @example Connected */
+            core_api: string;
         };
         BusinessReferencesResponse: {
             references: {

@@ -6,7 +6,7 @@
 
 Express 5.2.1 server written in TypeScript. Zod schemas and their OpenAPI registry describe exchanged objects; routers adapt upstream services to interface needs.
 
-`src/index.ts` mounts the Messages router at the root. Helpers convert identifiers and generated-client objects; `contactsRepository.ts` reads the directory. `business_references.ts` calls business BFFs with the session. Bootstrap loads up to 20 conversations and then 30 messages from the first conversation.
+`src/index.ts` mounts the Messages router at the root. Helpers convert identifiers and generated-client objects; `coreClient.ts` reads the Core API directory. `business_references.ts` calls business BFFs with the session. Bootstrap loads up to 20 conversations and then 30 messages from the first conversation.
 
 ## Data and persistence
 
@@ -35,7 +35,7 @@ PROJECT_BFF_URL=http://localhost:4001
 CALENDAR_BFF_URL=http://localhost:4002
 ```
 
-Also set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` and `DB_PASSWORD` for an existing database containing the tables expected by the SQL repositories. These variables and any secrets listed below still need to be supplied; the HTTP example prepares neither schema nor data.
+Also set `CORE_API_URL` and `CORE_API_PORT` to reach the Core API directory. These variables and any secrets listed below still need to be supplied; the HTTP example prepares no data.
 
 ```bash
 npm run start
@@ -62,8 +62,7 @@ Values below are local examples or explicitly described behavior, not production
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Diagnostic host and port. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source of project and task references. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source of event references. |
-| `DB_HOST` / `DB_PORT` | localhost / 5432 | SQL repository PostgreSQL connection. |
-| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | — | Database, account and secret to supply for the expected shared schema. |
+| `CORE_API_URL` / `CORE_API_PORT` | localhost / — | Core API directory (contacts, current user). |
 
 ## Routes and data contract
 
@@ -119,7 +118,7 @@ Before running Docker, check service variables, build secrets and networks in th
 
 ## Troubleshooting
 
-If conversations work but contacts do not, check PostgreSQL. If only business references are missing, check the two associated BFFs and session permissions. `/me` here describes the messaging profile; the web `/api/auth/*` adapters use BFF User.
+If conversations work but contacts do not, check Core API. If only business references are missing, check the two associated BFFs and session permissions. `/me` here describes the messaging profile; the web `/api/auth/*` adapters use BFF User.
 
 ## Repository reference
 
@@ -127,7 +126,7 @@ If conversations work but contacts do not, check PostgreSQL. If only business re
 - [src/routes/Messages/index.ts](../../src/routes/Messages/index.ts)
 - [src/routes/Messages/message_helpers.ts](../../src/routes/Messages/message_helpers.ts)
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)
-- [src/repositories/contactsRepository.ts](../../src/repositories/contactsRepository.ts)
+- [src/clients/coreClient.ts](../../src/clients/coreClient.ts)
 - [src/clients/messageClient.ts](../../src/clients/messageClient.ts)
 - [contracts/openapi.json](../../contracts/openapi.json)
 - [contracts/bff.d.ts](../../contracts/bff.d.ts)

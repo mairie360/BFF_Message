@@ -1,9 +1,8 @@
-import type { ContactUser } from '../../src/repositories/contactsRepository';
+import type { ContactUser } from '../../src/clients/coreClient';
 
 // Jeux de données conformes aux contrats des services amont reconstruits depuis les paquets
-// @mairie360/*-openapi installés (validés dans upstream-contracts.test.ts), et utilisateurs de la
-// table PostgreSQL `users` (sans contrat OpenAPI). Les champs non lus par le BFF sont volontairement
-// présents : ils doivent être ignorés.
+// @mairie360/*-openapi installés (validés dans upstream-contracts.test.ts). Les champs non lus par le
+// BFF sont volontairement présents : ils doivent être ignorés.
 
 type Overrides<T> = Partial<T> & Record<string, unknown>;
 
@@ -29,13 +28,18 @@ export function chatUsers(ids: number[]) {
   return { users: ids.map((id) => ({ id })) };
 }
 
-// --- PostgreSQL `users` (contacts) ---
+// --- Core API (@mairie360/core-api-openapi), annuaire des agents ---
 
 export const users = {
   agent: { id: 7, first_name: 'Agent', last_name: 'Test', email: 'agent.test@mairie360.fr' },
   sophie: { id: 8, first_name: 'Sophie', last_name: 'Leroy', email: 'sophie.leroy@mairie360.fr' },
-  thomas: { id: 9, first_name: 'Thomas', last_name: 'Bernard', email: null },
+  thomas: { id: 9, first_name: 'Thomas', last_name: 'Bernard', email: '' },
 } satisfies Record<string, ContactUser>;
+
+/** Corps de `GET /api/v1/user/` (DirectoryUsersResultView) : rôles et groupes ne sont pas lus par ce BFF. */
+export function directoryUsers(list: ContactUser[]) {
+  return { users: list.map((user) => ({ ...user, roles: ['User'], group_ids: [1] })) };
+}
 
 // --- BFF Project (@mairie360/bff-project-openapi) ---
 

@@ -5,6 +5,7 @@ import { registry } from '../openapi-registry';
 export const CheckApiResponseSchema = registry.register('CheckApiResponse', z.object({
   status: z.string().openapi({ example: 'OK' }),
   message_api: z.string().openapi({ example: 'Connected' }),
+  core_api: z.string().openapi({ example: 'Connected' }),
 }));
 
 // 2. Génération automatique de l'interface TypeScript (plus besoin de l'écrire à la main !)

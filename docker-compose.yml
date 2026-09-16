@@ -16,12 +16,6 @@ networks:
 x-common-env: &common-env
   HOST: "0.0.0.0"
   PORT: 4003
-  DB_TYPE: postgres
-  DB_NAME: mairie_360_database
-  DB_USER: postgres
-  DB_HOST: ${SHARED_DB_HOST:-postgres}
-  DB_PASSWORD: password
-  DB_PORT: 5432
 
 x-depends-on: &depends-on
   redis:
@@ -98,6 +92,9 @@ services:
       MESSAGE_API_URL: "message-api"
       MESSAGE_API_PORT: 3003
       MESSAGE_API_BASE_PATH: "http://message-api:3003/api"
+      # L'annuaire des agents vient de Core API, servie par la stack de BFF User.
+      CORE_API_URL: ${CORE_API_HOST:-core-api}
+      CORE_API_PORT: ${CORE_API_PORT:-3000}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

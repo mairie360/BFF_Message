@@ -1,5 +1,5 @@
 import messageClient from '../src/clients/messageClient';
-import { getContactUser } from '../src/repositories/contactsRepository';
+import { getContactUser, listContactsByIds } from '../src/clients/coreClient';
 import {
   fetchConversationMessages,
   fetchConversations,
@@ -17,9 +17,10 @@ jest.mock('../src/clients/messageClient', () => ({
   },
 }));
 
-jest.mock('../src/repositories/contactsRepository', () => ({
+jest.mock('../src/clients/coreClient', () => ({
   getContactUser: jest.fn(),
   listContacts: jest.fn(),
+  listContactsByIds: jest.fn().mockResolvedValue([]),
 }));
 
 const authorization = `Bearer header.${Buffer.from(
@@ -106,12 +107,13 @@ describe('message helpers author direction', () => {
     jest.mocked(messageClient.getChatUsers).mockResolvedValue({
       data: { users: [{ id: 7 }, { id: 8 }, { id: 9 }] },
     } as unknown as Awaited<ReturnType<typeof messageClient.getChatUsers>>);
-    jest.mocked(getContactUser).mockImplementation(async (id) => ({
+    // Les participants sont demandés à l'annuaire en un seul appel.
+    jest.mocked(listContactsByIds).mockImplementation(async (ids) => ids.map((id) => ({
       id,
       first_name: id === 8 ? 'Sophie' : 'Thomas',
       last_name: id === 8 ? 'Leroy' : 'Bernard',
-      email: null,
-    }));
+      email: '',
+    })));
 
     const conversations = await fetchConversations(undefined, 20, authorization);
 
@@ -121,7 +123,7 @@ describe('message helpers author direction', () => {
         department: 'Avec Sophie Leroy, Thomas Bernard',
       }),
     ]);
-    expect(getContactUser).toHaveBeenCalledTimes(2);
-    expect(getContactUser).not.toHaveBeenCalledWith(7);
+    expect(listContactsByIds).toHaveBeenCalledTimes(1);
+    expect(listContactsByIds).toHaveBeenCalledWith([8, 9], authorization);
   });
 });

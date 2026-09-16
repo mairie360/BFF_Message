@@ -6,7 +6,7 @@
 
 Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre OpenAPI décrivent les objets échangés; les routeurs adaptent les services amont aux besoins des interfaces.
 
-`src/index.ts` monte le routeur Messages à la racine. Les helpers convertissent les identifiants et objets du client généré; `contactsRepository.ts` lit l’annuaire. `business_references.ts` appelle les BFF métier avec la session. Le bootstrap charge au maximum 20 conversations puis 30 messages de la première conversation.
+`src/index.ts` monte le routeur Messages à la racine. Les helpers convertissent les identifiants et objets du client généré; `coreClient.ts` lit l’annuaire de Core API. `business_references.ts` appelle les BFF métier avec la session. Le bootstrap charge au maximum 20 conversations puis 30 messages de la première conversation.
 
 ## Données et persistance
 
@@ -35,7 +35,7 @@ PROJECT_BFF_URL=http://localhost:4001
 CALENDAR_BFF_URL=http://localhost:4002
 ```
 
-Compléter `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` et `DB_PASSWORD` pour une base existante contenant les tables attendues par les dépôts SQL. Ces variables et les éventuels secrets listés ci-dessous restent à fournir; l’exemple HTTP ne prépare ni schéma ni données.
+Compléter `CORE_API_URL` et `CORE_API_PORT` pour joindre l’annuaire de Core API. Ces variables et les éventuels secrets listés ci-dessous restent à fournir; l’exemple HTTP ne prépare pas de données.
 
 ```bash
 npm run start
@@ -62,8 +62,7 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Hôte et port du diagnostic. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source des références projets et tâches. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source des références événements. |
-| `DB_HOST` / `DB_PORT` | localhost / 5432 | Connexion PostgreSQL des dépôts SQL. |
-| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | — | Base, compte et secret à fournir pour le schéma partagé attendu. |
+| `CORE_API_URL` / `CORE_API_PORT` | localhost / — | Annuaire Core API (contacts, utilisateur courant). |
 
 ## Routes et contrat de données
 
@@ -119,7 +118,7 @@ Avant un lancement Docker, vérifier les variables de service, les secrets de bu
 
 ## Diagnostic
 
-Si les conversations fonctionnent mais pas les contacts, vérifier PostgreSQL. Si seules les références métier manquent, vérifier les deux BFF associés et les permissions de la session. `/me` décrit ici le profil de messagerie; les adaptateurs `/api/auth/*` du web utilisent BFF User.
+Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si seules les références métier manquent, vérifier les deux BFF associés et les permissions de la session. `/me` décrit ici le profil de messagerie; les adaptateurs `/api/auth/*` du web utilisent BFF User.
 
 ## Repères dans le dépôt
 
@@ -127,7 +126,7 @@ Si les conversations fonctionnent mais pas les contacts, vérifier PostgreSQL. S
 - [src/routes/Messages/index.ts](../../src/routes/Messages/index.ts)
 - [src/routes/Messages/message_helpers.ts](../../src/routes/Messages/message_helpers.ts)
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)
-- [src/repositories/contactsRepository.ts](../../src/repositories/contactsRepository.ts)
+- [src/clients/coreClient.ts](../../src/clients/coreClient.ts)
 - [src/clients/messageClient.ts](../../src/clients/messageClient.ts)
 - [contracts/openapi.json](../../contracts/openapi.json)
 - [contracts/bff.d.ts](../../contracts/bff.d.ts)

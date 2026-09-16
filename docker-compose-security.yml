@@ -131,6 +131,41 @@ services:
     networks:
       - backend
 
+  core-api:
+    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:1.2.0}
+    container_name: bff-message-sec-core-api
+    depends_on:
+      liquibase:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      <<: *db-env
+      HOST: "0.0.0.0"
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      PUBLIC_URL: http://core-api:3000
+      JWT_SECRET: secret
+      JWT_TIMEOUT: 3600
+    expose:
+      - "3000"
+    networks:
+      - backend
+    # L'image publiée est "distroless" (ni shell ni curl) : la disponibilité est
+    # sondée depuis le conteneur core-api-ready ci-dessous.
+
+  core-api-ready:
+    image: curlimages/curl:latest
+    container_name: bff-message-sec-core-api-ready
+    depends_on:
+      core-api:
+        condition: service_started
+    command: >
+      sh -c 'until curl -fsS http://core-api:3000/health >/dev/null; do
+      echo "waiting for core-api..."; sleep 2; done; echo "core-api ready"'
+    networks:
+      - backend
+
   bff-message:
     image: ${TARGET_IMAGE:-bff-message:security}
     container_name: bff-message-sec-bff
@@ -146,13 +181,16 @@ services:
         condition: service_completed_successfully
       message-api-ready:
         condition: service_completed_successfully
+      core-api-ready:
+        condition: service_completed_successfully
     environment:
-      <<: *db-env
       HOST: "0.0.0.0"
       PORT: 4003
       MESSAGE_API_URL: message-api
       MESSAGE_API_PORT: 3003
       MESSAGE_API_BASE_PATH: http://message-api:3003/api
+      CORE_API_URL: core-api
+      CORE_API_PORT: 3000
     expose:
       - "4003"
     networks:

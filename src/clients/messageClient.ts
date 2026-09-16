@@ -1,50 +1,6 @@
+import { getMessageApi } from '@mairie360/message-api-openapi/endpoints/messageApi';
 import axios from 'axios';
-import type {
-    AxiosInstance,
-    AxiosRequestConfig,
-    AxiosResponse,
-} from 'axios';
 import { DEFAULT_JWT_TOKEN } from '../config/token';
-import type {
-    CreateChatResultView,
-    CreateChatView,
-    GetChatResultView,
-    GetChatsResultView,
-    GetUsersView,
-    PostMessageResultView,
-    PostMessageView,
-} from '@mairie360/message-api-openapi/model';
-
-function getMessageApi(axiosInstance: AxiosInstance) {
-    const getChats = (options?: AxiosRequestConfig): Promise<AxiosResponse<GetChatsResultView>> => axiosInstance.get('/v1/', options);
-    const createChat = (
-        createChatView: CreateChatView,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<CreateChatResultView>> => axiosInstance.post('/v1/', createChatView, options);
-    const getChat = (
-        chatId: number,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<GetChatResultView>> => axiosInstance.get(`/v1/${chatId}/`, options);
-    const deleteChat = (chatId: number, options?: AxiosRequestConfig): Promise<AxiosResponse<void>> => axiosInstance.delete(`/v1/${chatId}/`, options);
-    const postMessage = (
-        chatId: number,
-        postMessageView: PostMessageView,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<PostMessageResultView>> => axiosInstance.post(`/v1/${chatId}/messages/`, postMessageView, options);
-    const getChatUsers = (
-        chatId: number,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<GetUsersView>> => axiosInstance.get(`/v1/${chatId}/users/`, options);
-
-    return {
-        getChats,
-        createChat,
-        getChat,
-        deleteChat,
-        postMessage,
-        getChatUsers,
-    };
-}
 
 function normalizeBaseUrl(baseUrl: string): string {
     return /^https?:\/\//.test(baseUrl) ? baseUrl : `http://${baseUrl}`;
@@ -79,9 +35,7 @@ apiClientInstance.interceptors.request.use(
     },
 );
 
-// 2. Injecter l'instance dans le code généré par Orval
+// Message API n'est appelée que par les opérations de son contrat publié (@mairie360/message-api-openapi).
 const messageClient = getMessageApi(apiClientInstance);
-
-console.log('Message API Base Path:', apiClientInstance.defaults.baseURL);
 
 export default messageClient;

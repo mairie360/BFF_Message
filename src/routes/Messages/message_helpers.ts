@@ -4,7 +4,7 @@ import type { Response } from 'express';
 import { z } from 'zod';
 import messageClient from '../../clients/messageClient';
 import { getAuthorizationHeader } from '../../config/token';
-import { getContactUser, listContacts } from '../../repositories/contactsRepository';
+import { getContactUser, listContacts, listContactsByIds } from '../../clients/coreClient';
 import type {
   ChatView,
   MessageView,
@@ -112,7 +112,7 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
     throw new HttpError(401, 'UNAUTHORIZED', 'Identifiant utilisateur absent du token');
   }
 
-  const user = await getContactUser(id);
+  const user = await getContactUser(id, incomingRequestToken);
 
   if (!user) {
     throw new HttpError(401, 'UNAUTHORIZED', 'Utilisateur connecté introuvable');
@@ -124,7 +124,7 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
     ...fallbackCurrentUser,
     id: publicUserId(id),
     name,
-    email: user.email ?? undefined,
+    email: user.email?.trim() ? user.email : undefined,
     lastConnection: new Date().toISOString(),
   };
 
@@ -177,7 +177,8 @@ function mapCoreUserToContact(user: CoreUser): BffContact | null {
     name,
     initials: initials(name),
     presence: 'offline',
-    email: user.email ?? undefined,
+    // L'annuaire Core renvoie une chaîne vide quand l'agent n'a pas d'email.
+    email: user.email?.trim() ? user.email : undefined,
   };
 }
 
@@ -193,13 +194,9 @@ async function fetchConversationParticipantNames(
         .map((user) => user.id)
         .filter((userId) => userId !== currentUserId),
     )];
-    const participants = await Promise.all(
-      participantIds.map((participantId) => getContactUser(participantId)),
-    );
+    const participants = await listContactsByIds(participantIds, incomingRequestToken);
 
     return participants.flatMap((participant) => {
-      if (!participant) return [];
-
       const contact = mapCoreUserToContact(participant);
       return contact ? [contact.name] : [];
     });
@@ -432,6 +429,7 @@ export async function fetchContacts(
     search,
     limit,
     Number.isInteger(currentUserId) ? currentUserId : undefined,
+    incomingRequestToken,
   );
   const contacts = users
     .map((user) => mapCoreUserToContact(user as CoreUser))

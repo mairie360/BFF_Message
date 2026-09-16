@@ -2,31 +2,27 @@ import path from 'node:path';
 import type { Express } from 'express';
 import request from 'supertest';
 
-// La table PostgreSQL `users` (contacts) n'a pas de contrat OpenAPI : le repository reste simulé par
-// jest.mock. Les services HTTP (Message API, BFF Project, BFF Calendar) sont servis par de vrais
-// serveurs locaux pilotés par les contrats reconstruits depuis leurs paquets @mairie360/*-openapi installés
-// (tests/support/orval-contract.ts) : chaque requête du BFF (chemin, paramètres, corps JSON) et chaque
-// réponse de succès simulée est validée contre ces contrats.
-jest.mock('../src/repositories/contactsRepository', () => ({
-  getContactUser: jest.fn(),
-  listContacts: jest.fn(),
-}));
+// Tous les services amont (Message API, Core API pour l'annuaire, BFF Projets et BFF Calendrier) sont servis
+// par de vrais serveurs locaux pilotés par les contrats reconstruits depuis leurs paquets @mairie360/*-openapi
+// installés (tests/support/orval-contract.ts) : chaque requête du BFF (chemin, paramètres, corps JSON) et
+// chaque réponse de succès simulée est validée contre ces contrats.
 
-import * as contactsRepository from '../src/repositories/contactsRepository';
 import { ContractMockServer } from './support/contract-mock-server';
 import { OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract } from './support/orval-contract';
 import {
-  authorizationFor, calendarBootstrapResponse, calendarEvent, chatResult, chatUsers, chatView, chatsResult, messageView,
-  projectDetailsResponse, projectListItem, projectsPageResponse, taskItem, tokenFor, users, type ProjectItem, type TaskItem,
+  authorizationFor, calendarBootstrapResponse, calendarEvent, chatResult, chatUsers, chatView, chatsResult,
+  directoryUsers, messageView, projectDetailsResponse, projectListItem, projectsPageResponse, taskItem, tokenFor,
+  users, type ProjectItem, type TaskItem,
 } from './support/upstream-fixtures';
 
 const { agent, sophie, thomas } = users;
 
 const messageApi = new ContractMockServer('MESSAGE_API', loadOrvalContract('@mairie360/message-api-openapi'), { basePath: '/api', rootPaths: ['/health'] });
+const coreApi = new ContractMockServer('CORE_API', loadOrvalContract('@mairie360/core-api-openapi'));
 const projectBff = new ContractMockServer('PROJECT_BFF', loadOrvalContract('@mairie360/bff-project-openapi'));
 const calendarBff = new ContractMockServer('CALENDAR_BFF', loadOrvalContract('@mairie360/bff-calendar-openapi'));
-const mocks = [messageApi, projectBff, calendarBff];
+const mocks = [messageApi, coreApi, projectBff, calendarBff];
 const bffContract = OpenApiContract.load(path.join(__dirname, '..', 'contracts', 'openapi.json'));
 
 let app: Express;
@@ -39,6 +35,9 @@ beforeAll(async () => {
   const messageApiUrl = new URL(messageApi.url);
   process.env.MESSAGE_API_URL = messageApiUrl.hostname;
   process.env.MESSAGE_API_PORT = messageApiUrl.port;
+  const coreApiUrl = new URL(coreApi.url);
+  process.env.CORE_API_URL = coreApiUrl.hostname;
+  process.env.CORE_API_PORT = coreApiUrl.port;
   process.env.PROJECT_BFF_URL = projectBff.url;
   process.env.CALENDAR_BFF_URL = calendarBff.url;
   ({ app } = await import('../src/index'));
@@ -49,9 +48,19 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(console, 'log').mockImplementation(() => undefined);
   for (const mock of mocks) mock.reset();
+  // Annuaire Core : la recherche et la sélection par identifiants sont appliquées comme par Core API.
   const directory = [agent, sophie, thomas];
-  jest.mocked(contactsRepository.getContactUser).mockImplementation(async (id) => directory.find((user) => user.id === id));
-  jest.mocked(contactsRepository.listContacts).mockImplementation(async (_search, _limit, excludedUserId) => directory.filter((user) => user.id !== excludedUserId));
+  coreApi.on('get', '/api/v1/user/', ({ url }) => {
+    const ids = url.searchParams.get('ids')?.split(',').map(Number);
+    const search = url.searchParams.get('search')?.toLowerCase();
+    return {
+      body: directoryUsers(directory.filter((user) => {
+        const matchesIds = !ids || ids.includes(user.id);
+        const fullName = `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase();
+        return matchesIds && (!search || fullName.includes(search));
+      })),
+    };
+  });
 });
 
 afterEach(() => {
@@ -116,7 +125,9 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       ] });
       expect(upstreamSequence(messageApi).sort()).toEqual(['GET /v1/', 'GET /v1/4/users/', 'GET /v1/5/users/']);
       expect(messageApi.requests.every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
-      expect(contactsRepository.getContactUser).not.toHaveBeenCalledWith(agent.id);
+      // Seuls les autres participants sont demandés à l'annuaire.
+      expect(coreApi.calls('/api/v1/user/').flatMap((call) => call.url.searchParams.get('ids')!.split(',')))
+        .not.toContain(String(agent.id));
     });
 
     test('GET /conversations filters by search and applies limit before loading participants', async () => {
@@ -298,7 +309,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(200);
       expectBffContract('get', '/me', response);
       expect(response.body.currentUser).toMatchObject({ id: 'user-8', name: 'Sophie Leroy', email: 'sophie.leroy@mairie360.fr' });
-      expect(contactsRepository.getContactUser).toHaveBeenCalledWith(sophie.id);
+      expect(coreApi.calls('/api/v1/user/')[0].url.searchParams.get('ids')).toBe(String(sophie.id));
     });
 
     test('GET /me answers 401 for a user absent from the users table', async () => {
@@ -308,16 +319,22 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expectBffContract('get', '/me', response);
     });
 
-    test('GET /contacts lists the users table without the current user', async () => {
-      const response = await request(app).get('/contacts?search=le&limit=5').set('Authorization', authorizationFor(agent.id));
+    test('GET /contacts lists the directory without the current user, search and limit forwarded to Core', async () => {
+      const all = await request(app).get('/contacts').set('Authorization', authorizationFor(agent.id));
+      const searched = await request(app).get('/contacts?search=le&limit=5').set('Authorization', authorizationFor(agent.id));
 
-      expect(response.status).toBe(200);
-      expectBffContract('get', '/contacts', response);
-      expect(contactsRepository.listContacts).toHaveBeenCalledWith('le', 5, agent.id);
-      expect(response.body.contacts).toEqual([
+      expect(all.status).toBe(200);
+      expectBffContract('get', '/contacts', all);
+      expect(all.body.contacts).toEqual([
         { id: 'user-8', name: 'Sophie Leroy', initials: 'SL', presence: 'offline', email: 'sophie.leroy@mairie360.fr' },
+        // Thomas Bernard n'a pas d'email : l'annuaire renvoie une chaîne vide, le contact n'en porte pas.
         { id: 'user-9', name: 'Thomas Bernard', initials: 'TB', presence: 'offline' },
       ]);
+
+      expect(searched.status).toBe(200);
+      const [, , , contacts] = coreApi.calls('/api/v1/user/');
+      expect(Object.fromEntries(contacts.url.searchParams)).toEqual({ search: 'le', limit: '5' });
+      expect(searched.body.contacts.map((contact: { id: string }) => contact.id)).toEqual(['user-8']);
     });
 
     test('GET /contacts requires a session', async () => {
@@ -325,7 +342,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       expectApiError(response, 401, 'UNAUTHORIZED');
       expectBffContract('get', '/contacts', response);
-      expect(contactsRepository.listContacts).not.toHaveBeenCalled();
+      expect(coreApi.requests).toEqual([]);
     });
 
     test('GET /messaging/bootstrap aggregates user, conversations, contacts and the first conversation messages', async () => {
@@ -379,7 +396,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       expectApiError(response, 400, 'BAD_REQUEST');
       expect(messageApi.requests).toEqual([]);
-      expect(contactsRepository.listContacts).not.toHaveBeenCalled();
+      expect(coreApi.requests).toEqual([]);
     });
   });
 
@@ -523,25 +540,30 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
   describe('GET /check_apis', () => {
     beforeEach(() => {
       messageApi.on('get', '/health', { raw: 'OK', contentType: 'text/plain' });
+      coreApi.on('get', '/health', { raw: 'OK', contentType: 'text/plain' });
     });
 
-    test('reports Message API connected through its /health operation', async () => {
+    test('reports Message API and Core API connected through their /health operations', async () => {
       const response = await request(app).get('/check_apis');
 
       expect(response.status).toBe(200);
       expectBffContract('get', '/check_apis', response);
-      expect(response.body).toEqual({ status: 'OK', message_api: 'Connected' });
+      expect(response.body).toEqual({ status: 'OK', message_api: 'Connected', core_api: 'Connected' });
       expect(messageApi.requests.map((call) => call.url.pathname)).toEqual(['/health']);
+      expect(coreApi.requests.map((call) => call.url.pathname)).toEqual(['/health']);
     });
 
-    test('answers 502 when Message API is unreachable', async () => {
-      messageApi.on('get', '/health', { dropConnection: true });
+    test.each([
+      ['Message API', () => messageApi.on('get', '/health', { dropConnection: true }), { message_api: 'Unreachable', core_api: 'Connected' }],
+      ['Core API', () => coreApi.on('get', '/health', { dropConnection: true }), { message_api: 'Connected', core_api: 'Unreachable' }],
+    ])('answers 502 when %s is unreachable', async (_service, breakService, expected) => {
+      breakService();
 
       const response = await request(app).get('/check_apis');
 
       expect(response.status).toBe(502);
       expectBffContract('get', '/check_apis', response);
-      expect(response.body).toMatchObject({ status: 'Error', message_api: 'Unreachable' });
+      expect(response.body).toMatchObject({ status: 'Error', ...expected });
     });
   });
 });

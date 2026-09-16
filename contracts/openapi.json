@@ -2408,11 +2408,16 @@
           "message_api": {
             "type": "string",
             "example": "Connected"
+          },
+          "core_api": {
+            "type": "string",
+            "example": "Connected"
           }
         },
         "required": [
           "status",
-          "message_api"
+          "message_api",
+          "core_api"
         ]
       },
       "BusinessReferencesResponse": {
@@ -2499,7 +2504,7 @@
         "tags": [
           "Connectivity"
         ],
-        "summary": "Vérifie la connexion avec l'API Message (Rust)",
+        "summary": "Vérifie la connexion avec l'API Message et Core API (annuaire)",
         "responses": {
           "200": {
             "description": "Connexion réussie",

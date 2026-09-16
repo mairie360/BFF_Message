@@ -12,11 +12,12 @@ import {
 
 const PACKAGES = [
   '@mairie360/message-api-openapi',
+  '@mairie360/core-api-openapi',
   '@mairie360/bff-project-openapi',
   '@mairie360/bff-calendar-openapi',
 ] as const;
 
-// Opérations amont réellement appelées par le BFF (src/clients/messageClient.ts, src/routes/check_apis.ts,
+// Opérations amont réellement appelées par le BFF (src/clients/, src/routes/check_apis.ts,
 // src/routes/Messages/business_references.ts).
 const CONSUMED = [
   { pkg: '@mairie360/message-api-openapi', operationId: 'getChats', method: 'get', template: '/v1/' },
@@ -26,6 +27,8 @@ const CONSUMED = [
   { pkg: '@mairie360/message-api-openapi', operationId: 'postMessage', method: 'post', template: '/v1/{chatId}/messages/' },
   { pkg: '@mairie360/message-api-openapi', operationId: 'getChatUsers', method: 'get', template: '/v1/{chatId}/users/' },
   { pkg: '@mairie360/message-api-openapi', operationId: 'health', method: 'get', template: '/health' },
+  { pkg: '@mairie360/core-api-openapi', operationId: 'listDirectoryUsers', method: 'get', template: '/api/v1/user/' },
+  { pkg: '@mairie360/core-api-openapi', operationId: 'health', method: 'get', template: '/health' },
   { pkg: '@mairie360/bff-project-openapi', operationId: 'getProjectsPage', method: 'get', template: '/projects-page' },
   { pkg: '@mairie360/bff-project-openapi', operationId: 'getProjectsProjectId', method: 'get', template: '/projects/{projectId}' },
   { pkg: '@mairie360/bff-calendar-openapi', operationId: 'getCalendarBootstrap', method: 'get', template: '/calendar/bootstrap' },
