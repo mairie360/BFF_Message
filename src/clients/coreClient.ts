@@ -1,115 +1,71 @@
-import axios from 'axios';
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { DEFAULT_JWT_TOKEN } from '../config/token';
-import type {
-    AddRoleToUserView,
-    CreateUserView,
-    GetMeResponseView,
-    GetUserResponseView,
-    PatchMeView,
-    PatchUserView,
-} from '@mairie360/core-api-openapi/model';
+import { getCoreApi } from '@mairie360/core-api-openapi/endpoints/coreApi';
+import type { DirectoryUser } from '@mairie360/core-api-openapi/model';
+import axios, { type AxiosRequestConfig } from 'axios';
+import { getAuthorizationHeader } from '../config/token';
 
-type UsersResponse = unknown;
+// L'annuaire des agents vient de Core API, par les opérations de son contrat publié
+// (@mairie360/core-api-openapi) : le BFF n'interroge plus la table `users` directement.
+const coreApiAxios = axios.create({ timeout: 5_000, headers: { Accept: 'application/json' } });
 
-function getUsers(axiosInstance: AxiosInstance) {
-    const getMe = (options?: AxiosRequestConfig): Promise<AxiosResponse<GetMeResponseView>> => axiosInstance.get('/api/v1/user/me/', options);
-    const patchMe = (
-        patchMeView: PatchMeView,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<void>> => axiosInstance.patch('/api/v1/user/me/', patchMeView, options);
-    const getUser = (
-        id: number,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<GetUserResponseView>> => axiosInstance.get(`/api/v1/user/${id}/`, options);
+const coreApi = getCoreApi(coreApiAxios);
 
-    return {
-        getMe,
-        patchMe,
-        getUser,
-    };
+export type ContactUser = Pick<DirectoryUser, 'id' | 'first_name' | 'last_name' | 'email'>;
+
+function normalizeBaseUrl(value: string): string {
+  return /^https?:\/\//i.test(value) ? value : `http://${value}`;
 }
 
-function getAdminUsers(axiosInstance: AxiosInstance) {
-    const adminGetUsers = (options?: AxiosRequestConfig): Promise<AxiosResponse<UsersResponse>> => axiosInstance.get('/api/v1/admin/users/', options);
-    const adminPostUser = (
-        createUserView: CreateUserView,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<void>> => axiosInstance.post('/api/v1/admin/users/', createUserView, options);
-    const adminPatchUser = (
-        userId: number,
-        patchUserView: PatchUserView,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<void>> => axiosInstance.patch(`/api/v1/admin/users/${userId}/`, patchUserView, options);
-    const adminAddRoleToUser = (
-        userId: number,
-        addRoleToUserView: AddRoleToUserView,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<void>> => axiosInstance.post(`/api/v1/admin/users/${userId}/roles/`, addRoleToUserView, options);
-    const adminDeleteUserRole = (
-        userId: number,
-        roleId: number,
-        options?: AxiosRequestConfig,
-    ): Promise<AxiosResponse<void>> => axiosInstance.delete(`/api/v1/admin/users/${userId}/roles/${roleId}`, options);
+/** URL relue à chaque appel : les variables d'environnement peuvent changer sans redémarrage. */
+function coreOptions(incomingRequestToken?: string): AxiosRequestConfig {
+  const url = new URL(normalizeBaseUrl(process.env.CORE_API_URL ?? 'localhost'));
+  if (!url.port && process.env.CORE_API_PORT) url.port = process.env.CORE_API_PORT;
+  const authorization = getAuthorizationHeader(incomingRequestToken);
 
-    return {
-        adminGetUsers,
-        adminPostUser,
-        adminPatchUser,
-        adminAddRoleToUser,
-        adminDeleteUserRole,
-    };
+  return {
+    baseURL: url.toString().replace(/\/+$/, ''),
+    ...(authorization ? { headers: { Authorization: authorization } } : {}),
+  };
 }
 
-type CoreClient = ReturnType<typeof getUsers> & ReturnType<typeof getAdminUsers>;
+/** Agents non archivés, hors utilisateur connecté, triés par nom puis prénom. */
+export async function listContacts(
+  search: string | undefined,
+  limit: number | undefined,
+  excludedUserId: number | undefined,
+  incomingRequestToken?: string,
+): Promise<ContactUser[]> {
+  const response = await coreApi.listDirectoryUsers(
+    { ...(search ? { search } : {}), ...(limit ? { limit } : {}) },
+    coreOptions(incomingRequestToken),
+  );
 
-function normalizeBaseUrl(baseUrl: string): string {
-    return /^https?:\/\//.test(baseUrl) ? baseUrl : `http://${baseUrl}`;
+  return response.data.users.filter((user) => user.id !== excludedUserId);
 }
 
-function buildCoreBaseUrl(): string {
-    const baseUrl = process.env.CORE_API_BASE_URL ?? process.env.CORE_API_URL ?? 'localhost:3000';
-    const port = process.env.CORE_API_PORT;
-    const normalized = normalizeBaseUrl(baseUrl);
+/** Agents demandés par identifiant, en un seul appel (les inconnus sont absents du résultat). */
+export async function listContactsByIds(
+  ids: number[],
+  incomingRequestToken?: string,
+): Promise<ContactUser[]> {
+  if (ids.length === 0) return [];
 
-    if (!port || /:\d+(\/|$)/.test(normalized)) {
-        return normalized;
-    }
+  const response = await coreApi.listDirectoryUsers(
+    { ids: ids.join(',') },
+    coreOptions(incomingRequestToken),
+  );
 
-    return `${normalized}:${port}`;
+  return response.data.users;
 }
 
-const apiClientInstance = axios.create({
-    baseURL: buildCoreBaseUrl(),
-    timeout: 5000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+/** Agent d'identifiant `id`, ou `undefined` s'il est inconnu ou archivé. */
+export async function getContactUser(
+  id: number,
+  incomingRequestToken?: string,
+): Promise<ContactUser | undefined> {
+  const [user] = await listContactsByIds([id], incomingRequestToken);
+  return user;
+}
 
-apiClientInstance.interceptors.request.use(
-    (config) => {
-        const currentAuth = config.headers.Authorization;
-
-        if (!currentAuth && DEFAULT_JWT_TOKEN) {
-            config.headers.Authorization = DEFAULT_JWT_TOKEN.startsWith('Bearer ')
-                ? DEFAULT_JWT_TOKEN
-                : `Bearer ${DEFAULT_JWT_TOKEN}`;
-        }
-
-        console.log('Requête sortante vers :', config.baseURL + '' + config.url);
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    },
-);
-
-const coreClient: CoreClient = {
-    ...getUsers(apiClientInstance),
-    ...getAdminUsers(apiClientInstance),
-};
-
-console.log('Core API Base Path:', apiClientInstance.defaults.baseURL);
-
-export default coreClient;
+export async function checkCoreApi(): Promise<void> {
+  await coreApi.health({ ...coreOptions(), timeout: 5_000 });
+}

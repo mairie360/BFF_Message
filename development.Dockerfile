@@ -14,18 +14,6 @@ RUN --mount=type=secret,id=npmrc,target=/app/.npmrc \
     --mount=type=secret,id=node_auth_token,env=NODE_AUTH_TOKEN \
     npm ci
 
-# Le package Orval est publié en .ts; on génère le .js que Node chargera au runtime.
-RUN npx tsc node_modules/@mairie360/message-api-openapi/endpoints/messageApi.ts \
-    --rootDir node_modules/@mairie360/message-api-openapi \
-    --module commonjs \
-    --target ES2020 \
-    --esModuleInterop \
-    --skipLibCheck \
-    --moduleResolution node \
-    --outDir node_modules/@mairie360/message-api-openapi \
-    --declaration false \
-    --sourceMap false
-
 # On copie le reste du code source
 COPY . .
 

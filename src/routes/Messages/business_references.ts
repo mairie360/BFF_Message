@@ -1,5 +1,11 @@
 import { Request, Router } from 'express';
 import { z } from 'zod';
+import {
+  calendarBff,
+  calendarBffOptions,
+  projectBff,
+  projectBffOptions,
+} from '../../clients/businessBffClients';
 import { registry } from '../../openapi-registry';
 const router = Router();
 export const BusinessReferencesSchema = registry.register('BusinessReferencesResponse', z.object({
@@ -20,85 +26,25 @@ type BusinessReference = {
   description?: string;
 };
 
-type ProjectListItem = {
-  id: string;
-  title: string;
-};
-
-type ProjectsPageResponse = {
-  projects?: ProjectListItem[];
-};
-
-type ProjectTask = {
-  id: string;
-  title: string;
-};
-
-type ProjectDetailsResponse = {
-  taskItems?: ProjectTask[];
-};
-
-type CalendarEvent = {
-  id?: string | number;
-  title: string;
-  date?: string;
-};
-
-type CalendarBootstrapResponse = {
-  events?: CalendarEvent[];
-};
-
-const DEFAULT_PROJECT_BFF_URL = "http://localhost:4001";
-const DEFAULT_CALENDAR_BFF_URL = "http://localhost:4002";
-
-function normalizedBaseUrl(value: string) {
-  return value.replace(/\/+$/, "");
-}
-
 function getAuthorizationHeader(request: Request) {
   return request.headers.authorization;
 }
 
-async function fetchJson<T>(url: string, authorization?: string): Promise<T> {
-  const headers = new Headers({ Accept: "application/json" });
-
-  if (authorization) headers.set("Authorization", authorization);
-
-  const response = await fetch(url, {
-    headers,
-    cache: "no-store",
-    signal: AbortSignal.timeout(8_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Upstream request failed (${response.status})`);
-  }
-
-  return response.json() as Promise<T>;
-}
-
 async function loadProjectReferences(authorization?: string): Promise<BusinessReference[]> {
-  const projectBaseUrl = normalizedBaseUrl(
-    process.env.PROJECT_BFF_URL ?? DEFAULT_PROJECT_BFF_URL,
-  );
-  const projectsPage = await fetchJson<ProjectsPageResponse>(
-    `${projectBaseUrl}/projects-page?limit=100`,
-    authorization,
-  );
-  const projects = projectsPage.projects ?? [];
+  const options = projectBffOptions(authorization);
+  const projectsPage = await projectBff.getProjectsPage({ limit: 100 }, options);
+  const projects = projectsPage.data.projects ?? [];
   const taskRequests = await Promise.allSettled(
+    // Le client généré insère le paramètre tel quel : l'identifiant est encodé ici.
     projects.map((project) =>
-      fetchJson<ProjectDetailsResponse>(
-        `${projectBaseUrl}/projects/${encodeURIComponent(project.id)}`,
-        authorization,
-      ),
+      projectBff.getProjectsProjectId(encodeURIComponent(project.id), options),
     ),
   );
   const taskReferences = taskRequests.flatMap((result, projectIndex) => {
     if (result.status !== "fulfilled") return [];
 
     const project = projects[projectIndex];
-    return (result.value.taskItems ?? []).map((task) => ({
+    return (result.value.data.taskItems ?? []).map((task) => ({
       id: `task:${task.id}`,
       title: task.title,
       kind: "task" as const,
@@ -129,16 +75,14 @@ function calendarDateRange() {
 }
 
 async function loadCalendarReferences(authorization?: string): Promise<BusinessReference[]> {
-  const calendarBaseUrl = normalizedBaseUrl(
-    process.env.CALENDAR_BFF_URL ?? DEFAULT_CALENDAR_BFF_URL,
-  );
   const { from, to } = calendarDateRange();
-  const calendar = await fetchJson<CalendarBootstrapResponse>(
-    `${calendarBaseUrl}/calendar/bootstrap?from=${from}&to=${to}`,
-    authorization,
-  );
+  // from et to sont lus par BFF Calendar mais pas encore déclarés par son contrat publié.
+  const calendar = await calendarBff.getCalendarBootstrap({
+    ...calendarBffOptions(authorization),
+    params: { from, to },
+  });
 
-  return (calendar.events ?? []).flatMap((event) => {
+  return (calendar.data.events ?? []).flatMap((event) => {
     if (event.id === undefined) return [];
 
     return [{

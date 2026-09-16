@@ -5,10 +5,6 @@ dist/
 .idea/
 .vscode/
 coverage/
-src/services/generated/
-
-openapi.json
-openapi.yaml
 .npmrc
 
 # Rapports générés par les tests de sécurité / performance
@@ -17,5 +13,3 @@ openapi.yaml
 .zap/*.md
 zap.yaml
 summary.json
-
-!contracts/openapi.json

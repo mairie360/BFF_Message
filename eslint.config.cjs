@@ -11,7 +11,6 @@ module.exports = [
       'node_modules/',
       'coverage/',
       'eslint.config.cjs',
-      '.eslintrc.js',
       'jest.config.ts',
       'scripts/export-swagger.ts',
       'load-test.js'
