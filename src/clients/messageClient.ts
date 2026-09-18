@@ -1,4 +1,4 @@
-import { getMessageApi } from '@mairie360/message-api-openapi/endpoints/messageApi';
+import { getMessageAPIMairie360 } from '@mairie360/message-api-openapi/endpoints/messageAPIMairie360';
 import axios from 'axios';
 import { DEFAULT_JWT_TOKEN } from '../config/token';
 
@@ -8,7 +8,7 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 // 1. Créer l'instance Axios dédiée au service distant
 const apiClientInstance = axios.create({
-    baseURL: normalizeBaseUrl(process.env.MESSAGE_API_BASE_PATH || 'localhost:8080/api'),
+    baseURL: normalizeBaseUrl(process.env.MESSAGE_API_BASE_PATH || 'localhost:3003'),
     timeout: 5000,
     headers: {
         'Content-Type': 'application/json',
@@ -36,6 +36,6 @@ apiClientInstance.interceptors.request.use(
 );
 
 // Message API n'est appelée que par les opérations de son contrat publié (@mairie360/message-api-openapi).
-const messageClient = getMessageApi(apiClientInstance);
+const messageClient = getMessageAPIMairie360(apiClientInstance);
 
 export default messageClient;

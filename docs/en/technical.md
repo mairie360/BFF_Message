@@ -28,7 +28,7 @@ Create `.env` in the repository root. Local HTTP configuration example to adapt 
 
 ```dotenv
 PORT=4003
-MESSAGE_API_BASE_PATH=http://localhost:3003/api
+MESSAGE_API_BASE_PATH=http://localhost:3003
 MESSAGE_API_URL=localhost
 MESSAGE_API_PORT=3003
 PROJECT_BFF_URL=http://localhost:4001
@@ -58,7 +58,7 @@ Values below are local examples or explicitly described behavior, not production
 | Variable or precedence | Example / stated fallback | Purpose |
 | --- | --- | --- |
 | `PORT` | 4003 | Port used by this local example. |
-| `MESSAGE_API_BASE_PATH` | http://localhost:3003/api | Explicit business address; the code fallback is `http://localhost:8080/api`. |
+| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Message API root (its routes are published under `/api/v1`); the code fallback is `http://localhost:3003`. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Diagnostic host and port. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source of project and task references. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source of event references. |
