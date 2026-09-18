@@ -28,7 +28,7 @@ Créer `.env` à la racine. Exemple de configuration HTTP locale à adapter aux 
 
 ```dotenv
 PORT=4003
-MESSAGE_API_BASE_PATH=http://localhost:3003/api
+MESSAGE_API_BASE_PATH=http://localhost:3003
 MESSAGE_API_URL=localhost
 MESSAGE_API_PORT=3003
 PROJECT_BFF_URL=http://localhost:4001
@@ -58,7 +58,7 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 | Variable ou priorité | Exemple / repli indiqué | Rôle |
 | --- | --- | --- |
 | `PORT` | 4003 | Port de cet exemple local. |
-| `MESSAGE_API_BASE_PATH` | http://localhost:3003/api | Adresse métier explicite; le repli du code est `http://localhost:8080/api`. |
+| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Racine de Message API (ses routes sont publiées sous `/api/v1`); le repli du code est `http://localhost:3003`. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Hôte et port du diagnostic. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source des références projets et tâches. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source des références événements. |

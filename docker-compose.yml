@@ -40,7 +40,7 @@ services:
 
   message-api:
     container_name: message-api-bff-message-developpement
-    image: ghcr.io/mairie360/message-api:0.6.1
+    image: ghcr.io/mairie360/message-api:0.7.1
     ports:
       - "3003:3003"
     networks:
@@ -91,7 +91,7 @@ services:
       # IMPORTANT : On utilise le nom du service Docker pour communiquer
       MESSAGE_API_URL: "message-api"
       MESSAGE_API_PORT: 3003
-      MESSAGE_API_BASE_PATH: "http://message-api:3003/api"
+      MESSAGE_API_BASE_PATH: "http://message-api:3003"
       # L'annuaire des agents vient de Core API, servie par la stack de BFF User.
       CORE_API_URL: ${CORE_API_HOST:-core-api}
       CORE_API_PORT: ${CORE_API_PORT:-3000}

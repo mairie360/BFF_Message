@@ -30,7 +30,7 @@ x-db-env: &db-env
 
 services:
   postgres:
-    image: ${DB_IMAGE:-ghcr.io/mairie360/database:1.1.0}
+    image: ${DB_IMAGE:-ghcr.io/mairie360/database:1.3.0}
     container_name: bff-message-perf-db
     environment:
       POSTGRES_USER: postgres
@@ -49,7 +49,7 @@ services:
       retries: 10
 
   liquibase:
-    image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:1.1.0}
+    image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:1.3.0}
     container_name: bff-message-perf-liquibase
     depends_on:
       postgres:
@@ -96,7 +96,7 @@ services:
       retries: 5
 
   message-api:
-    image: ${MESSAGE_API_IMAGE:-ghcr.io/mairie360/message-api:0.6.1}
+    image: ${MESSAGE_API_IMAGE:-ghcr.io/mairie360/message-api:0.7.1}
     container_name: bff-message-perf-message-api
     depends_on:
       liquibase:
@@ -188,7 +188,7 @@ services:
       PORT: 4003
       MESSAGE_API_URL: message-api
       MESSAGE_API_PORT: 3003
-      MESSAGE_API_BASE_PATH: http://message-api:3003/api
+      MESSAGE_API_BASE_PATH: http://message-api:3003
       CORE_API_URL: core-api
       CORE_API_PORT: 3000
     expose:

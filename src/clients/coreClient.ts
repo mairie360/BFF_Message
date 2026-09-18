@@ -1,4 +1,4 @@
-import { getCoreApi } from '@mairie360/core-api-openapi/endpoints/coreApi';
+import { getCoreAPIMairie360 } from '@mairie360/core-api-openapi/endpoints/coreAPIMairie360';
 import type { DirectoryUser } from '@mairie360/core-api-openapi/model';
 import axios, { type AxiosRequestConfig } from 'axios';
 import { getAuthorizationHeader } from '../config/token';
@@ -7,7 +7,7 @@ import { getAuthorizationHeader } from '../config/token';
 // (@mairie360/core-api-openapi) : le BFF n'interroge plus la table `users` directement.
 const coreApiAxios = axios.create({ timeout: 5_000, headers: { Accept: 'application/json' } });
 
-const coreApi = getCoreApi(coreApiAxios);
+const coreApi = getCoreAPIMairie360(coreApiAxios);
 
 export type ContactUser = Pick<DirectoryUser, 'id' | 'first_name' | 'last_name' | 'email'>;
 
