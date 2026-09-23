@@ -26,6 +26,7 @@
     "js-yaml": "^5.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@mairie360/bff-calendar-openapi": "0.3.0",
     "@mairie360/bff-project-openapi": "0.3.0",
     "@types/express": "5.0.6",
@@ -33,7 +34,8 @@
     "@types/supertest": "6.0.3",
     "@types/swagger-ui-express": "4.1.8",
     "esbuild": "0.28.2",
-    "eslint": "9.39.5",
+    "eslint": "10.10.0",
+    "globals": "17.12.0",
     "jest": "30.5.1",
     "supertest": "7.2.2",
     "ts-jest": "29.4.12",
