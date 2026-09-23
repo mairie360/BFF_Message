@@ -31,7 +31,7 @@
     "@mairie360/bff-project-openapi": "0.3.0",
     "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
-    "@types/supertest": "6.0.3",
+    "@types/supertest": "7.2.1",
     "@types/swagger-ui-express": "4.1.8",
     "esbuild": "0.28.2",
     "eslint": "10.10.0",
