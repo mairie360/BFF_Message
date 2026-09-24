@@ -110,13 +110,15 @@ The type generator is pinned to `openapi-typescript@7.10.1` in `scripts/contract
 
 The `contracts.yml` job uses Node.js 22, `actions/checkout@v7` and `actions/setup-node@v7`. It runs on pushes, pull requests and manual dispatch; it installs with `npm ci`, checks contracts and runs the associated tests.
 
-`cicd.yml` calls `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v1.13.2`, with `cicd_version: v1.13.2` and `node_version: "22"`. Reusable steps and GitHub environments determine actual checks, publications and deployments.
+`cicd.yml` calls `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v3.0.0`, with `cicd_version: v3.0.0` and `node_version: "22"`. Reusable steps and GitHub environments determine actual checks, publications and deployments.
 
 The Dockerfile uses `node:24-alpine` for build and runtime; the image command is `["node", "dist/index.js"]` (the code only imports types from the `@mairie360/*` packages). That version is separate from the Node.js 22 contract job.
 
 `security_test.sh` and `performance_test.sh` test the image named by `IMAGE_REF`: in CI, the image `release-dev` has just published, the same artifact that is then promoted to staging and prod. When `IMAGE_REF` is empty (local use), they first build `bff-message:local` from `development.Dockerfile`, which needs `NODE_AUTH_TOKEN` and `./.npmrc`.
 
 `security_test.sh` runs the OWASP ZAP stack of `docker-compose-security.yml`: ZAP replays every operation of `/openapi.json` with a static admin JWT (`sub=1`, HS256, `JWT_SECRET=b"secret"` in every service of the security and performance stacks) and fills bodies and parameters from the contract examples. `init-test.sql` seeds the rows those examples name (users 1, 2, 3 and 10, conversation 101 with message 1001, conversation 102 for the DELETE route and conversation 201 for the posted messages); keep examples and seed in sync when adding a route. Ids received from the client must be a positive integer or a public id (`user-3`, `conversation-101`), and `<` / `>` are refused in message contents, group names and descriptions.
+
+`security_test.sh` also runs the OpenAPI coverage gate of `mairie360/CICD` (`tests/zap/zap_hooks.py`, passed to ZAP with `--hook`), checked out as `cicd-repo/` by the CI jobs and cloned there by both scripts at the pinned `cicd_version` (`CICD_VERSION` overrides it). After the scan, the hook fails when an operation of the contract was never reached, or when an operation that requires `bearerAuth`/`cookieAuth` only got 401/403. The contract requires one of these schemes at the top level; public operations (`/health`, `/check_apis`) declare `security: []` in their `registerPath`, so a new public route must do the same. The k6 side of the gate (`coverage.js`, one handler per operation in `load-test.js`) comes with MAIR-196.
 
 Before running Docker, check service variables, build secrets and networks in the repository files. Green CI validates its jobs; it does not prove business-service availability in a remote environment.
 
