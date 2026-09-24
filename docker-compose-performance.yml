@@ -198,8 +198,16 @@ services:
     depends_on:
       bff-message:
         condition: service_healthy
+    # load-test.js declares one handler per operation of the contract through the shared OpenAPI
+    # coverage module (mairie360/CICD tests/k6/coverage.js, cloned into cicd-repo/ by
+    # performance_test.sh or checked out by the CI job): k6 aborts at init when an operation has no
+    # handler, and fails its `operations_uncovered` threshold when a handler does not send its request.
     volumes:
       - ./load-test.js:/load-test.js:ro
+      # The committed contract is the coverage reference (contracts:check keeps it equal to the
+      # document served by the BFF).
+      - ./contracts/openapi.json:/openapi.json:ro
+      - ./cicd-repo/tests/k6/coverage.js:/coverage.js:ro
     environment:
       BASE_URL: http://bff-message:4003
       JWT_SECRET: 'b"secret"'
