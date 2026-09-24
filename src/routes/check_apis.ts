@@ -11,6 +11,7 @@ const MESSAGE_FULL_URL = `http://${process.env.MESSAGE_API_URL}:${process.env.ME
 registry.registerPath({
   method: 'get',
   path: '/check_apis',
+  security: [],
   tags: ['Connectivity'],
   summary: "Vérifie la connexion avec l'API Message et Core API (annuaire)",
   responses: {
