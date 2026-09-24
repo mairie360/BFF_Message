@@ -59,8 +59,12 @@ export const ConversationDtoSchema = z.object({
     example: 'Marketing',
   }),
   kind: ConversationKindSchema.optional().openapi({
-    description: 'Type de conversation, direct ou groupe',
+    description: 'Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise',
     example: 'direct',
+  }),
+  contactId: IdSchema.optional().openapi({
+    description: 'Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one',
+    example: 'user-8',
   }),
   avatarUrl: z.string().url().optional().openapi({
     description: 'URL de l’avatar de la conversation',

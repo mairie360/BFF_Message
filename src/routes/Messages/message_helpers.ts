@@ -131,24 +131,82 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
   return currentUser;
 }
 
+type ConversationParticipants = {
+  /** Every member id of the chat, the caller included. */
+  memberIds: number[];
+  /** Directory entries of the other members. */
+  others: BffContact[];
+};
+
+const noParticipants: ConversationParticipants = { memberIds: [], others: [] };
+
+// Name given by `createDirectMessage` to the chats it creates; the id is the recipient's.
+const DIRECT_CHAT_NAME = /^Direct (\d+)$/;
+
+function directMessageName(recipientId: number): string {
+  return `Direct ${recipientId}`;
+}
+
+/**
+ * Id of the other participant when the chat is a direct conversation: created by
+ * `POST /direct-messages` (named `Direct <recipientId>`, the recipient being either member) and
+ * holding exactly the caller and one contact. Message API's own `kind` column is not used: it is
+ * set to `direct` for every chat without a group and is not exposed.
+ */
+function directContactId(
+  chatName: string,
+  memberIds: number[],
+  currentUserId: number | undefined,
+): number | undefined {
+  const match = DIRECT_CHAT_NAME.exec(chatName);
+  if (!match || currentUserId === undefined) return undefined;
+
+  const members = [...new Set(memberIds)];
+  if (members.length !== 2 || !members.includes(currentUserId)) return undefined;
+  if (!members.includes(Number(match[1]))) return undefined;
+
+  return members.find((memberId) => memberId !== currentUserId);
+}
+
 function mapChatToConversation(
   chat: ChatView | { id: number; name: string; unread_count?: number },
   messages: MessageView[] = [],
-  participantNames: string[] = [],
+  participants: ConversationParticipants = noParticipants,
+  currentUserId?: number,
 ): BffConversation {
   const lastMessage = messages[messages.length - 1];
+  const summary = {
+    id: publicChatId(chat.id),
+    lastMessage: lastMessage?.content,
+    lastMessageAt: lastMessage?.created_at,
+    unreadCount: chat.unread_count ?? 0,
+  };
+  const contactId = directContactId(chat.name, participants.memberIds, currentUserId);
+
+  if (contactId !== undefined) {
+    // A direct conversation is shown under the contact's name, the same on both sides.
+    const contact = participants.others.find((other) => other.id === publicUserId(contactId));
+    const name = contact?.name ?? `Utilisateur ${contactId}`;
+
+    return {
+      ...summary,
+      name,
+      kind: 'direct',
+      contactId: publicUserId(contactId),
+      initials: initials(name),
+    };
+  }
+
+  const participantNames = participants.others.map((other) => other.name);
 
   return {
-    id: publicChatId(chat.id),
+    ...summary,
     name: chat.name,
     department: participantNames.length > 0
       ? `Avec ${participantNames.join(', ')}`
       : undefined,
     kind: 'group',
     initials: initials(chat.name),
-    lastMessage: lastMessage?.content,
-    lastMessageAt: lastMessage?.created_at,
-    unreadCount: chat.unread_count ?? 0,
   };
 }
 
@@ -182,26 +240,28 @@ function mapCoreUserToContact(user: CoreUser): BffContact | null {
   };
 }
 
-async function fetchConversationParticipantNames(
+async function fetchConversationParticipants(
   chatId: number,
   currentUserId: number | undefined,
   incomingRequestToken?: string,
-): Promise<string[]> {
+): Promise<ConversationParticipants> {
   try {
     const response = await messageClient.getChatUsers(chatId, authOptions(incomingRequestToken));
-    const participantIds = [...new Set(
-      response.data.users
-        .map((user) => user.id)
-        .filter((userId) => userId !== currentUserId),
-    )];
-    const participants = await listContactsByIds(participantIds, incomingRequestToken);
+    const memberIds = [...new Set(response.data.users.map((user) => user.id))];
+    const participants = await listContactsByIds(
+      memberIds.filter((userId) => userId !== currentUserId),
+      incomingRequestToken,
+    );
 
-    return participants.flatMap((participant) => {
-      const contact = mapCoreUserToContact(participant);
-      return contact ? [contact.name] : [];
-    });
+    return {
+      memberIds,
+      others: participants.flatMap((participant) => {
+        const contact = mapCoreUserToContact(participant);
+        return contact ? [contact] : [];
+      }),
+    };
   } catch {
-    return [];
+    return noParticipants;
   }
 }
 
@@ -293,13 +353,13 @@ export async function fetchConversations(
 
   return Promise.all(
     visibleChats.map(async (chat) => {
-      const participantNames = await fetchConversationParticipantNames(
+      const participants = await fetchConversationParticipants(
         chat.id,
         currentUserId,
         incomingRequestToken,
       );
 
-      return mapChatToConversation(chat, [], participantNames);
+      return mapChatToConversation(chat, [], participants, currentUserId);
     }),
   );
 }
@@ -315,9 +375,9 @@ export async function fetchConversationMessages(
   }
 
   const currentUserId = numericUserIdFromToken(incomingRequestToken);
-  const [response, participantNames, chat] = await Promise.all([
+  const [response, participants, chat] = await Promise.all([
     messageClient.getChat(chatId, authOptions(incomingRequestToken)),
-    fetchConversationParticipantNames(chatId, currentUserId, incomingRequestToken),
+    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken),
     fetchChatSummary(chatId, incomingRequestToken),
   ]);
   const apiMessages = response.data.messages as MessageView[];
@@ -329,7 +389,8 @@ export async function fetchConversationMessages(
     conversation: mapChatToConversation(
       chat ?? { id: chatId, name: `Conversation ${chatId}` },
       apiMessages,
-      participantNames,
+      participants,
+      currentUserId,
     ),
     messages: typeof limit === 'number' ? messages.slice(-limit) : messages,
   };
@@ -350,9 +411,9 @@ export async function sendMessageToConversation(
     throw new HttpError(401, 'UNAUTHORIZED', 'Identifiant utilisateur absent du token');
   }
 
-  const [response, participantNames, chat] = await Promise.all([
+  const [response, participants, chat] = await Promise.all([
     messageClient.postMessage(chatId, { content }, authOptions(incomingRequestToken)),
-    fetchConversationParticipantNames(chatId, currentUserId, incomingRequestToken),
+    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken),
     fetchChatSummary(chatId, incomingRequestToken),
   ]);
   const now = new Date().toISOString();
@@ -367,7 +428,8 @@ export async function sendMessageToConversation(
     conversation: mapChatToConversation(
       chat ?? { id: chatId, name: `Conversation ${chatId}` },
       [],
-      participantNames,
+      participants,
+      currentUserId,
     ),
     message,
   };
@@ -384,7 +446,7 @@ export async function createDirectMessage(
   }
 
   const chat = await messageClient.createChat({
-    name: `Direct ${recipientNumericId}`,
+    name: directMessageName(recipientNumericId),
     members: [recipientNumericId],
   }, authOptions(incomingRequestToken));
 

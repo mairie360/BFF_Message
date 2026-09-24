@@ -154,6 +154,32 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         .not.toContain(String(agent.id));
     });
 
+    test('GET /conversations marks a direct conversation with its contact, on both sides', async () => {
+      // `Direct 8` was created by the agent (7) for Sophie (8) through POST /direct-messages.
+      const chats = [chatView(6, 'Direct 8', 1), chatView(7, 'Direct 8'), chatView(9, 'Binôme')];
+      const members = { 6: [agent.id, sophie.id], 7: [agent.id, sophie.id, thomas.id], 9: [agent.id, sophie.id] };
+      mockMessageApi({ chats, members });
+
+      const asAgent = await request(app).get('/conversations').set('Authorization', authorizationFor(agent.id));
+
+      expect(asAgent.status).toBe(200);
+      expectBffContract('get', '/conversations', asAgent);
+      expect(asAgent.body.conversations).toEqual([
+        { id: 'conversation-6', name: 'Sophie Leroy', kind: 'direct', contactId: 'user-8', initials: 'SL', unreadCount: 1 },
+        // Three members, or not created by POST /direct-messages: a group, even with two members.
+        { id: 'conversation-7', name: 'Direct 8', department: 'Avec Sophie Leroy, Thomas Bernard', kind: 'group', initials: 'D8', unreadCount: 0 },
+        { id: 'conversation-9', name: 'Binôme', department: 'Avec Sophie Leroy', kind: 'group', initials: 'B', unreadCount: 0 },
+      ]);
+
+      mockMessageApi({ chats: [chatView(6, 'Direct 8', 1)], members });
+      const asSophie = await request(app).get('/conversations').set('Authorization', authorizationFor(sophie.id));
+
+      expectBffContract('get', '/conversations', asSophie);
+      expect(asSophie.body.conversations).toEqual([
+        { id: 'conversation-6', name: `${agent.first_name} ${agent.last_name}`, kind: 'direct', contactId: `user-${agent.id}`, initials: expect.any(String), unreadCount: 1 },
+      ]);
+    });
+
     test('GET /conversations filters by search and applies limit before loading participants', async () => {
       mockMessageApi({ chats: [chatView(1, 'Voirie'), chatView(2, 'Équipe voirie nord'), chatView(3, 'Voirie sud'), chatView(4, 'Écoles')] });
 
@@ -314,8 +340,8 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
-    test('POST /direct-messages creates a chat with the recipient then posts the first message in it', async () => {
-      mockMessageApi({ createdChatId: 21, postedMessageId: 50, members: { 21: [agent.id, sophie.id] } });
+    test('POST /direct-messages creates a direct chat with the recipient then posts the first message in it', async () => {
+      mockMessageApi({ chats: [chatView(21, 'Direct 8')], createdChatId: 21, postedMessageId: 50, members: { 21: [agent.id, sophie.id] } });
 
       const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
         .send({ recipientId: 'user-8', message: 'Bonjour Sophie' });
@@ -326,7 +352,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => [call.url.pathname, call.body]))
         .toEqual([[messageApiUrls.getPostMessageUrl(21), { content: 'Bonjour Sophie' }]]);
       expect(response.body).toEqual({
-        conversation: expect.objectContaining({ id: 'conversation-21', name: 'Conversation 21', department: 'Avec Sophie Leroy' }),
+        conversation: expect.objectContaining({ id: 'conversation-21', name: 'Sophie Leroy', kind: 'direct', contactId: 'user-8' }),
         message: expect.objectContaining({ id: 'message-50', conversationId: 21, direction: 'outgoing' }),
       });
     });

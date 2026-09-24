@@ -10,7 +10,7 @@ Express 5.2.1 server written in TypeScript. Zod schemas and their OpenAPI regist
 
 ## Data and persistence
 
-Conversations and messages use Message API. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Local profile edits, attachment metadata and the read acknowledgement do not provide complete persistence.
+Conversations and messages use Message API. A conversation created by `POST /direct-messages` (Message API chat named `Direct <recipientId>`) that holds exactly the caller and one contact is returned with `kind: 'direct'`, `contactId` (the contact's id) and the contact's name; every other conversation is `kind: 'group'`. The front posts a new message to a contact in that conversation (`POST /conversations/{id}/messages`) and only calls `POST /direct-messages` when there is none. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Local profile edits, attachment metadata and the read acknowledgement do not provide complete persistence.
 
 Attachment upload currently creates metadata and does not provide durable binary storage. Mark-as-read returns a zero counter without writing to Message API. Conversation groups use the API, while some profile data remains local to the process.
 

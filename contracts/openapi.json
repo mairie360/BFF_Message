@@ -165,8 +165,20 @@
               "direct",
               "group"
             ],
-            "description": "Type de conversation, direct ou groupe",
+            "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
             "example": "direct"
+          },
+          "contactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+            "example": "user-8"
           },
           "avatarUrl": {
             "type": "string",
@@ -498,8 +510,20 @@
                     "direct",
                     "group"
                   ],
-                  "description": "Type de conversation, direct ou groupe",
+                  "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                   "example": "direct"
+                },
+                "contactId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                  "example": "user-8"
                 },
                 "avatarUrl": {
                   "type": "string",
@@ -591,8 +615,20 @@
                   "direct",
                   "group"
                 ],
-                "description": "Type de conversation, direct ou groupe",
+                "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                 "example": "direct"
+              },
+              "contactId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                "example": "user-8"
               },
               "avatarUrl": {
                 "type": "string",
@@ -1093,8 +1129,20 @@
                   "direct",
                   "group"
                 ],
-                "description": "Type de conversation, direct ou groupe",
+                "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                 "example": "direct"
+              },
+              "contactId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                "example": "user-8"
               },
               "avatarUrl": {
                 "type": "string",
@@ -1179,8 +1227,20 @@
                   "direct",
                   "group"
                 ],
-                "description": "Type de conversation, direct ou groupe",
+                "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                 "example": "direct"
+              },
+              "contactId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                "example": "user-8"
               },
               "avatarUrl": {
                 "type": "string",
@@ -1433,8 +1493,20 @@
                   "direct",
                   "group"
                 ],
-                "description": "Type de conversation, direct ou groupe",
+                "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                 "example": "direct"
+              },
+              "contactId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                "example": "user-8"
               },
               "avatarUrl": {
                 "type": "string",
@@ -1752,8 +1824,20 @@
                     "direct",
                     "group"
                   ],
-                  "description": "Type de conversation, direct ou groupe",
+                  "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                   "example": "direct"
+                },
+                "contactId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                  "example": "user-8"
                 },
                 "avatarUrl": {
                   "type": "string",
@@ -2830,8 +2914,20 @@
                               "direct",
                               "group"
                             ],
-                            "description": "Type de conversation, direct ou groupe",
+                            "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                             "example": "direct"
+                          },
+                          "contactId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                            "example": "user-8"
                           },
                           "avatarUrl": {
                             "type": "string",
@@ -3341,8 +3437,20 @@
                               "direct",
                               "group"
                             ],
-                            "description": "Type de conversation, direct ou groupe",
+                            "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                             "example": "direct"
+                          },
+                          "contactId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                            "example": "user-8"
                           },
                           "avatarUrl": {
                             "type": "string",
@@ -3686,8 +3794,20 @@
                             "direct",
                             "group"
                           ],
-                          "description": "Type de conversation, direct ou groupe",
+                          "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                           "example": "direct"
+                        },
+                        "contactId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                          "example": "user-8"
                         },
                         "avatarUrl": {
                           "type": "string",
@@ -4134,8 +4254,20 @@
                             "direct",
                             "group"
                           ],
-                          "description": "Type de conversation, direct ou groupe",
+                          "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                           "example": "direct"
+                        },
+                        "contactId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                          "example": "user-8"
                         },
                         "avatarUrl": {
                           "type": "string",
@@ -4687,8 +4819,20 @@
                             "direct",
                             "group"
                           ],
-                          "description": "Type de conversation, direct ou groupe",
+                          "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                           "example": "direct"
+                        },
+                        "contactId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                          "example": "user-8"
                         },
                         "avatarUrl": {
                           "type": "string",
@@ -4857,8 +5001,20 @@
                             "direct",
                             "group"
                           ],
-                          "description": "Type de conversation, direct ou groupe",
+                          "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
                           "example": "direct"
+                        },
+                        "contactId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                          "example": "user-8"
                         },
                         "avatarUrl": {
                           "type": "string",
