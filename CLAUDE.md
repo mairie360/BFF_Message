@@ -29,7 +29,8 @@ npm run contracts:check         # fails if contracts/ is stale (CI gate)
 (`scripts/build.mjs`): the `@mairie360/*` clients are published as TypeScript, so they are inlined
 while the other dependencies stay external. Node **22** is required to reproduce the contract job / CI (`.github/workflows/contracts.yml`,
 `cicd.yml` → `mairie360/CICD` reusable workflow). The Docker images use `node:24-alpine`. The production image runs `node dist/index.js` (bundle);
-the test stacks run `npx tsx src/index.ts` from `development.Dockerfile`.
+the test stacks run the image named by `IMAGE_REF` (in CI, the image published by `release-dev`;
+locally, `bff-message:local` built from `development.Dockerfile` by the scripts).
 
 Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `NODE_AUTH_TOKEN` from
 the environment; set it to a token with read access to those packages before `npm ci`.
