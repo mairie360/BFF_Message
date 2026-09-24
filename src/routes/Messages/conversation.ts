@@ -3,6 +3,7 @@ import {Router, Request, Response} from 'express';
 import {
     registry,
     ConversationIdParams,
+    DeletedConversationIdParams,
     ConversationsQuery,
     ConversationsResponse,
     DeleteConversationResponse,
@@ -54,7 +55,7 @@ registry.registerPath({
     tags: ['Conversations'],
     summary: 'Supprime une conversation',
     request: {
-        params: ConversationIdParams,
+        params: DeletedConversationIdParams,
     },
     responses: {
         200: {

@@ -769,8 +769,8 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Identifiant unique de la conversation */
-                    conversationId: string | number;
+                    /** @description Identifiant (conversation-<id> ou entier) */
+                    conversationId: number | string;
                 };
                 cookie?: never;
             };
@@ -819,8 +819,8 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Identifiant unique de la conversation */
-                    conversationId: string | number;
+                    /** @description Identifiant (conversation-<id> ou entier) */
+                    conversationId: number | string;
                 };
                 cookie?: never;
             };
@@ -828,10 +828,10 @@ export interface paths {
                 content: {
                     "application/json": {
                         /**
-                         * @description Identifiant du dernier message lu dans la conversation
-                         * @example 54321
+                         * @description Identifiant (message-<id> ou entier)
+                         * @example 1001
                          */
-                        readUntilMessageId?: string | number;
+                        readUntilMessageId?: number | string;
                     };
                 };
             };
@@ -886,22 +886,16 @@ export interface paths {
                     "application/json": {
                         /**
                          * @description Nom du groupe à créer
-                         * @example Équipe Marketing
+                         * @example Marketing team
                          */
                         name: string;
                         /**
                          * @description Description du groupe à créer
-                         * @example Groupe pour l’équipe marketing
+                         * @example Group of the marketing team
                          */
                         description?: string;
-                        /**
-                         * @description Liste des identifiants des membres à ajouter au groupe
-                         * @example [
-                         *       "12345",
-                         *       "67890"
-                         *     ]
-                         */
-                        memberIds: (string | number)[];
+                        /** @description Liste des identifiants des membres à ajouter au groupe */
+                        memberIds: (number | string)[];
                     };
                 };
             };
@@ -1103,10 +1097,16 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        /** Format: email */
+                        /**
+                         * Format: email
+                         * @example security-admin@mairie360.fr
+                         */
                         email?: string;
+                        /** @example 0612345678 */
                         phone?: string;
+                        /** @example 1 place de la Mairie */
                         address?: string;
+                        /** @example Paris */
                         city?: string;
                     };
                 };
@@ -1197,8 +1197,8 @@ export interface paths {
                 };
                 header?: never;
                 path: {
-                    /** @description Identifiant unique de la conversation */
-                    conversationId: string | number;
+                    /** @description Identifiant (conversation-<id> ou entier) */
+                    conversationId: number | string;
                 };
                 cookie?: never;
             };
@@ -1409,8 +1409,8 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Identifiant unique de la conversation */
-                    conversationId: string | number;
+                    /** @description Identifiant (conversation-<id> ou entier) */
+                    conversationId: number | string;
                 };
                 cookie?: never;
             };
@@ -1422,16 +1422,10 @@ export interface paths {
                          * @example Bonjour à tous !
                          */
                         content: string;
-                        /**
-                         * @description Liste des identifiants des pièces jointes du message
-                         * @example []
-                         */
-                        attachmentIds?: (string | number)[];
-                        /**
-                         * @description Liste des identifiants des mentions dans le message
-                         * @example []
-                         */
-                        mentionIds?: (string | number)[];
+                        /** @description Liste des identifiants des pièces jointes du message */
+                        attachmentIds?: (number | string)[];
+                        /** @description Liste des identifiants des mentions dans le message */
+                        mentionIds?: (number | string)[];
                     };
                 };
             };
@@ -1656,10 +1650,10 @@ export interface paths {
                 content: {
                     "application/json": {
                         /**
-                         * @description Identifiant unique du destinataire du message direct
-                         * @example 67890
+                         * @description Identifiant (user-<id> ou entier)
+                         * @example 3
                          */
-                        recipientId: string | number;
+                        recipientId: number | string;
                         /**
                          * @description Contenu du message direct à envoyer
                          * @example Salut ! Comment ça va ?
@@ -3151,10 +3145,16 @@ export interface components {
         };
         /** @description Champs éditables du profil utilisateur */
         UpdateCurrentUserBody: {
-            /** Format: email */
+            /**
+             * Format: email
+             * @example security-admin@mairie360.fr
+             */
             email?: string;
+            /** @example 0612345678 */
             phone?: string;
+            /** @example 1 place de la Mairie */
             address?: string;
+            /** @example Paris */
             city?: string;
         };
         /** @description Corps de la requête pour envoyer un message */
@@ -3164,24 +3164,18 @@ export interface components {
              * @example Bonjour à tous !
              */
             content: string;
-            /**
-             * @description Liste des identifiants des pièces jointes du message
-             * @example []
-             */
-            attachmentIds?: (string | number)[];
-            /**
-             * @description Liste des identifiants des mentions dans le message
-             * @example []
-             */
-            mentionIds?: (string | number)[];
+            /** @description Liste des identifiants des pièces jointes du message */
+            attachmentIds?: (number | string)[];
+            /** @description Liste des identifiants des mentions dans le message */
+            mentionIds?: (number | string)[];
         };
         /** @description Corps de la requête pour créer un nouveau message direct */
         NewDirectMessageBody: {
             /**
-             * @description Identifiant unique du destinataire du message direct
-             * @example 67890
+             * @description Identifiant (user-<id> ou entier)
+             * @example 3
              */
-            recipientId: string | number;
+            recipientId: number | string;
             /**
              * @description Contenu du message direct à envoyer
              * @example Salut ! Comment ça va ?
@@ -3192,30 +3186,24 @@ export interface components {
         CreateGroupBody: {
             /**
              * @description Nom du groupe à créer
-             * @example Équipe Marketing
+             * @example Marketing team
              */
             name: string;
             /**
              * @description Description du groupe à créer
-             * @example Groupe pour l’équipe marketing
+             * @example Group of the marketing team
              */
             description?: string;
-            /**
-             * @description Liste des identifiants des membres à ajouter au groupe
-             * @example [
-             *       "12345",
-             *       "67890"
-             *     ]
-             */
-            memberIds: (string | number)[];
+            /** @description Liste des identifiants des membres à ajouter au groupe */
+            memberIds: (number | string)[];
         };
         /** @description Corps de la requête pour marquer une conversation comme lue */
         MarkConversationAsReadBody: {
             /**
-             * @description Identifiant du dernier message lu dans la conversation
-             * @example 54321
+             * @description Identifiant (message-<id> ou entier)
+             * @example 1001
              */
-            readUntilMessageId?: string | number;
+            readUntilMessageId?: number | string;
         };
         /** @description Corps de la requête pour télécharger une pièce jointe */
         UploadAttachmentBody: {
@@ -3251,11 +3239,13 @@ export interface components {
              */
             limit?: number | null;
             /**
+             * Format: date-time
              * @description Curseur pour récupérer les messages avant un certain point
              * @example 2026-06-23T12:32:00Z
              */
             before?: string;
             /**
+             * Format: date-time
              * @description Curseur pour récupérer les messages après un certain point
              * @example 2026-06-23T12:32:00Z
              */
@@ -3277,10 +3267,10 @@ export interface components {
         /** @description Paramètres pour identifier une conversation */
         ConversationIdParams: {
             /**
-             * @description Identifiant unique de la conversation
-             * @example 12345
+             * @description Identifiant (conversation-<id> ou entier)
+             * @example 101
              */
-            conversationId: string | number;
+            conversationId: number | string;
         };
         CheckApiResponse: {
             /** @example OK */

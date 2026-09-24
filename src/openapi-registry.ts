@@ -13,6 +13,19 @@ export const IdSchema = z.union([z.string(), z.number()]).openapi({
 });
 
 
+// Ids received from the client: a positive integer or a public id (`user-3`, `conversation-101`). The helpers
+// read the trailing number, so any other string (`12345 AND 1=2`) must be refused before reaching them.
+// The examples are numbers (ZAP writes a string example of an anyOf unquoted) naming rows of init-test.sql.
+function inputId(kind: string, example: number) {
+  return z.union([
+    z.number().int().positive(),
+    z.string().regex(new RegExp(`^(?:${kind}-)?\\d+$`), `Expected a ${kind} identifier`),
+  ]).openapi({ description: `Identifiant (${kind}-<id> ou entier)`, example });
+}
+
+// Stored texts are rendered by the fronts: `<` and `>` are refused.
+const noMarkup = (schema: z.ZodString) => schema.regex(/^[^<>]*$/, 'Must not contain < or >');
+
 export const ConversationKindSchema = z.enum(['direct', 'group']).openapi({
   description: 'Type de conversation, direct ou groupe',
   example: 'direct',
@@ -198,12 +211,19 @@ export const ContactDtoSchema = z.object({
 });
 
 export const ConversationIdParams = z.object({
-  conversationId: IdSchema.openapi({
-    description: 'Identifiant unique de la conversation',
-    example: '12345',
-  }),
+  conversationId: inputId('conversation', 101),
 }).openapi({
   description: 'Paramètres pour identifier une conversation',
+});
+
+// Writes get their own seeded conversations: a scan replaying the examples must not delete conversation 101,
+// nor change the messages that the reads of conversation 101 return.
+export const DeletedConversationIdParams = z.object({
+  conversationId: inputId('conversation', 102),
+});
+
+export const WrittenConversationIdParams = z.object({
+  conversationId: inputId('conversation', 201),
 });
 
 
@@ -230,11 +250,11 @@ export const MessagesQuery = z.object({
     description: 'Nombre maximum de messages à retourner',
     example: 20,
   }),
-  before: z.string().optional().openapi({
+  before: z.iso.datetime().optional().openapi({
     description: 'Curseur pour récupérer les messages avant un certain point',
     example: '2026-06-23T12:32:00Z',
   }),
-  after: z.string().optional().openapi({
+  after: z.iso.datetime().optional().openapi({
     description: 'Curseur pour récupérer les messages après un certain point',
     example: '2026-06-23T12:32:00Z',
   }),
@@ -258,28 +278,23 @@ export const ContactsQuery = z.object({
 // Requête 
 
 export const SendMessageBody = z.object({
-  content: z.string().openapi({
+  content: noMarkup(z.string()).openapi({
     description: 'Contenu du message à envoyer',
     example: 'Bonjour à tous !',
   }),
-  attachmentIds: z.array(IdSchema).optional().openapi({
+  attachmentIds: z.array(inputId('attachment', 1)).optional().openapi({
     description: 'Liste des identifiants des pièces jointes du message',
-    example: [],
   }),
-  mentionIds: z.array(IdSchema).optional().openapi({
+  mentionIds: z.array(inputId('user', 3)).optional().openapi({
     description: 'Liste des identifiants des mentions dans le message',
-    example: [],
   }),
 }).openapi({
   description: 'Corps de la requête pour envoyer un message',
 });
 
 export const NewDirectMessageBody = z.object({
-  recipientId: IdSchema.openapi({
-    description: 'Identifiant unique du destinataire du message direct',
-    example: '67890',
-  }),
-  message: z.string().openapi({
+  recipientId: inputId('user', 3),
+  message: noMarkup(z.string()).openapi({
     description: 'Contenu du message direct à envoyer',
     example: 'Salut ! Comment ça va ?',
   }),
@@ -288,27 +303,23 @@ export const NewDirectMessageBody = z.object({
 });
 
 export const CreateGroupBody = z.object({
-    name: z.string().openapi({
+    name: noMarkup(z.string()).openapi({
         description: 'Nom du groupe à créer',
-        example: 'Équipe Marketing',
+        example: 'Marketing team',
     }),
-    description: z.string().optional().openapi({
+    description: noMarkup(z.string()).optional().openapi({
         description: 'Description du groupe à créer',
-        example: 'Groupe pour l’équipe marketing',
+        example: 'Group of the marketing team',
     }),
-    memberIds: z.array(IdSchema).openapi({
+    memberIds: z.array(inputId('user', 3)).openapi({
         description: 'Liste des identifiants des membres à ajouter au groupe',
-        example: ['12345', '67890'],
     }),
 }).openapi({
     description: 'Corps de la requête pour créer un nouveau groupe',
 });
 
 export const MarkConversationAsReadBody = z.object({
-    readUntilMessageId: IdSchema.optional().openapi({
-        description: 'Identifiant du dernier message lu dans la conversation',
-        example: '54321',
-    }),
+    readUntilMessageId: inputId('message', 1001).optional(),
 }).openapi({
     description: 'Corps de la requête pour marquer une conversation comme lue',
 });
@@ -331,10 +342,10 @@ export const CurrentUserResponse = z.object({
 });
 
 export const UpdateCurrentUserBody = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
+  email: z.string().email().optional().openapi({ example: 'security-admin@mairie360.fr' }),
+  phone: z.string().optional().openapi({ example: '0612345678' }),
+  address: z.string().optional().openapi({ example: '1 place de la Mairie' }),
+  city: z.string().optional().openapi({ example: 'Paris' }),
 }).openapi({
   description: 'Champs éditables du profil utilisateur',
 });

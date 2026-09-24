@@ -83,7 +83,9 @@ router.patch('/', (req: Request, res: Response) => {
         return sendValidationError(res, bodyResult.error.issues);
     }
 
-    return res.status(200).json(updateCurrentUser(bodyResult.data));
+    updateCurrentUser(bodyResult.data, req.headers.authorization)
+        .then((user) => res.status(200).json(user))
+        .catch((error) => handleUnknownError(res, error));
 });
 
 export default router;
