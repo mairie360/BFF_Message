@@ -2153,16 +2153,20 @@
         "properties": {
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "example": "security-admin@mairie360.fr"
           },
           "phone": {
-            "type": "string"
+            "type": "string",
+            "example": "0612345678"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "example": "1 place de la Mairie"
           },
           "city": {
-            "type": "string"
+            "type": "string",
+            "example": "Paris"
           }
         },
         "description": "Champs éditables du profil utilisateur"
@@ -2172,6 +2176,7 @@
         "properties": {
           "content": {
             "type": "string",
+            "pattern": "^[^<>]*$",
             "description": "Contenu du message à envoyer",
             "example": "Bonjour à tous !"
           },
@@ -2180,34 +2185,36 @@
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:attachment-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique, peut être une chaîne ou un nombre",
-              "example": "12345"
+              "description": "Identifiant (attachment-<id> ou entier)",
+              "example": 1
             },
-            "description": "Liste des identifiants des pièces jointes du message",
-            "example": []
+            "description": "Liste des identifiants des pièces jointes du message"
           },
           "mentionIds": {
             "type": "array",
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:user-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique, peut être une chaîne ou un nombre",
-              "example": "12345"
+              "description": "Identifiant (user-<id> ou entier)",
+              "example": 3
             },
-            "description": "Liste des identifiants des mentions dans le message",
-            "example": []
+            "description": "Liste des identifiants des mentions dans le message"
           }
         },
         "required": [
@@ -2221,17 +2228,20 @@
           "recipientId": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer",
+                "exclusiveMinimum": 0
               },
               {
-                "type": "number"
+                "type": "string",
+                "pattern": "^(?:user-)?\\d+$"
               }
             ],
-            "description": "Identifiant unique du destinataire du message direct",
-            "example": "67890"
+            "description": "Identifiant (user-<id> ou entier)",
+            "example": 3
           },
           "message": {
             "type": "string",
+            "pattern": "^[^<>]*$",
             "description": "Contenu du message direct à envoyer",
             "example": "Salut ! Comment ça va ?"
           }
@@ -2247,33 +2257,33 @@
         "properties": {
           "name": {
             "type": "string",
+            "pattern": "^[^<>]*$",
             "description": "Nom du groupe à créer",
-            "example": "Équipe Marketing"
+            "example": "Marketing team"
           },
           "description": {
             "type": "string",
+            "pattern": "^[^<>]*$",
             "description": "Description du groupe à créer",
-            "example": "Groupe pour l’équipe marketing"
+            "example": "Group of the marketing team"
           },
           "memberIds": {
             "type": "array",
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:user-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique, peut être une chaîne ou un nombre",
-              "example": "12345"
+              "description": "Identifiant (user-<id> ou entier)",
+              "example": 3
             },
-            "description": "Liste des identifiants des membres à ajouter au groupe",
-            "example": [
-              "12345",
-              "67890"
-            ]
+            "description": "Liste des identifiants des membres à ajouter au groupe"
           }
         },
         "required": [
@@ -2288,14 +2298,16 @@
           "readUntilMessageId": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer",
+                "exclusiveMinimum": 0
               },
               {
-                "type": "number"
+                "type": "string",
+                "pattern": "^(?:message-)?\\d+$"
               }
             ],
-            "description": "Identifiant du dernier message lu dans la conversation",
-            "example": "54321"
+            "description": "Identifiant (message-<id> ou entier)",
+            "example": 1001
           }
         },
         "description": "Corps de la requête pour marquer une conversation comme lue"
@@ -2347,11 +2359,13 @@
           },
           "before": {
             "type": "string",
+            "format": "date-time",
             "description": "Curseur pour récupérer les messages avant un certain point",
             "example": "2026-06-23T12:32:00Z"
           },
           "after": {
             "type": "string",
+            "format": "date-time",
             "description": "Curseur pour récupérer les messages après un certain point",
             "example": "2026-06-23T12:32:00Z"
           }
@@ -2383,14 +2397,16 @@
           "conversationId": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer",
+                "exclusiveMinimum": 0
               },
               {
-                "type": "number"
+                "type": "string",
+                "pattern": "^(?:conversation-)?\\d+$"
               }
             ],
-            "description": "Identifiant unique de la conversation",
-            "example": "12345"
+            "description": "Identifiant (conversation-<id> ou entier)",
+            "example": 101
           }
         },
         "required": [
@@ -3450,17 +3466,19 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique de la conversation",
-              "example": "12345"
+              "description": "Identifiant (conversation-<id> ou entier)",
+              "example": 102
             },
             "required": true,
-            "description": "Identifiant unique de la conversation",
+            "description": "Identifiant (conversation-<id> ou entier)",
             "name": "conversationId",
             "in": "path"
           }
@@ -3516,17 +3534,19 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique de la conversation",
-              "example": "12345"
+              "description": "Identifiant (conversation-<id> ou entier)",
+              "example": 101
             },
             "required": true,
-            "description": "Identifiant unique de la conversation",
+            "description": "Identifiant (conversation-<id> ou entier)",
             "name": "conversationId",
             "in": "path"
           }
@@ -3541,14 +3561,16 @@
                   "readUntilMessageId": {
                     "anyOf": [
                       {
-                        "type": "string"
+                        "type": "integer",
+                        "exclusiveMinimum": 0
                       },
                       {
-                        "type": "number"
+                        "type": "string",
+                        "pattern": "^(?:message-)?\\d+$"
                       }
                     ],
-                    "description": "Identifiant du dernier message lu dans la conversation",
-                    "example": "54321"
+                    "description": "Identifiant (message-<id> ou entier)",
+                    "example": 1001
                   }
                 },
                 "description": "Corps de la requête pour marquer une conversation comme lue"
@@ -3609,33 +3631,33 @@
                 "properties": {
                   "name": {
                     "type": "string",
+                    "pattern": "^[^<>]*$",
                     "description": "Nom du groupe à créer",
-                    "example": "Équipe Marketing"
+                    "example": "Marketing team"
                   },
                   "description": {
                     "type": "string",
+                    "pattern": "^[^<>]*$",
                     "description": "Description du groupe à créer",
-                    "example": "Groupe pour l’équipe marketing"
+                    "example": "Group of the marketing team"
                   },
                   "memberIds": {
                     "type": "array",
                     "items": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer",
+                          "exclusiveMinimum": 0
                         },
                         {
-                          "type": "number"
+                          "type": "string",
+                          "pattern": "^(?:user-)?\\d+$"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                      "example": "12345"
+                      "description": "Identifiant (user-<id> ou entier)",
+                      "example": 3
                     },
-                    "description": "Liste des identifiants des membres à ajouter au groupe",
-                    "example": [
-                      "12345",
-                      "67890"
-                    ]
+                    "description": "Liste des identifiants des membres à ajouter au groupe"
                   }
                 },
                 "required": [
@@ -3906,16 +3928,20 @@
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email"
+                    "format": "email",
+                    "example": "security-admin@mairie360.fr"
                   },
                   "phone": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "0612345678"
                   },
                   "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "1 place de la Mairie"
                   },
                   "city": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Paris"
                   }
                 },
                 "description": "Champs éditables du profil utilisateur"
@@ -4044,17 +4070,19 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique de la conversation",
-              "example": "12345"
+              "description": "Identifiant (conversation-<id> ou entier)",
+              "example": 101
             },
             "required": true,
-            "description": "Identifiant unique de la conversation",
+            "description": "Identifiant (conversation-<id> ou entier)",
             "name": "conversationId",
             "in": "path"
           },
@@ -4075,6 +4103,7 @@
           {
             "schema": {
               "type": "string",
+              "format": "date-time",
               "description": "Curseur pour récupérer les messages avant un certain point",
               "example": "2026-06-23T12:32:00Z"
             },
@@ -4086,6 +4115,7 @@
           {
             "schema": {
               "type": "string",
+              "format": "date-time",
               "description": "Curseur pour récupérer les messages après un certain point",
               "example": "2026-06-23T12:32:00Z"
             },
@@ -4411,17 +4441,19 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "integer",
+                  "exclusiveMinimum": 0
                 },
                 {
-                  "type": "number"
+                  "type": "string",
+                  "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant unique de la conversation",
-              "example": "12345"
+              "description": "Identifiant (conversation-<id> ou entier)",
+              "example": 201
             },
             "required": true,
-            "description": "Identifiant unique de la conversation",
+            "description": "Identifiant (conversation-<id> ou entier)",
             "name": "conversationId",
             "in": "path"
           }
@@ -4435,6 +4467,7 @@
                 "properties": {
                   "content": {
                     "type": "string",
+                    "pattern": "^[^<>]*$",
                     "description": "Contenu du message à envoyer",
                     "example": "Bonjour à tous !"
                   },
@@ -4443,34 +4476,36 @@
                     "items": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer",
+                          "exclusiveMinimum": 0
                         },
                         {
-                          "type": "number"
+                          "type": "string",
+                          "pattern": "^(?:attachment-)?\\d+$"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                      "example": "12345"
+                      "description": "Identifiant (attachment-<id> ou entier)",
+                      "example": 1
                     },
-                    "description": "Liste des identifiants des pièces jointes du message",
-                    "example": []
+                    "description": "Liste des identifiants des pièces jointes du message"
                   },
                   "mentionIds": {
                     "type": "array",
                     "items": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer",
+                          "exclusiveMinimum": 0
                         },
                         {
-                          "type": "number"
+                          "type": "string",
+                          "pattern": "^(?:user-)?\\d+$"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                      "example": "12345"
+                      "description": "Identifiant (user-<id> ou entier)",
+                      "example": 3
                     },
-                    "description": "Liste des identifiants des mentions dans le message",
-                    "example": []
+                    "description": "Liste des identifiants des mentions dans le message"
                   }
                 },
                 "required": [
@@ -4794,17 +4829,20 @@
                   "recipientId": {
                     "anyOf": [
                       {
-                        "type": "string"
+                        "type": "integer",
+                        "exclusiveMinimum": 0
                       },
                       {
-                        "type": "number"
+                        "type": "string",
+                        "pattern": "^(?:user-)?\\d+$"
                       }
                     ],
-                    "description": "Identifiant unique du destinataire du message direct",
-                    "example": "67890"
+                    "description": "Identifiant (user-<id> ou entier)",
+                    "example": 3
                   },
                   "message": {
                     "type": "string",
+                    "pattern": "^[^<>]*$",
                     "description": "Contenu du message direct à envoyer",
                     "example": "Salut ! Comment ça va ?"
                   }
