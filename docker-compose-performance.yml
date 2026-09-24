@@ -1,11 +1,15 @@
-# Stack de test de performance ISOLÉE pour le BFF Message.
+# Isolated performance test stack for the BFF Message.
 #
-#   ./performance_test.sh          (local)
-#   docker compose -f docker-compose-performance.yml up --build \
-#       --abort-on-container-exit --exit-code-from k6-perf-test   (CI)
+#   ./performance_test.sh                 (local)
+#   IMAGE_REF=<image> ./performance_test.sh   (CI: the image published by release-dev)
 #
-# k6-perf-test sort en échec si un seuil de load-test.js est dépassé.
-# TARGET_IMAGE (optionnel) : image BFF pré-construite à tester au lieu du build local.
+# The BFF under test is never built by this file: it runs the image named by
+# IMAGE_REF, which the CI sets to the dev image built once by release-dev and
+# then promoted to staging and prod. When IMAGE_REF is empty, the script builds
+# bff-message:local from development.Dockerfile first (NODE_AUTH_TOKEN and ./.npmrc
+# are needed to read the @mairie360/* packages).
+#
+# k6-perf-test fails when a threshold of load-test.js is exceeded.
 
 volumes:
   postgres-data:
@@ -13,12 +17,6 @@ volumes:
 
 networks:
   backend:
-
-secrets:
-  npmrc:
-    file: ./.npmrc
-  node_auth_token:
-    environment: NODE_AUTH_TOKEN
 
 x-db-env: &db-env
   DB_TYPE: postgres
@@ -166,16 +164,8 @@ services:
       - backend
 
   bff-message:
-    image: ${TARGET_IMAGE:-bff-message:perf}
+    image: ${IMAGE_REF:-bff-message:local}
     container_name: bff-message-perf-bff
-    build:
-      context: .
-      dockerfile: development.Dockerfile
-      secrets:
-        - npmrc
-        - node_auth_token
-    # Pas de "ts-node-dev --respawn" sous charge : on lance le serveur directement.
-    command: ["npx", "tsx", "src/index.ts"]
     depends_on:
       seeder:
         condition: service_completed_successfully
