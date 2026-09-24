@@ -114,6 +114,8 @@ Le job `contracts.yml` utilise Node.js 22, `actions/checkout@v7` et `actions/set
 
 Le Dockerfile utilise `node:24-alpine` pour la construction et l’exécution; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). Cette version est distincte du job de contrats Node.js 22.
 
+`security_test.sh` lance la stack OWASP ZAP de `docker-compose-security.yml`: ZAP rejoue chaque opération de `/openapi.json` avec un JWT admin statique (`sub=1`, HS256, `JWT_SECRET=b"secret"` dans tous les services des stacks de sécurité et de performance) et remplit corps et paramètres avec les exemples du contrat. `init-test.sql` crée les lignes que ces exemples désignent (utilisateurs 1, 2, 3 et 10, conversation 101 avec le message 1001, conversation 102 pour la route DELETE et conversation 201 pour les messages postés); garder exemples et seed alignés en ajoutant une route. Les identifiants reçus du client doivent être un entier positif ou un identifiant public (`user-3`, `conversation-101`), et `<` / `>` sont refusés dans les contenus de message, noms et descriptions de groupe.
+
 Avant un lancement Docker, vérifier les variables de service, les secrets de build et les réseaux dans les fichiers du dépôt. Une CI verte valide ses jobs; elle ne prouve pas la disponibilité des services métier dans un environnement distant.
 
 ## Diagnostic
