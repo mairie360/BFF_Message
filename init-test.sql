@@ -26,6 +26,8 @@ INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM roles r CROSS JOIN (VALUES (2), (3), (10)) AS u(id) WHERE lower(r.name) = 'user'
 ON CONFLICT DO NOTHING;
 
+-- User 2 (the k6 caller) is also a member of conversation 101, so that the k6 reads of
+-- /conversations and /messaging/bootstrap return a conversation.
 -- Scan fixtures: ZAP fills ids with the contract examples, so conversation 101 (members 1 and 3,
 -- message 1001) is read and marked as read, conversation 201 receives the posted messages (the reads
 -- of 101 stay stable), conversation 102 is the example of DELETE /conversations/{conversationId}, and user 3 is the example member. ZAP ignores the example of a
@@ -38,7 +40,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO conversation_members (conversation_id, user_id)
-VALUES (101, 1), (101, 3), (102, 1), (102, 3), (201, 1), (201, 3)
+VALUES (101, 1), (101, 2), (101, 3), (102, 1), (102, 3), (201, 1), (201, 3)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO messages (id, conversation_id, owner_id, content)
