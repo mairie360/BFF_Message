@@ -75,7 +75,7 @@ returns `unreadCount: 0` without calling upstream; `POST /attachments` returns f
 no binary storage (it still requires a session resolved through Core API, 401 otherwise).
 `GET /me` resolves the caller from its own token through Core API on every request; never keep
 module-level user state, it leaks one caller's profile to the next. There is no `PATCH /me`: profile
-edits belong to Core_API (`PATCH /api/v1/user/me`) through BFF_user / Settings.
+edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## OpenAPI contract (source of truth)
 

@@ -30,7 +30,7 @@ This repository contains the BFF server and its contract. Associated web service
 
 ## Data and current state
 
-Conversations and messages use Message API. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Attachment metadata and the read acknowledgement do not provide complete persistence. The profile is read-only here (`GET /me`); profile edits go through BFF User / Core API.
+Conversations and messages use Message API. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Attachment metadata and the read acknowledgement do not provide complete persistence. The profile is read-only here (`GET /me`); profile edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## Scope and limitations
 

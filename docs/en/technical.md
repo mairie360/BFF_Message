@@ -117,7 +117,7 @@ Before running Docker, check service variables, build secrets and networks in th
 
 ## Troubleshooting
 
-If conversations work but contacts do not, check Core API. If only business references are missing, check the two associated BFFs and session permissions. `/me` here is read-only and describes the messaging profile; the web `/api/auth/*` adapters use BFF User, and profile edits go through BFF User / Core API (`PATCH /api/v1/user/me`).
+If conversations work but contacts do not, check Core API. If only business references are missing, check the two associated BFFs and session permissions. `/me` here is read-only and describes the messaging profile; the web `/api/auth/*` adapters use BFF User, and profile edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## Repository reference
 

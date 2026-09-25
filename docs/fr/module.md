@@ -30,7 +30,7 @@ Ce dépôt contient le serveur BFF et son contrat. Les web services associés po
 
 ## Données et état actuel
 
-Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. Les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète. Le profil est ici en lecture seule (`GET /me`) ; sa modification passe par BFF User / Core API.
+Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. Les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète. Le profil est ici en lecture seule (`GET /me`) ; sa modification passe par BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## Périmètre et limites
 

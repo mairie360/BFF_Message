@@ -39,6 +39,6 @@ router.get('/', (req: Request, res: Response) => {
         .catch((error) => handleUnknownError(res, error));
 });
 
-// Profile edits are not served here: they go through BFF_user / Core_API (PATCH /api/v1/user/me).
+// Profile edits are not served here: they go through BFF_Settings (PATCH /settings/profile) → Core_API (PATCH /api/v1/user/me).
 
 export default router;

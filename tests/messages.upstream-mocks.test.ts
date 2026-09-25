@@ -438,7 +438,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(upstreamSequence(coreApi).slice(-1)).toEqual([called('GET', coreApiUrls.getListDirectoryUsersUrl({ ids: String(agent.id) }))]);
     });
 
-    test('PATCH /me is not served (profile edits go through BFF_user / Core_API)', async () => {
+    test('PATCH /me is not served (profile edits go through BFF_Settings PATCH /settings/profile)', async () => {
       const anonymous = await request(app).patch('/me').send({ city: 'Lyon' });
       const authenticated = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon' });
 

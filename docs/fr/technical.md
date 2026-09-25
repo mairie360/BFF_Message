@@ -117,7 +117,7 @@ Avant un lancement Docker, vérifier les variables de service, les secrets de bu
 
 ## Diagnostic
 
-Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si seules les références métier manquent, vérifier les deux BFF associés et les permissions de la session. `/me` est ici en lecture seule et décrit le profil de messagerie; les adaptateurs `/api/auth/*` du web utilisent BFF User, et la modification du profil passe par BFF User / Core API (`PATCH /api/v1/user/me`).
+Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si seules les références métier manquent, vérifier les deux BFF associés et les permissions de la session. `/me` est ici en lecture seule et décrit le profil de messagerie; les adaptateurs `/api/auth/*` du web utilisent BFF User, et la modification du profil passe par BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## Repères dans le dépôt
 
