@@ -1092,116 +1092,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Met à jour les champs éditables du profil utilisateur */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: email */
-                        email?: string;
-                        phone?: string;
-                        address?: string;
-                        city?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Profil utilisateur mis à jour */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description Utilisateur actuellement connecté */
-                            currentUser: {
-                                /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                                 * @example 12345
-                                 */
-                                id: string | number;
-                                /**
-                                 * @description Nom complet de l’utilisateur actuel
-                                 * @example Alice Dupont
-                                 */
-                                name: string;
-                                /** Format: email */
-                                email?: string;
-                                role?: string;
-                                /** Format: uri */
-                                avatarUrl?: string;
-                                phone?: string;
-                                service?: string;
-                                position?: string;
-                                address?: string;
-                                city?: string;
-                                lastConnection?: string;
-                            };
-                        };
-                    };
-                };
-                /** @description Payload invalide */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
-                    };
-                };
-                /** @description Unauthenticated user */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-        };
+        patch?: never;
         trace?: never;
     };
     "/conversations/{conversationId}/messages": {
@@ -3129,33 +3020,6 @@ export interface components {
                 lastConnection?: string;
             };
         };
-        /** @description Réponse contenant l’utilisateur actuel mis à jour */
-        UpdateCurrentUserResponse: {
-            /** @description Utilisateur actuellement connecté */
-            currentUser: {
-                /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                 * @example 12345
-                 */
-                id: string | number;
-                /**
-                 * @description Nom complet de l’utilisateur actuel
-                 * @example Alice Dupont
-                 */
-                name: string;
-                /** Format: email */
-                email?: string;
-                role?: string;
-                /** Format: uri */
-                avatarUrl?: string;
-                phone?: string;
-                service?: string;
-                position?: string;
-                address?: string;
-                city?: string;
-                lastConnection?: string;
-            };
-        };
         /** @description Réponse contenant les informations sur l’erreur de l’API */
         ApiErrorResponse: {
             /**
@@ -3175,14 +3039,6 @@ export interface components {
              *     }
              */
             details?: unknown;
-        };
-        /** @description Champs éditables du profil utilisateur */
-        UpdateCurrentUserBody: {
-            /** Format: email */
-            email?: string;
-            phone?: string;
-            address?: string;
-            city?: string;
         };
         /** @description Corps de la requête pour envoyer un message */
         SendMessageBody: {

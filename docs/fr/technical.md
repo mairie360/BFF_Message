@@ -81,7 +81,6 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | POST | `/conversations/{conversationId}/read` | application/json | 200 |
 | POST | `/groups` | application/json | 201, 401 |
 | GET | `/me` | — | 200, 401 |
-| PATCH | `/me` | application/json | 200, 400, 401 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 401 |
 | POST | `/conversations/{conversationId}/messages` | application/json | 201, 401 |
 | POST | `/direct-messages` | application/json | 201, 401 |
@@ -118,7 +117,7 @@ Avant un lancement Docker, vérifier les variables de service, les secrets de bu
 
 ## Diagnostic
 
-Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si seules les références métier manquent, vérifier les deux BFF associés et les permissions de la session. `/me` décrit ici le profil de messagerie; les adaptateurs `/api/auth/*` du web utilisent BFF User.
+Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si seules les références métier manquent, vérifier les deux BFF associés et les permissions de la session. `/me` est ici en lecture seule et décrit le profil de messagerie; les adaptateurs `/api/auth/*` du web utilisent BFF User, et la modification du profil passe par BFF User / Core API (`PATCH /api/v1/user/me`).
 
 ## Repères dans le dépôt
 

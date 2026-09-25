@@ -81,7 +81,6 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | POST | `/conversations/{conversationId}/read` | application/json | 200 |
 | POST | `/groups` | application/json | 201, 401 |
 | GET | `/me` | — | 200, 401 |
-| PATCH | `/me` | application/json | 200, 400, 401 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 401 |
 | POST | `/conversations/{conversationId}/messages` | application/json | 201, 401 |
 | POST | `/direct-messages` | application/json | 201, 401 |
@@ -118,7 +117,7 @@ Before running Docker, check service variables, build secrets and networks in th
 
 ## Troubleshooting
 
-If conversations work but contacts do not, check Core API. If only business references are missing, check the two associated BFFs and session permissions. `/me` here describes the messaging profile; the web `/api/auth/*` adapters use BFF User.
+If conversations work but contacts do not, check Core API. If only business references are missing, check the two associated BFFs and session permissions. `/me` here is read-only and describes the messaging profile; the web `/api/auth/*` adapters use BFF User, and profile edits go through BFF User / Core API (`PATCH /api/v1/user/me`).
 
 ## Repository reference
 

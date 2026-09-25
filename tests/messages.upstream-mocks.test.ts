@@ -417,44 +417,35 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
   });
 
   describe('session isolation and authentication (MAIR-224)', () => {
-    test('PATCH /me without a token answers 401 and never exposes another user', async () => {
-      // A previous caller's GET /me must not leak into an anonymous PATCH /me.
+    test('GET /me without a token answers 401 and never exposes the previous caller', async () => {
       await request(app).get('/me').set('Authorization', authorizationFor(sophie.id));
 
-      const response = await request(app).patch('/me').send({ city: 'Lyon' });
+      const response = await request(app).get('/me');
 
       expectApiError(response, 401, 'UNAUTHORIZED');
-      expectBffContract('patch', '/me', response);
-      expect(JSON.stringify(response.body)).not.toContain('sophie');
-      expect(JSON.stringify(response.body)).not.toContain('user-8');
+      expectBffContract('get', '/me', response);
+      expect(JSON.stringify(response.body)).not.toMatch(/sophie|user-8/i);
     });
 
-    test('PATCH /me answers with the caller own profile, never the last GET /me caller', async () => {
+    test('GET /me answers with each caller own profile, never the previous caller', async () => {
       await request(app).get('/me').set('Authorization', authorizationFor(sophie.id));
 
-      const response = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon' });
+      const response = await request(app).get('/me').set('Authorization', authorizationFor(agent.id));
 
       expect(response.status).toBe(200);
-      expectBffContract('patch', '/me', response);
-      expect(response.body.currentUser).toMatchObject({ id: 'user-7', name: 'Agent Test', email: 'agent.test@mairie360.fr', city: 'Lyon' });
+      expectBffContract('get', '/me', response);
+      expect(response.body.currentUser).toMatchObject({ id: 'user-7', name: 'Agent Test', email: 'agent.test@mairie360.fr' });
       expect(upstreamSequence(coreApi).slice(-1)).toEqual([called('GET', coreApiUrls.getListDirectoryUsersUrl({ ids: String(agent.id) }))]);
     });
 
-    test('PATCH /me does not share one user edits with another user', async () => {
-      await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon', phone: '0102030405' });
+    test('PATCH /me is not served (profile edits go through BFF_user / Core_API)', async () => {
+      const anonymous = await request(app).patch('/me').send({ city: 'Lyon' });
+      const authenticated = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon' });
 
-      const response = await request(app).patch('/me').set('Authorization', authorizationFor(sophie.id)).send({ address: '1 rue de la Mairie' });
-
-      expect(response.status).toBe(200);
-      expect(response.body.currentUser).toMatchObject({ id: 'user-8', address: '1 rue de la Mairie' });
-      expect(response.body.currentUser).not.toHaveProperty('city');
-      expect(response.body.currentUser).not.toHaveProperty('phone');
-    });
-
-    test('PATCH /me answers 401 for a token whose user is absent from the directory', async () => {
-      const response = await request(app).patch('/me').set('Authorization', authorizationFor(404)).send({ city: 'Lyon' });
-
-      expectApiError(response, 401, 'UNAUTHORIZED');
+      expectApiError(anonymous, 404, 'NOT_FOUND');
+      expectApiError(authenticated, 404, 'NOT_FOUND');
+      expect(bffContract.match('patch', '/me')?.template).toBeUndefined();
+      expect(coreApi.requests).toEqual([]);
     });
 
     test('POST /attachments without a token answers 401', async () => {
@@ -506,7 +497,6 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
   describe('request validation', () => {
     test.each([
-      ['patch', '/me', { email: 'pas-un-email' }],
       ['get', '/contacts?limit=beaucoup', undefined],
       ['post', '/groups', { memberIds: [8] }],
       ['get', '/conversations/conversation-4/messages?limit=1.5', undefined],

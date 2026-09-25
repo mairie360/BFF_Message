@@ -330,22 +330,6 @@ export const CurrentUserResponse = z.object({
   description: 'Réponse contenant l’utilisateur actuel',
 });
 
-export const UpdateCurrentUserBody = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-}).openapi({
-  description: 'Champs éditables du profil utilisateur',
-});
-
-export const UpdateCurrentUserResponse = z.object({
-  currentUser: CurrentUserDtoSchema,
-}).openapi({
-  description: 'Réponse contenant l’utilisateur actuel mis à jour',
-});
-
-
 export const ConversationsResponse = z.object({
   conversations: z.array(ConversationDtoSchema).openapi({
     description: 'Liste des conversations',
@@ -492,9 +476,7 @@ registry.register('MarkConversationAsReadResponse', MarkConversationAsReadRespon
 registry.register('UploadAttachmentResponse', UploadAttachmentResponse);
 registry.register('MessagingBootstrapResponse', MessagingBootstrapResponse);
 registry.register('CurrentUserResponse', CurrentUserResponse);
-registry.register('UpdateCurrentUserResponse', UpdateCurrentUserResponse);
 registry.register('ApiErrorResponse', ApiErrorResponse);
-registry.register('UpdateCurrentUserBody', UpdateCurrentUserBody);
 registry.register('SendMessageBody', SendMessageBody);
 registry.register('NewDirectMessageBody', NewDirectMessageBody);
 registry.register('CreateGroupBody', CreateGroupBody);

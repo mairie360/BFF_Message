@@ -71,10 +71,11 @@ verification** (`numericUserIdFromToken` in `message_helpers.ts`).
 When adding fields, keep this mapping in the `map*ToDto` helpers.
 
 **Deliberately non-persistent** (do not "fix" without checking intent): `POST /conversations/:id/read`
-returns `unreadCount: 0` without calling upstream; `PATCH /me` echoes the edited fields on top of the
-caller's own profile (resolved per request from its token, never stored); `POST /attachments` returns
-fabricated metadata with no binary storage. Both require a session (401 otherwise). Never reintroduce
-module-level user state: it leaks one caller's profile to the next.
+returns `unreadCount: 0` without calling upstream; `POST /attachments` returns fabricated metadata with
+no binary storage (it still requires a session resolved through Core API, 401 otherwise).
+`GET /me` resolves the caller from its own token through Core API on every request; never keep
+module-level user state, it leaks one caller's profile to the next. There is no `PATCH /me`: profile
+edits belong to Core_API (`PATCH /api/v1/user/me`) through BFF_user / Settings.
 
 ## OpenAPI contract (source of truth)
 

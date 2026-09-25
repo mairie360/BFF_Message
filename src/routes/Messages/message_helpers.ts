@@ -467,19 +467,6 @@ export async function getCurrentUser(incomingRequestToken?: string): Promise<{ c
   return { currentUser: await fetchCurrentUser(incomingRequestToken) };
 }
 
-/**
- * Echoes the editable profile fields on top of the caller's own profile. Deliberately non-persistent
- * (nothing is stored upstream nor in-process), and always scoped to the user of the request token.
- */
-export async function updateCurrentUser(
-  input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>,
-  incomingRequestToken?: string,
-): Promise<{ currentUser: BffCurrentUser }> {
-  const user = await fetchCurrentUser(incomingRequestToken);
-
-  return { currentUser: { ...user, ...input } };
-}
-
 export function uploadAttachment(files?: unknown): { attachments: BffAttachment[] } {
   const fileList = Array.isArray(files) ? files : [files];
   const attachments = fileList.map((file, index) => {
