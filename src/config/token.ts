@@ -4,7 +4,7 @@ function isUsableToken(value?: string): value is string {
   }
 
   const token = value.trim();
-  return !['undefined', 'null', 'Bearer', 'Bearer undefined', 'Bearer null'].includes(token);
+  return token !== '' && !['undefined', 'null', 'Bearer', 'Bearer undefined', 'Bearer null'].includes(token);
 }
 
 /**
