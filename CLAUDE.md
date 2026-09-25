@@ -111,3 +111,7 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
 `eslint.config.cjs` (flat config) is the active one; `.eslintrc.js` is legacy and unused. Only
 `src/**/*.ts` is linted. `@typescript-eslint/no-explicit-any` is an **error** — use `unknown` +
 narrowing. Unused args must be `_`-prefixed.
+
+## Pull request reviewers
+
+Every PR requests a review from the whole team, minus its author: `CarolinHugo`, `LAURETbenjamin`, `MathTek` and `Quentintnrl` (`gh pr create … --reviewer CarolinHugo,LAURETbenjamin,MathTek`). `.github/CODEOWNERS` makes GitHub request them automatically as well.
