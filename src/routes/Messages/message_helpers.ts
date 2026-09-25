@@ -532,14 +532,6 @@ export async function getCurrentUser(incomingRequestToken?: string): Promise<{ c
   return { currentUser: await fetchCurrentUser(incomingRequestToken) };
 }
 
-/** Returns the caller's profile with the edited fields; nothing is persisted upstream yet. */
-export async function updateCurrentUser(
-  input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>,
-  incomingRequestToken?: string,
-): Promise<{ currentUser: BffCurrentUser }> {
-  return { currentUser: { ...(await fetchCurrentUser(incomingRequestToken)), ...input } };
-}
-
 export function uploadAttachment(files?: unknown): { attachments: BffAttachment[] } {
   const fileList = Array.isArray(files) ? files : [files];
   const attachments = fileList.map((file, index) => {
