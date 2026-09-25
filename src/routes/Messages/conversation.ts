@@ -72,7 +72,7 @@ registry.registerPath({
   method: 'post',
   path: '/conversations/{conversationId}/read',
   tags: ['Conversations'],
-  summary: 'Marquer une conversation comme lue',
+  summary: 'Marquer une conversation comme lue (indisponible tant que la persistance amont manque)',
   request: {
     params: ConversationIdParams,
     body: {
@@ -86,10 +86,18 @@ registry.registerPath({
   },
   responses: {
     200: {
-      description: 'Conversation mise à jour',
+      description: 'Conversation mise à jour après persistance amont (fonctionnalité à venir)',
       content: {
         'application/json': {
           schema: MarkConversationAsReadResponse,
+        },
+      },
+    },
+    503: {
+      description: 'Acquittement indisponible : aucune lecture n’a été persistée',
+      content: {
+        'application/json': {
+          schema: ApiErrorResponse,
         },
       },
     },

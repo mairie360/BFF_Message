@@ -412,10 +412,13 @@ export async function deleteConversation(conversationId: string | number, incomi
 }
 
 export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
-  return {
-    conversationId,
-    unreadCount: 0,
-  };
+  if (parseNumericId(conversationId) === null) {
+    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
+  }
+
+  // Message_API has no explicit read operation yet. A fabricated zero would
+  // incorrectly tell callers that the unread count was persisted.
+  throw new HttpError(503, 'READ_ACK_UNAVAILABLE', 'Acquittement de lecture indisponible');
 }
 
 export async function fetchContacts(

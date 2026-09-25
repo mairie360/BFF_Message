@@ -3510,7 +3510,7 @@
         "tags": [
           "Conversations"
         ],
-        "summary": "Marquer une conversation comme lue",
+        "summary": "Marquer une conversation comme lue (indisponible tant que la persistance amont manque)",
         "parameters": [
           {
             "schema": {
@@ -3558,7 +3558,7 @@
         },
         "responses": {
           "200": {
-            "description": "Conversation mise à jour",
+            "description": "Conversation mise à jour après persistance amont (fonctionnalité à venir)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3587,6 +3587,39 @@
                     "unreadCount"
                   ],
                   "description": "Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Acquittement indisponible : aucune lecture n’a été persistée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
                 }
               }
             }
