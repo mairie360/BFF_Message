@@ -6,6 +6,7 @@ import {
     UpdateCurrentUserBody,
     UpdateCurrentUserResponse,
 } from '../../openapi-registry';
+import { getAuthorizationHeader } from '../../config/token';
 import { getCurrentUser, sendValidationError, updateCurrentUser, handleUnknownError } from './message_helpers';
 
 const router = Router();
@@ -67,6 +68,14 @@ registry.registerPath({
                 },
             },
         },
+        401: {
+            description: 'Unauthenticated user',
+            content: {
+                'application/json': {
+                    schema: ApiErrorResponse,
+                },
+            },
+        },
     },
 });
 
@@ -77,13 +86,19 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 router.patch('/', (req: Request, res: Response) => {
+    if (!getAuthorizationHeader(req.headers.authorization)) {
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
     const bodyResult = UpdateCurrentUserBody.safeParse(req.body);
 
     if (!bodyResult.success) {
         return sendValidationError(res, bodyResult.error.issues);
     }
 
-    return res.status(200).json(updateCurrentUser(bodyResult.data));
+    return updateCurrentUser(bodyResult.data, req.headers.authorization)
+        .then((result) => res.status(200).json(result))
+        .catch((error) => handleUnknownError(res, error));
 });
 
 export default router;

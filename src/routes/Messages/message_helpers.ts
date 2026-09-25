@@ -33,8 +33,6 @@ const fallbackCurrentUser: BffCurrentUser = {
   lastConnection: new Date().toISOString(),
 };
 
-let currentUser: BffCurrentUser = fallbackCurrentUser;
-
 function authOptions(incomingRequestToken?: string): AxiosRequestConfig {
   const authHeader = getAuthorizationHeader(incomingRequestToken);
 
@@ -109,26 +107,25 @@ export class HttpError extends Error {
 export async function fetchCurrentUser(incomingRequestToken?: string): Promise<BffCurrentUser> {
   const id = numericUserIdFromToken(incomingRequestToken);
   if (!id) {
-    throw new HttpError(401, 'UNAUTHORIZED', 'Identifiant utilisateur absent du token');
+    throw new HttpError(401, 'UNAUTHORIZED', 'User id missing from the token');
   }
 
   const user = await getContactUser(id, incomingRequestToken);
 
   if (!user) {
-    throw new HttpError(401, 'UNAUTHORIZED', 'Utilisateur connecté introuvable');
+    throw new HttpError(401, 'UNAUTHORIZED', 'Authenticated user not found');
   }
 
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 
-  currentUser = {
+  // Built per request from the caller's own token: no user state is shared between requests.
+  return {
     ...fallbackCurrentUser,
     id: publicUserId(id),
     name,
     email: user.email?.trim() ? user.email : undefined,
     lastConnection: new Date().toISOString(),
   };
-
-  return currentUser;
 }
 
 function mapChatToConversation(
@@ -263,10 +260,12 @@ export function handleUnknownError(res: Response, error: unknown): Response {
       return res.status(502).json({ code: 'BAD_GATEWAY', message: 'Service amont indisponible' });
     }
 
+    // Upstream messages and bodies are never relayed to the client (information leak).
     return res.status(status).json({
-      code: 'UPSTREAM_ERROR',
-      message: axiosError.message,
-      details: axiosError.response?.data,
+      code: status === 401 ? 'UNAUTHORIZED' : status === 404 ? 'NOT_FOUND' : 'UPSTREAM_ERROR',
+      message: status === 401
+        ? 'Invalid session'
+        : status === 404 ? 'Resource not found' : 'The request was rejected by an upstream service',
     });
   }
 
@@ -468,15 +467,17 @@ export async function getCurrentUser(incomingRequestToken?: string): Promise<{ c
   return { currentUser: await fetchCurrentUser(incomingRequestToken) };
 }
 
-export function updateCurrentUser(input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>): {
-  currentUser: BffCurrentUser;
-} {
-  currentUser = {
-    ...currentUser,
-    ...input,
-  };
+/**
+ * Echoes the editable profile fields on top of the caller's own profile. Deliberately non-persistent
+ * (nothing is stored upstream nor in-process), and always scoped to the user of the request token.
+ */
+export async function updateCurrentUser(
+  input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>,
+  incomingRequestToken?: string,
+): Promise<{ currentUser: BffCurrentUser }> {
+  const user = await fetchCurrentUser(incomingRequestToken);
 
-  return { currentUser };
+  return { currentUser: { ...user, ...input } };
 }
 
 export function uploadAttachment(files?: unknown): { attachments: BffAttachment[] } {

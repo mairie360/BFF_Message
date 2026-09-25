@@ -47,7 +47,8 @@ let app: Express;
 beforeAll(async () => {
   await Promise.all(mocks.map((mock) => mock.start()));
   // messageClient et check_apis lisent leurs URL amont au chargement : l'application est importée après.
-  delete process.env.DEFAULT_JWT_TOKEN;
+  // Former service-token fallback: it must be ignored even when set (MAIR-224).
+  process.env.DEFAULT_JWT_TOKEN = 'Bearer service-token-must-not-leak';
   process.env.MESSAGE_API_BASE_PATH = messageApi.url;
   const messageApiUrl = new URL(messageApi.url);
   process.env.MESSAGE_API_URL = messageApiUrl.hostname;
@@ -415,6 +416,94 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
     });
   });
 
+  describe('session isolation and authentication (MAIR-224)', () => {
+    test('PATCH /me without a token answers 401 and never exposes another user', async () => {
+      // A previous caller's GET /me must not leak into an anonymous PATCH /me.
+      await request(app).get('/me').set('Authorization', authorizationFor(sophie.id));
+
+      const response = await request(app).patch('/me').send({ city: 'Lyon' });
+
+      expectApiError(response, 401, 'UNAUTHORIZED');
+      expectBffContract('patch', '/me', response);
+      expect(JSON.stringify(response.body)).not.toContain('sophie');
+      expect(JSON.stringify(response.body)).not.toContain('user-8');
+    });
+
+    test('PATCH /me answers with the caller own profile, never the last GET /me caller', async () => {
+      await request(app).get('/me').set('Authorization', authorizationFor(sophie.id));
+
+      const response = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon' });
+
+      expect(response.status).toBe(200);
+      expectBffContract('patch', '/me', response);
+      expect(response.body.currentUser).toMatchObject({ id: 'user-7', name: 'Agent Test', email: 'agent.test@mairie360.fr', city: 'Lyon' });
+      expect(upstreamSequence(coreApi).slice(-1)).toEqual([called('GET', coreApiUrls.getListDirectoryUsersUrl({ ids: String(agent.id) }))]);
+    });
+
+    test('PATCH /me does not share one user edits with another user', async () => {
+      await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon', phone: '0102030405' });
+
+      const response = await request(app).patch('/me').set('Authorization', authorizationFor(sophie.id)).send({ address: '1 rue de la Mairie' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.currentUser).toMatchObject({ id: 'user-8', address: '1 rue de la Mairie' });
+      expect(response.body.currentUser).not.toHaveProperty('city');
+      expect(response.body.currentUser).not.toHaveProperty('phone');
+    });
+
+    test('PATCH /me answers 401 for a token whose user is absent from the directory', async () => {
+      const response = await request(app).patch('/me').set('Authorization', authorizationFor(404)).send({ city: 'Lyon' });
+
+      expectApiError(response, 401, 'UNAUTHORIZED');
+    });
+
+    test('POST /attachments without a token answers 401', async () => {
+      const response = await request(app).post('/attachments').send({ files: [{ name: 'note.pdf' }] });
+
+      expectApiError(response, 401, 'UNAUTHORIZED');
+      expectBffContract('post', '/attachments', response);
+      expect(coreApi.requests).toEqual([]);
+    });
+
+    test('POST /attachments answers 401 when the session cannot be resolved', async () => {
+      const response = await request(app).post('/attachments').set('Authorization', authorizationFor(404)).send({ files: [{ name: 'note.pdf' }] });
+
+      expectApiError(response, 401, 'UNAUTHORIZED');
+    });
+
+    test('POST /attachments accepts an authenticated caller', async () => {
+      const response = await request(app).post('/attachments').set('Authorization', authorizationFor(agent.id)).send({ files: [{ name: 'note.pdf' }] });
+
+      expect(response.status).toBe(201);
+      expectBffContract('post', '/attachments', response);
+      expect(response.body.attachments).toEqual([expect.objectContaining({ name: 'note.pdf' })]);
+    });
+
+    test('an anonymous request is forwarded upstream without any default token', async () => {
+      messageApi.on('get', MESSAGE_API.chats, ({ headers }) => (headers.authorization
+        ? { body: chatsResult([]) }
+        : { status: 401, raw: 'Unauthorized', contentType: 'text/plain', outOfContract: true }));
+
+      const response = await request(app).get('/conversations');
+
+      expectApiError(response, 401, 'UNAUTHORIZED');
+      expect(messageApi.requests.map((call) => call.headers.authorization)).toEqual([undefined]);
+    });
+
+    test('an upstream 4xx is relayed without its message or body', async () => {
+      mockMessageApi();
+      messageApi.on('post', MESSAGE_API.chats, {
+        status: 422, body: { error: 'duplicate key value violates unique constraint "chats_pkey"' }, outOfContract: true,
+      });
+
+      const response = await request(app).post('/groups').set('Authorization', authorizationFor(agent.id)).send({ name: 'Équipe', memberIds: [8] });
+
+      expectApiError(response, 422, 'UPSTREAM_ERROR');
+      expect(response.body).not.toHaveProperty('details');
+      expect(JSON.stringify(response.body)).not.toMatch(/duplicate|chats_pkey|status code/i);
+    });
+  });
+
   describe('request validation', () => {
     test.each([
       ['patch', '/me', { email: 'pas-un-email' }],
@@ -444,8 +533,9 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       const response = await request(app).get('/conversations').set('Authorization', authorizationFor(agent.id));
 
-      expectApiError(response, 401, 'UPSTREAM_ERROR');
+      expectApiError(response, 401, 'UNAUTHORIZED');
       expectBffContract('get', '/conversations', response);
+      expect(JSON.stringify(response.body)).not.toContain('Unauthorized');
     });
 
     test('keeps a Message API 404 on an unknown chat as a 404', async () => {
@@ -453,7 +543,8 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       const response = await request(app).get('/conversations/conversation-99/messages').set('Authorization', authorizationFor(agent.id));
 
-      expectApiError(response, 404, 'UPSTREAM_ERROR');
+      expectApiError(response, 404, 'NOT_FOUND');
+      expect(JSON.stringify(response.body)).not.toContain('Chat not found');
       expect(messageApi.calls(MESSAGE_API.chat).map((call) => call.url.pathname)).toEqual([messageApiUrls.getGetChatUrl(99)]);
     });
 

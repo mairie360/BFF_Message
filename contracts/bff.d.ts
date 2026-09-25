@@ -1173,6 +1173,33 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Unauthenticated user */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Code d’erreur unique
+                             * @example USER_NOT_FOUND
+                             */
+                            code: string;
+                            /**
+                             * @description Message d’erreur détaillé
+                             * @example L’utilisateur spécifié est introuvable.
+                             */
+                            message: string;
+                            /**
+                             * @description Détails supplémentaires sur l’erreur
+                             * @example {
+                             *       "userId": "12345"
+                             *     }
+                             */
+                            details?: unknown;
+                        };
+                    };
+                };
             };
         };
         trace?: never;

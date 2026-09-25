@@ -4029,6 +4029,39 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Code d’erreur unique",
+                      "example": "USER_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message d’erreur détaillé",
+                      "example": "L’utilisateur spécifié est introuvable."
+                    },
+                    "details": {
+                      "description": "Détails supplémentaires sur l’erreur",
+                      "example": {
+                        "userId": "12345"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                }
+              }
+            }
           }
         }
       }
