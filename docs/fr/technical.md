@@ -81,7 +81,7 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | POST | `/conversations/{conversationId}/read` | application/json | 200 |
 | POST | `/groups` | application/json | 201, 401 |
 | GET | `/me` | — | 200, 401 |
-| PATCH | `/me` | application/json | 200, 400 |
+| PATCH | `/me` | application/json | 200, 400, 401 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 401 |
 | POST | `/conversations/{conversationId}/messages` | application/json | 201, 401 |
 | POST | `/direct-messages` | application/json | 201, 401 |

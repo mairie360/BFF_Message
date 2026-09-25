@@ -81,7 +81,7 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | POST | `/conversations/{conversationId}/read` | application/json | 200 |
 | POST | `/groups` | application/json | 201, 401 |
 | GET | `/me` | — | 200, 401 |
-| PATCH | `/me` | application/json | 200, 400 |
+| PATCH | `/me` | application/json | 200, 400, 401 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 401 |
 | POST | `/conversations/{conversationId}/messages` | application/json | 201, 401 |
 | POST | `/direct-messages` | application/json | 201, 401 |

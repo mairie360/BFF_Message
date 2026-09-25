@@ -5,7 +5,8 @@ import {
     UploadAttachmentResponse,
     ApiErrorResponse,
 } from '../../openapi-registry';
-import { uploadAttachment } from './message_helpers';
+import { getAuthorizationHeader } from '../../config/token';
+import { fetchCurrentUser, handleUnknownError, uploadAttachment } from './message_helpers';
 
 const router = Router();
 
@@ -45,8 +46,14 @@ registry.registerPath({
 });
 
 router.post('/', (req: Request, res: Response) => {
-    const result = uploadAttachment(req.body?.files);
-    return res.status(201).json(result);
+    if (!getAuthorizationHeader(req.headers.authorization)) {
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    // The session is resolved against Core API (which verifies the token) before accepting any file.
+    return fetchCurrentUser(req.headers.authorization)
+        .then(() => res.status(201).json(uploadAttachment(req.body?.files)))
+        .catch((error) => handleUnknownError(res, error));
 });
 
 export default router;
