@@ -224,6 +224,15 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
+    test('POST /conversations/:id/read rejects an id without digits before calling Message API', async () => {
+      mockMessageApi();
+
+      const response = await request(app).post('/conversations/general/read').set('Authorization', authorizationFor(agent.id)).send({});
+
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expect(messageApi.requests).toHaveLength(0);
+    });
+
     test('POST /groups creates a Message API chat with the numeric member ids', async () => {
       mockMessageApi({ createdChatId: 18 });
 
