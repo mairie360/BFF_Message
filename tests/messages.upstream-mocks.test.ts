@@ -229,7 +229,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       mockMessageApi({ createdChatId: 18 });
 
       const response = await request(app).post('/groups').set('Authorization', authorizationFor(agent.id))
-        .send({ name: 'Équipe voirie', memberIds: ['user-8', 9, 'inconnu'] });
+        .send({ name: 'Équipe voirie', memberIds: ['user-8', 9] });
 
       expect(response.status).toBe(201);
       expectBffContract('post', '/groups', response);
@@ -342,6 +342,18 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(upstreamSequence(coreApi)).toEqual([called('GET', coreApiUrls.getListDirectoryUsersUrl({ ids: String(sophie.id) }))]);
     });
 
+    test('PATCH /me answers the caller profile, never the one of a previous caller', async () => {
+      await request(app).patch('/me').set('Authorization', authorizationFor(sophie.id)).send({ city: 'Lyon' });
+
+      const response = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ phone: '0612345678' });
+
+      expect(response.status).toBe(200);
+      expectBffContract('patch', '/me', response);
+      expect(response.body.currentUser).toMatchObject({ id: `user-${agent.id}`, phone: '0612345678' });
+      expect(response.body.currentUser.city).toBeUndefined();
+      expect(response.body.currentUser.email).not.toBe('sophie.leroy@mairie360.fr');
+    });
+
     test('GET /me answers 401 for a user absent from the directory', async () => {
       const response = await request(app).get('/me').set('Authorization', authorizationFor(404));
 
@@ -424,6 +436,16 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       ['post', '/conversations/conversation-4/messages', { content: 42 }],
       ['post', '/direct-messages', { recipientId: 'user-8' }],
       ['post', '/conversations/conversation-4/read', { readUntilMessageId: true }],
+      // Ids are read by their trailing number: any other string would name an unrelated row.
+      ['post', '/groups', { name: 'Équipe', memberIds: ['user-8', 'inconnu'] }],
+      ['post', '/groups', { name: 'Équipe', memberIds: ['12345 AND 1=2'] }],
+      ['post', '/direct-messages', { recipientId: 'conversation-8', message: 'Bonjour' }],
+      ['post', '/conversations/conversation-4/read', { readUntilMessageId: 'John Doe' }],
+      ['get', '/conversations/user-4/messages', undefined],
+      ['get', '/conversations/conversation-4/messages?before=2026-06-23T12:32:00Z%20AND%201=1', undefined],
+      ['post', '/conversations/conversation-4/messages', { content: '<script>alert(1)</script>' }],
+      ['post', '/direct-messages', { recipientId: 'user-8', message: '<img src=x onerror=alert(1)>' }],
+      ['post', '/groups', { name: '<b>Équipe</b>', memberIds: [8] }],
     ] as const)('%s %s rejects an invalid payload with 400 before any upstream call', async (method, url, body) => {
       mockMessageApi();
 
