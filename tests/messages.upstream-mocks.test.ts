@@ -214,14 +214,13 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
-    test('POST /conversations/:id/read answers without calling Message API (non persistent)', async () => {
+    test('POST /conversations/:id/read refuses a non-persistent acknowledgement', async () => {
       mockMessageApi();
 
       const response = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(agent.id)).send({ readUntilMessageId: 'message-42' });
 
-      expect(response.status).toBe(200);
+      expectApiError(response, 503, 'READ_ACK_UNAVAILABLE');
       expectBffContract('post', '/conversations/conversation-4/read', response);
-      expect(response.body).toEqual({ conversationId: 'conversation-4', unreadCount: 0 });
       expect(messageApi.requests).toHaveLength(0);
     });
 
