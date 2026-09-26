@@ -19,7 +19,6 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | POST | `/conversations/{conversationId}/read` | 200 Conversation mise à jour |
 | POST | `/groups` | 201 Groupe créé avec succès |
 | GET | `/me` | 200 Profil utilisateur actuel |
-| PATCH | `/me` | 200 Profil utilisateur mis à jour |
 | GET | `/conversations/{conversationId}/messages` | 200 Liste des messages de la conversation |
 | POST | `/conversations/{conversationId}/messages` | 201 Message créé avec succès |
 | POST | `/direct-messages` | 201 Message direct créé avec succès |
@@ -32,4 +31,4 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1`. Il est exécu
 
 ## Références métier
 
-`/business-references` est agrégé dans BFF Message depuis `PROJECT_BFF_URL` et `CALENDAR_BFF_URL`. Le web service relaie la même réponse. Les pièces jointes, groupes ou profils déjà gérés en mémoire par le BFF ne deviennent pas persistants par cet alignement.
+`/business-references` est agrégé dans BFF Message depuis `PROJECT_BFF_URL` et `CALENDAR_BFF_URL`. Le web service relaie la même réponse. Les pièces jointes ou groupes déjà gérés en mémoire par le BFF ne deviennent pas persistants par cet alignement.

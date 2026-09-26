@@ -35,7 +35,7 @@ Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `N
 the environment; set it to a token with read access to those packages before `npm ci`.
 
 Env vars for local runs (all optional, each client falls back to a `localhost` default):
-`PORT` (required), `DEFAULT_JWT_TOKEN`, `MESSAGE_API_BASE_PATH`, `MESSAGE_API_URL` + `MESSAGE_API_PORT`
+`PORT` (required), `MESSAGE_API_BASE_PATH`, `MESSAGE_API_URL` + `MESSAGE_API_PORT`
 (`/check_apis` only), `CORE_API_URL` + `CORE_API_PORT` (directory), `PROJECT_BFF_URL`,
 `CALENDAR_BFF_URL`.
 
@@ -47,8 +47,8 @@ and the Messages router at `/`.
 
 **Auth flow.** The middleware promotes an `accessToken` cookie to an `Authorization: Bearer` header
 when none is present. Route handlers pass `req.headers.authorization` down to helpers, which forward
-it to upstream services. When no caller token exists, the axios client interceptors
-(`src/clients/*.ts`) fall back to `DEFAULT_JWT_TOKEN` (`src/config/token.ts`). The current user's
+it to upstream services. There is no default/service token: without a caller token, upstream calls
+carry no `Authorization` header (`getAuthorizationHeader` in `src/config/token.ts`). The current user's
 numeric id is taken from the JWT `sub` claim by base64url-decoding the payload **without signature
 verification** (`numericUserIdFromToken` in `message_helpers.ts`).
 
@@ -71,8 +71,11 @@ verification** (`numericUserIdFromToken` in `message_helpers.ts`).
 When adding fields, keep this mapping in the `map*ToDto` helpers.
 
 **Deliberately non-persistent** (do not "fix" without checking intent): `POST /conversations/:id/read`
-returns `unreadCount: 0` without calling upstream; `PATCH /me` mutates a module-level `currentUser`
-variable in-process; `POST /attachments` returns fabricated metadata with no binary storage.
+returns `unreadCount: 0` without calling upstream; `POST /attachments` returns fabricated metadata with
+no binary storage (it still requires a session resolved through Core API, 401 otherwise).
+`GET /me` resolves the caller from its own token through Core API on every request; never keep
+module-level user state, it leaks one caller's profile to the next. There is no `PATCH /me`: profile
+edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## OpenAPI contract (source of truth)
 
