@@ -10,7 +10,7 @@ Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre Op
 
 ## Données et persistance
 
-Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil, les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète.
+Conversations et messages passent par Message API. Une conversation créée par `POST /direct-messages` (salon Message API nommé `Direct <recipientId>`) qui ne réunit que l’appelant et un contact est renvoyée avec `kind: 'direct'`, `contactId` (identifiant du contact) et le nom du contact ; toute autre conversation est `kind: 'group'`. Le front publie un nouveau message à un contact dans cette conversation (`POST /conversations/{id}/messages`) et n’appelle `POST /direct-messages` que s’il n’en existe pas. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil, les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète.
 
 L’upload de pièces jointes fabrique actuellement des métadonnées et ne fournit pas un stockage binaire durable. Le marquage lu renvoie un compteur nul sans écrire dans Message API. Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
 

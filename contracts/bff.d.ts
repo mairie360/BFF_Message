@@ -331,11 +331,16 @@ export interface paths {
                                  */
                                 department?: string;
                                 /**
-                                 * @description Type de conversation, direct ou groupe
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                                  * @example direct
                                  * @enum {string}
                                  */
                                 kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
                                 /**
                                  * Format: uri
                                  * @description URL de l’avatar de la conversation
@@ -670,11 +675,16 @@ export interface paths {
                                  */
                                 department?: string;
                                 /**
-                                 * @description Type de conversation, direct ou groupe
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                                  * @example direct
                                  * @enum {string}
                                  */
                                 kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
                                 /**
                                  * Format: uri
                                  * @description URL de l’avatar de la conversation
@@ -931,11 +941,16 @@ export interface paths {
                                  */
                                 department?: string;
                                 /**
-                                 * @description Type de conversation, direct ou groupe
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                                  * @example direct
                                  * @enum {string}
                                  */
                                 kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
                                 /**
                                  * Format: uri
                                  * @description URL de l’avatar de la conversation
@@ -1229,11 +1244,16 @@ export interface paths {
                                  */
                                 department?: string;
                                 /**
-                                 * @description Type de conversation, direct ou groupe
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                                  * @example direct
                                  * @enum {string}
                                  */
                                 kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
                                 /**
                                  * Format: uri
                                  * @description URL de l’avatar de la conversation
@@ -1559,11 +1579,16 @@ export interface paths {
                                  */
                                 department?: string;
                                 /**
-                                 * @description Type de conversation, direct ou groupe
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                                  * @example direct
                                  * @enum {string}
                                  */
                                 kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
                                 /**
                                  * Format: uri
                                  * @description URL de l’avatar de la conversation
@@ -1694,11 +1719,16 @@ export interface paths {
                                  */
                                 department?: string;
                                 /**
-                                 * @description Type de conversation, direct ou groupe
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                                  * @example direct
                                  * @enum {string}
                                  */
                                 kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
                                 /**
                                  * Format: uri
                                  * @description URL de l’avatar de la conversation
@@ -1960,11 +1990,16 @@ export interface components {
              */
             department?: string;
             /**
-             * @description Type de conversation, direct ou groupe
+             * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
              * @example direct
              * @enum {string}
              */
             kind?: "direct" | "group";
+            /**
+             * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+             * @example user-8
+             */
+            contactId?: string | number;
             /**
              * Format: uri
              * @description URL de l’avatar de la conversation
@@ -2169,11 +2204,16 @@ export interface components {
                  */
                 department?: string;
                 /**
-                 * @description Type de conversation, direct ou groupe
+                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
+                /**
+                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                 * @example user-8
+                 */
+                contactId?: string | number;
                 /**
                  * Format: uri
                  * @description URL de l’avatar de la conversation
@@ -2233,11 +2273,16 @@ export interface components {
                  */
                 department?: string;
                 /**
-                 * @description Type de conversation, direct ou groupe
+                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
+                /**
+                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                 * @example user-8
+                 */
+                contactId?: string | number;
                 /**
                  * Format: uri
                  * @description URL de l’avatar de la conversation
@@ -2537,11 +2582,16 @@ export interface components {
                  */
                 department?: string;
                 /**
-                 * @description Type de conversation, direct ou groupe
+                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
+                /**
+                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                 * @example user-8
+                 */
+                contactId?: string | number;
                 /**
                  * Format: uri
                  * @description URL de l’avatar de la conversation
@@ -2596,11 +2646,16 @@ export interface components {
                  */
                 department?: string;
                 /**
-                 * @description Type de conversation, direct ou groupe
+                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
+                /**
+                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                 * @example user-8
+                 */
+                contactId?: string | number;
                 /**
                  * Format: uri
                  * @description URL de l’avatar de la conversation
@@ -2753,11 +2808,16 @@ export interface components {
                  */
                 department?: string;
                 /**
-                 * @description Type de conversation, direct ou groupe
+                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
+                /**
+                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                 * @example user-8
+                 */
+                contactId?: string | number;
                 /**
                  * Format: uri
                  * @description URL de l’avatar de la conversation
@@ -2934,11 +2994,16 @@ export interface components {
                  */
                 department?: string;
                 /**
-                 * @description Type de conversation, direct ou groupe
+                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
+                /**
+                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                 * @example user-8
+                 */
+                contactId?: string | number;
                 /**
                  * Format: uri
                  * @description URL de l’avatar de la conversation
