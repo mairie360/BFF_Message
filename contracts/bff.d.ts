@@ -813,7 +813,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Marquer une conversation comme lue */
+        /** Marquer une conversation comme lue (indisponible tant que la persistance amont manque) */
         post: {
             parameters: {
                 query?: never;
@@ -836,7 +836,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Conversation mise à jour */
+                /** @description Conversation mise à jour après persistance amont (fonctionnalité à venir) */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -853,6 +853,33 @@ export interface paths {
                              * @example 0
                              */
                             unreadCount: number;
+                        };
+                    };
+                };
+                /** @description Acquittement indisponible : aucune lecture n’a été persistée */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Code d’erreur unique
+                             * @example USER_NOT_FOUND
+                             */
+                            code: string;
+                            /**
+                             * @description Message d’erreur détaillé
+                             * @example L’utilisateur spécifié est introuvable.
+                             */
+                            message: string;
+                            /**
+                             * @description Détails supplémentaires sur l’erreur
+                             * @example {
+                             *       "userId": "12345"
+                             *     }
+                             */
+                            details?: unknown;
                         };
                     };
                 };
