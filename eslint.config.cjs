@@ -10,6 +10,7 @@ module.exports = [
       'dist/',
       'node_modules/',
       'coverage/',
+      'cicd-repo/',
       'eslint.config.cjs',
       'jest.config.ts',
       'scripts/export-swagger.ts',

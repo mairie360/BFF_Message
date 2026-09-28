@@ -107,6 +107,15 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
 - `openapi-contract.ts`, `contract-mock-server.ts` and `orval-contract.ts` are shared verbatim with
   `BFF_Calendar` and `BFF_Dashboard`; keep the copies identical.
 
+## ZAP OpenAPI coverage gate
+
+`security_test.sh` / `performance_test.sh` clone `mairie360/CICD` into `cicd-repo/` (gitignored) at
+the pinned `cicd_version` (`CICD_VERSION=<branch>` overrides it). ZAP runs its
+`tests/zap/zap_hooks.py` with `--hook`: every operation of the served spec must be reached, and
+non-public ones with a non-401/403 answer. The spec declares `bearerAuth` + `cookieAuth` at the top
+level (`src/openapi.ts`); public routes (`/health`, `/check_apis`) set `security: []` in
+`registerPath`. The k6 half (`coverage.js`, one `load-test.js` handler per operation) is MAIR-196.
+
 ## Linting
 
 `eslint.config.cjs` (flat config) is the active one; `.eslintrc.js` is legacy and unused. Only

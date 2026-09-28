@@ -4,7 +4,27 @@
     "title": "bff_message",
     "version": "1.0.0"
   },
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {
+      "cookieAuth": []
+    }
+  ],
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "accessToken"
+      }
+    },
     "schemas": {
       "IdSchema": {
         "anyOf": [
@@ -2504,6 +2524,7 @@
   "paths": {
     "/health": {
       "get": {
+        "security": [],
         "tags": [
           "Connectivity"
         ],
@@ -2517,6 +2538,7 @@
     },
     "/check_apis": {
       "get": {
+        "security": [],
         "tags": [
           "Connectivity"
         ],
