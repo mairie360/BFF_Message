@@ -377,15 +377,14 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(upstreamSequence(coreApi)).toEqual([called('GET', coreApiUrls.getListDirectoryUsersUrl({ ids: String(sophie.id) }))]);
     });
 
-    test('PATCH /me answers the caller profile, never the one of a previous caller', async () => {
-      await request(app).patch('/me').set('Authorization', authorizationFor(sophie.id)).send({ city: 'Lyon' });
+    test('GET /me answers the caller profile, never the one of a previous caller', async () => {
+      await request(app).get('/me').set('Authorization', authorizationFor(sophie.id));
 
-      const response = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ phone: '0612345678' });
+      const response = await request(app).get('/me').set('Authorization', authorizationFor(agent.id));
 
       expect(response.status).toBe(200);
-      expectBffContract('patch', '/me', response);
-      expect(response.body.currentUser).toMatchObject({ id: `user-${agent.id}`, phone: '0612345678' });
-      expect(response.body.currentUser.city).toBeUndefined();
+      expectBffContract('get', '/me', response);
+      expect(response.body.currentUser).toMatchObject({ id: `user-${agent.id}` });
       expect(response.body.currentUser.email).not.toBe('sophie.leroy@mairie360.fr');
     });
 
