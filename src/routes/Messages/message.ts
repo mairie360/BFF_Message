@@ -6,6 +6,7 @@ import {
     NewDirectMessageBody,
     NewDirectMessageResponse,
     ConversationIdParams,
+    WrittenConversationIdParams,
     SendMessageBody,
     SendMessageResponse,
     ApiErrorResponse,
@@ -55,7 +56,7 @@ registry.registerPath({
     tags: ['Messages'],
     summary: 'Crée un nouveau message dans une conversation',
     request: {
-        params: ConversationIdParams,
+        params: WrittenConversationIdParams,
         body: {
             required: true,
             content: {

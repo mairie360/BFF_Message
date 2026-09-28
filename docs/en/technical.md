@@ -114,6 +114,8 @@ The `contracts.yml` job uses Node.js 22, `actions/checkout@v7` and `actions/setu
 
 The Dockerfile uses `node:24-alpine` for build and runtime; the image command is `["node", "dist/index.js"]` (the code only imports types from the `@mairie360/*` packages). That version is separate from the Node.js 22 contract job.
 
+`security_test.sh` runs the OWASP ZAP stack of `docker-compose-security.yml`: ZAP replays every operation of `/openapi.json` with a static admin JWT (`sub=1`, HS256, `JWT_SECRET=b"secret"` in every service of the security and performance stacks) and fills bodies and parameters from the contract examples. `init-test.sql` seeds the rows those examples name (users 1, 2, 3 and 10, conversation 101 with message 1001, conversation 102 for the DELETE route and conversation 201 for the posted messages); keep examples and seed in sync when adding a route. Ids received from the client must be a positive integer or a public id (`user-3`, `conversation-101`), and `<` / `>` are refused in message contents, group names and descriptions.
+
 Before running Docker, check service variables, build secrets and networks in the repository files. Green CI validates its jobs; it does not prove business-service availability in a remote environment.
 
 ## Troubleshooting

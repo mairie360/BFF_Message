@@ -33,8 +33,6 @@ const fallbackCurrentUser: BffCurrentUser = {
   lastConnection: new Date().toISOString(),
 };
 
-let currentUser: BffCurrentUser = fallbackCurrentUser;
-
 function authOptions(incomingRequestToken?: string): AxiosRequestConfig {
   const authHeader = getAuthorizationHeader(incomingRequestToken);
 
@@ -120,15 +118,14 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
 
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 
-  currentUser = {
+  // Built per request: a module-level user would leak the last caller's profile to the next one.
+  return {
     ...fallbackCurrentUser,
     id: publicUserId(id),
     name,
     email: user.email?.trim() ? user.email : undefined,
     lastConnection: new Date().toISOString(),
   };
-
-  return currentUser;
 }
 
 function mapChatToConversation(
@@ -468,15 +465,12 @@ export async function getCurrentUser(incomingRequestToken?: string): Promise<{ c
   return { currentUser: await fetchCurrentUser(incomingRequestToken) };
 }
 
-export function updateCurrentUser(input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>): {
-  currentUser: BffCurrentUser;
-} {
-  currentUser = {
-    ...currentUser,
-    ...input,
-  };
-
-  return { currentUser };
+/** Returns the caller's profile with the edited fields; nothing is persisted upstream yet. */
+export async function updateCurrentUser(
+  input: Partial<Pick<BffCurrentUser, 'email' | 'phone' | 'address' | 'city'>>,
+  incomingRequestToken?: string,
+): Promise<{ currentUser: BffCurrentUser }> {
+  return { currentUser: { ...(await fetchCurrentUser(incomingRequestToken)), ...input } };
 }
 
 export function uploadAttachment(files?: unknown): { attachments: BffAttachment[] } {

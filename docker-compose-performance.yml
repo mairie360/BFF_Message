@@ -109,7 +109,7 @@ services:
       PORT: 3003
       REDIS_URL: redis://redis:6379
       PUBLIC_URL: http://message-api:3003
-      JWT_SECRET: secret
+      JWT_SECRET: b"secret"
       JWT_TIMEOUT: 3600
     expose:
       - "3003"
@@ -144,7 +144,7 @@ services:
       PORT: 3000
       REDIS_URL: redis://redis:6379
       PUBLIC_URL: http://core-api:3000
-      JWT_SECRET: secret
+      JWT_SECRET: b"secret"
       JWT_TIMEOUT: 3600
     expose:
       - "3000"
@@ -212,7 +212,7 @@ services:
       - ./load-test.js:/load-test.js:ro
     environment:
       BASE_URL: http://bff-message:4003
-      JWT_SECRET: secret
+      JWT_SECRET: 'b"secret"'
       PERF_USER_ID: "2"
     command: ["run", "/load-test.js"]
     networks:
