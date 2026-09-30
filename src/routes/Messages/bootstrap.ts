@@ -2,9 +2,9 @@ import {Router, Request, Response} from 'express';
 import {
     registry,
     MessagingBootstrapResponse,
-    ApiErrorResponse,
+    errorResponses,
 } from '../../openapi-registry';
-import { fetchMessagingBootstrap, handleUnknownError } from './message_helpers';
+import { fetchMessagingBootstrap, upstreamError } from './message_helpers';
 
 const router = Router();
 
@@ -22,21 +22,19 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            401: 'Missing or invalid session',
+            502: 'Message API or Core API is unavailable or failed',
+        }),
     },
 });
 
-router.get('/', (req: Request, res: Response) => {
-    fetchMessagingBootstrap(req.headers.authorization)
-        .then((bootstrap) => res.status(200).json(bootstrap))
-        .catch((error) => handleUnknownError(res, error));
+router.get('/', async (req: Request, res: Response) => {
+    try {
+        res.status(200).json(await fetchMessagingBootstrap(req.headers.authorization));
+    } catch (error) {
+        throw upstreamError(error, [401]);
+    }
 });
 
 export default router;

@@ -9,14 +9,14 @@ import {
     WrittenConversationIdParams,
     SendMessageBody,
     SendMessageResponse,
-    ApiErrorResponse,
+    errorResponses,
 } from '../../openapi-registry';
 import {
     createDirectMessage,
     fetchConversationMessages,
-    handleUnknownError,
     sendMessageToConversation,
-    sendValidationError,
+    upstreamError,
+    validationError,
 } from './message_helpers';
 
 const router = Router();
@@ -39,14 +39,12 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            400: 'Invalid conversation id or query (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            404: 'Unknown conversation, or the caller is not one of its members',
+            502: 'Message API or Core API is unavailable or failed',
+        }),
     },
 });
 
@@ -75,14 +73,12 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            400: 'Invalid conversation id or body (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            404: 'Unknown conversation, or the caller is not one of its members',
+            502: 'Message API or Core API is unavailable or failed',
+        }),
     },
 });
 
@@ -110,61 +106,64 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            400: 'Invalid body (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            502: 'Message API or Core API is unavailable or failed',
+        }),
     },
 });
 
-router.get('/conversations/:conversationId/messages', (req: Request, res: Response) => {
+router.get('/conversations/:conversationId/messages', async (req: Request, res: Response) => {
     const paramsResult = ConversationIdParams.safeParse(req.params);
     const queryResult = MessagesQuery.safeParse(req.query);
 
     if (!paramsResult.success) {
-        return sendValidationError(res, paramsResult.error.issues);
+        throw validationError('params', paramsResult.error.issues);
     }
 
     if (!queryResult.success) {
-        return sendValidationError(res, queryResult.error.issues);
+        throw validationError('query', queryResult.error.issues);
     }
 
-    fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit, req.headers.authorization)
-        .then((result) => res.status(200).json(result))
-        .catch((error) => handleUnknownError(res, error));
+    try {
+        res.status(200).json(await fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit, req.headers.authorization));
+    } catch (error) {
+        throw upstreamError(error, [401, 404]);
+    }
 });
 
-router.post('/conversations/:conversationId/messages', (req: Request, res: Response) => {
+router.post('/conversations/:conversationId/messages', async (req: Request, res: Response) => {
     const paramsResult = ConversationIdParams.safeParse(req.params);
     const bodyResult = SendMessageBody.safeParse(req.body);
 
     if (!paramsResult.success) {
-        return sendValidationError(res, paramsResult.error.issues);
+        throw validationError('params', paramsResult.error.issues);
     }
 
     if (!bodyResult.success) {
-        return sendValidationError(res, bodyResult.error.issues);
+        throw validationError('body', bodyResult.error.issues);
     }
 
-    sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content, req.headers.authorization)
-        .then((result) => res.status(201).json(result))
-        .catch((error) => handleUnknownError(res, error));
+    try {
+        res.status(201).json(await sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content, req.headers.authorization));
+    } catch (error) {
+        throw upstreamError(error, [400, 401, 404]);
+    }
 });
 
-router.post('/direct-messages', (req: Request, res: Response) => {
+router.post('/direct-messages', async (req: Request, res: Response) => {
     const bodyResult = NewDirectMessageBody.safeParse(req.body);
 
     if (!bodyResult.success) {
-        return sendValidationError(res, bodyResult.error.issues);
+        throw validationError('body', bodyResult.error.issues);
     }
 
-    createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message, req.headers.authorization)
-        .then((result) => res.status(201).json(result))
-        .catch((error) => handleUnknownError(res, error));
+    try {
+        res.status(201).json(await createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message, req.headers.authorization));
+    } catch (error) {
+        throw upstreamError(error, [400, 401]);
+    }
 });
 
 export default router;

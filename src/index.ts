@@ -1,5 +1,6 @@
 import { openApiDocument as openApiSpec } from './openapi';
-import express, { NextFunction, Request, Response } from 'express';
+import { errorHandler, notFoundHandler } from '@mairie360/bffs-lib';
+import express from 'express';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import healthRouter from './routes/health';
@@ -66,20 +67,11 @@ app.use('/health', healthRouter);
 app.use('/check_apis', checkApis);
 app.use('/', messagesRouter);
 
-// Route inconnue : 404 JSON (le fallback Express répond en text/html).
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ code: 'NOT_FOUND', message: 'Ressource introuvable' });
-});
-
-// Erreurs non gérées (ex. JSON malformé -> 400 via body-parser) : JSON, sans détail interne.
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  const raw = (err as { status?: unknown; statusCode?: unknown }) ?? {};
-  const status = typeof raw.status === 'number' ? raw.status : typeof raw.statusCode === 'number' ? raw.statusCode : 500;
-  if (status >= 500) console.error('[BFF] Unexpected error', err);
-  res.status(status).json(status >= 500
-    ? { code: 'INTERNAL_SERVER_ERROR', message: 'Erreur interne du service' }
-    : { code: 'BAD_REQUEST', message: 'Requête invalide' });
-});
+// Unknown routes and every error end in the shared envelope `{ error: { code, message, details } }`:
+// the status of the error is kept (400 for an unparsable body, 401, 404, 502, 503...) and anything
+// unexpected becomes a 500 without leaking its message.
+app.use(notFoundHandler);
+app.use(errorHandler({ onError: (error) => console.error('[BFF] Unexpected error', error) }));
 
 if (require.main === module) app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);

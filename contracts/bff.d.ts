@@ -106,12 +106,14 @@ export interface paths {
                         "application/json": components["schemas"]["BusinessReferencesResponse"];
                     };
                 };
-                /** @description Session invalide */
+                /** @description Missing session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
                 };
             };
         };
@@ -191,31 +193,22 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -479,31 +472,22 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -589,31 +573,31 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Invalid query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -726,31 +710,31 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Invalid query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -805,6 +789,51 @@ export interface paths {
                              */
                             conversationId?: string | number;
                         };
+                    };
+                };
+                /** @description Invalid conversation id */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Only an administrator may delete a conversation */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -866,31 +895,22 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Acquittement indisponible : aucune lecture n’a été persistée */
+                /** @description Invalid conversation id or body (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Read acknowledgement unavailable: nothing was persisted */
                 503: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1008,31 +1028,31 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Invalid body (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1094,31 +1114,22 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1332,31 +1343,40 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Invalid conversation id or query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1558,31 +1578,40 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Invalid conversation id or body (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1796,31 +1825,31 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Utilisateur non authentifié */
+                /** @description Invalid body (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /**
-                             * @description Code d’erreur unique
-                             * @example USER_NOT_FOUND
-                             */
-                            code: string;
-                            /**
-                             * @description Message d’erreur détaillé
-                             * @example L’utilisateur spécifié est introuvable.
-                             */
-                            message: string;
-                            /**
-                             * @description Détails supplémentaires sur l’erreur
-                             * @example {
-                             *       "userId": "12345"
-                             *     }
-                             */
-                            details?: unknown;
-                        };
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1835,6 +1864,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ErrorResponse: {
+            error: {
+                /** @enum {string} */
+                code: "BAD_REQUEST" | "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "PAYLOAD_TOO_LARGE" | "UNPROCESSABLE_ENTITY" | "TOO_MANY_REQUESTS" | "INTERNAL_ERROR" | "BAD_GATEWAY" | "SERVICE_UNAVAILABLE" | "GATEWAY_TIMEOUT";
+                message: string;
+                details: {
+                    path?: string;
+                    message: string;
+                }[];
+            };
+        };
         /**
          * @description Identifiant unique, peut être une chaîne ou un nombre
          * @example 12345
@@ -3099,26 +3139,6 @@ export interface components {
                 city?: string;
                 lastConnection?: string;
             };
-        };
-        /** @description Réponse contenant les informations sur l’erreur de l’API */
-        ApiErrorResponse: {
-            /**
-             * @description Code d’erreur unique
-             * @example USER_NOT_FOUND
-             */
-            code: string;
-            /**
-             * @description Message d’erreur détaillé
-             * @example L’utilisateur spécifié est introuvable.
-             */
-            message: string;
-            /**
-             * @description Détails supplémentaires sur l’erreur
-             * @example {
-             *       "userId": "12345"
-             *     }
-             */
-            details?: unknown;
         };
         /** @description Corps de la requête pour envoyer un message */
         SendMessageBody: {

@@ -73,21 +73,31 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401 |
-| POST | `/attachments` | multipart/form-data | 201, 401 |
-| GET | `/messaging/bootstrap` | — | 200, 401 |
-| GET | `/contacts` | — | 200, 401 |
-| GET | `/conversations` | — | 200, 401 |
-| DELETE | `/conversations/{conversationId}` | — | 200 |
-| POST | `/conversations/{conversationId}/read` | application/json | 200 |
-| POST | `/groups` | application/json | 201, 401 |
-| GET | `/me` | — | 200, 401 |
-| GET | `/conversations/{conversationId}/messages` | — | 200, 401 |
-| POST | `/conversations/{conversationId}/messages` | application/json | 201, 401 |
-| POST | `/direct-messages` | application/json | 201, 401 |
+| POST | `/attachments` | multipart/form-data | 201, 401, 502 |
+| GET | `/messaging/bootstrap` | — | 200, 401, 502 |
+| GET | `/contacts` | — | 200, 400, 401, 502 |
+| GET | `/conversations` | — | 200, 400, 401, 502 |
+| DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502 |
+| POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 503 |
+| POST | `/groups` | application/json | 201, 400, 401, 502 |
+| GET | `/me` | — | 200, 401, 502 |
+| GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502 |
+| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502 |
+| POST | `/direct-messages` | application/json | 201, 400, 401, 502 |
 
 ## Session, permissions et erreurs
 
 Le BFF utilise l’en-tête Authorization; en son absence, le middleware peut reprendre le cookie `accessToken`. Les clients métier transmettent cette autorisation. Les profils locaux et réponses de lecture ne doivent pas être interprétés comme une validation de stockage ou de droits par l’API distante.
+
+Toutes les erreurs sont renvoyées dans l’enveloppe commune à tous les BFFs (`@mairie360/bffs-lib`,
+schéma `ErrorResponse` du contrat) : `{ "error": { "code": "NOT_FOUND", "message": "Resource not found", "details": [] } }`.
+`code` découle du statut (`BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `BAD_GATEWAY`,
+`SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, ...). Un échec de validation est un 400 dont `details` liste les
+champs invalides (`{ "path": "body.content", "message": "..." }`). Un 4xx amont n’est conservé que si la
+route le déclare (401/404 de Message API, 403 sur `DELETE /conversations/{conversationId}`, 400 sur les
+créations de messages et de conversations), avec un message générique ; tout autre statut amont ou une
+panne réseau donne 502. Les messages et corps amont ne sont jamais relayés ; une erreur inattendue donne
+un 500 générique.
 
 ## Synchronisation et vérifications
 
