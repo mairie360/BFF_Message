@@ -26,6 +26,61 @@
       }
     },
     "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "BAD_REQUEST",
+                  "UNAUTHORIZED",
+                  "FORBIDDEN",
+                  "NOT_FOUND",
+                  "CONFLICT",
+                  "PAYLOAD_TOO_LARGE",
+                  "UNPROCESSABLE_ENTITY",
+                  "TOO_MANY_REQUESTS",
+                  "INTERNAL_ERROR",
+                  "BAD_GATEWAY",
+                  "SERVICE_UNAVAILABLE",
+                  "GATEWAY_TIMEOUT"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "IdSchema": {
         "anyOf": [
           {
@@ -2160,32 +2215,6 @@
         ],
         "description": "Réponse contenant l’utilisateur actuel"
       },
-      "ApiErrorResponse": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "description": "Code d’erreur unique",
-            "example": "USER_NOT_FOUND"
-          },
-          "message": {
-            "type": "string",
-            "description": "Message d’erreur détaillé",
-            "example": "L’utilisateur spécifié est introuvable."
-          },
-          "details": {
-            "description": "Détails supplémentaires sur l’erreur",
-            "example": {
-              "userId": "12345"
-            }
-          }
-        },
-        "required": [
-          "code",
-          "message"
-        ],
-        "description": "Réponse contenant les informations sur l’erreur de l’API"
-      },
       "SendMessageBody": {
         "type": "object",
         "properties": {
@@ -2569,7 +2598,14 @@
             }
           },
           "401": {
-            "description": "Session invalide"
+            "description": "Missing session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2662,34 +2698,21 @@
             }
           },
           "401": {
-            "description": "Utilisateur non authentifié",
+            "description": "Missing or invalid session",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3117,34 +3140,21 @@
             }
           },
           "401": {
-            "description": "Utilisateur non authentifié",
+            "description": "Missing or invalid session",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3265,35 +3275,32 @@
               }
             }
           },
-          "401": {
-            "description": "Utilisateur non authentifié",
+          "400": {
+            "description": "Invalid query (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3460,35 +3467,32 @@
               }
             }
           },
-          "401": {
-            "description": "Utilisateur non authentifié",
+          "400": {
+            "description": "Invalid query (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3557,6 +3561,56 @@
                     "deleted"
                   ],
                   "description": "Réponse indiquant si la conversation a été supprimée avec succès"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid conversation id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only an administrator may delete a conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3654,35 +3708,22 @@
               }
             }
           },
-          "503": {
-            "description": "Acquittement indisponible : aucune lecture n’a été persistée",
+          "400": {
+            "description": "Invalid conversation id or body (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Read acknowledgement unavailable: nothing was persisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3849,35 +3890,32 @@
               }
             }
           },
-          "401": {
-            "description": "Utilisateur non authentifié",
+          "400": {
+            "description": "Invalid body (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3966,34 +4004,21 @@
             }
           },
           "401": {
-            "description": "Utilisateur non authentifié",
+            "description": "Missing or invalid session",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4350,35 +4375,42 @@
               }
             }
           },
-          "401": {
-            "description": "Utilisateur non authentifié",
+          "400": {
+            "description": "Invalid conversation id or query (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4743,35 +4775,42 @@
               }
             }
           },
-          "401": {
-            "description": "Utilisateur non authentifié",
+          "400": {
+            "description": "Invalid conversation id or body (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -5096,35 +5135,32 @@
               }
             }
           },
-          "401": {
-            "description": "Utilisateur non authentifié",
+          "400": {
+            "description": "Invalid body (details lists the invalid fields)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Code d’erreur unique",
-                      "example": "USER_NOT_FOUND"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Message d’erreur détaillé",
-                      "example": "L’utilisateur spécifié est introuvable."
-                    },
-                    "details": {
-                      "description": "Détails supplémentaires sur l’erreur",
-                      "example": {
-                        "userId": "12345"
-                      }
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ],
-                  "description": "Réponse contenant les informations sur l’erreur de l’API"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

@@ -6,7 +6,8 @@ import {
   projectBff,
   projectBffOptions,
 } from '../../clients/businessBffClients';
-import { registry } from '../../openapi-registry';
+import { HttpError } from '@mairie360/bffs-lib';
+import { errorResponses, registry } from '../../openapi-registry';
 const router = Router();
 export const BusinessReferencesSchema = registry.register('BusinessReferencesResponse', z.object({
   references: z.array(z.object({ id: z.string(), title: z.string(), kind: z.enum(['project', 'task', 'event']), description: z.string().optional() })),
@@ -14,7 +15,7 @@ export const BusinessReferencesSchema = registry.register('BusinessReferencesRes
 }));
 registry.registerPath({ method: 'get', path: '/business-references', responses: {
   200: { description: 'Références des BFF Projets et Calendrier', content: { 'application/json': { schema: BusinessReferencesSchema } } },
-  401: { description: 'Session invalide' },
+  ...errorResponses({ 401: 'Missing session' }),
 } });
 
 type BusinessReferenceKind = "project" | "task" | "event";
@@ -96,7 +97,7 @@ async function loadCalendarReferences(authorization?: string): Promise<BusinessR
 
 router.get('/', async (request, response) => {
   const authorization = getAuthorizationHeader(request);
-  if (!authorization) return response.status(401).json({ error: { message: 'Session invalide.' } });
+  if (!authorization) throw new HttpError(401, 'Invalid session.');
   const results = await Promise.allSettled([
     loadProjectReferences(authorization),
     loadCalendarReferences(authorization),

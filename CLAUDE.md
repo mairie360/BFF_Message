@@ -57,7 +57,16 @@ verification** (`numericUserIdFromToken` in `message_helpers.ts`).
 (`conversation.ts`, `me.ts`, `contacts.ts`, `groups.ts`, `message.ts`, `bootstrap.ts`,
 `attachments.ts`, `business_references.ts`). Nearly all business logic lives in
 `src/routes/Messages/message_helpers.ts`; route files are thin (zod `safeParse` → call helper →
-`handleUnknownError`).
+`throw upstreamError(error, declared)`).
+
+**Errors.** Every error is `{ error: { code, message, details } }` (`@mairie360/bffs-lib`,
+`ErrorResponse` in the contract, declared through `errorResponses({...})` on every operation).
+Routes throw `HttpError` or `validationError(location, issues)` (400, one detail per invalid field);
+Express 5 hands async rejections to `errorHandler()`, mounted last in `src/index.ts` after
+`notFoundHandler`. `upstreamError(error, declared)` keeps only the upstream 4xx the route declares and
+turns any other status or a network failure into 502; never relay upstream bodies. Register the
+envelope with `ErrorResponseSchema.clone()` (zod 4 only adds `.openapi()` to schemas created after
+`extendZodWithOpenApi`). When a route starts answering a new status, declare it in its `registerPath`.
 
 **Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (base URL from `MESSAGE_API_BASE_PATH` with
 `http://` normalization) into the generated `@mairie360/message-api-openapi` client.

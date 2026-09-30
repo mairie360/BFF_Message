@@ -1,4 +1,5 @@
 import { OpenAPIRegistry, extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { ErrorResponseSchema } from '@mairie360/bffs-lib';
 import { z } from 'zod';
 
 // On ajoute les méthodes .openapi() à Zod
@@ -469,24 +470,18 @@ export const MessagingBootstrapResponse = z.object({
     description: 'Réponse contenant les données de base pour le démarrage de la messagerie',
 });
 
-// Api error
+// Body of every error answer, shared by every BFF (`@mairie360/bffs-lib`): `{ error: { code, message, details } }`.
+// clone(): the lib builds its schemas on import, before extendZodWithOpenApi() above, and zod 4 only
+// adds .openapi() to schemas created after the extension.
+export const ErrorResponse = registry.register('ErrorResponse', ErrorResponseSchema.clone());
 
-export const ApiErrorResponse = z.object({
-    code: z.string().openapi({
-        description: 'Code d’erreur unique',
-        example: 'USER_NOT_FOUND',
-    }),
-    message: z.string().openapi({
-        description: 'Message d’erreur détaillé',
-        example: 'L’utilisateur spécifié est introuvable.',
-    }),
-    details: z.any().optional().openapi({
-        description: 'Détails supplémentaires sur l’erreur',
-        example: { userId: '12345' },
-    }),
-}).openapi({
-    description: 'Réponse contenant les informations sur l’erreur de l’API',
-});
+/** Error responses of an operation, `{ status: description }`, all answered with `ErrorResponse`. */
+export function errorResponses(descriptions: Record<number, string>) {
+    return Object.fromEntries(Object.entries(descriptions).map(([status, description]) => [status, {
+        description,
+        content: { 'application/json': { schema: ErrorResponse } },
+    }]));
+}
 
 registry.register('IdSchema', IdSchema);
 registry.register('CurrentUserDtoSchema', CurrentUserDtoSchema);
@@ -506,7 +501,6 @@ registry.register('MarkConversationAsReadResponse', MarkConversationAsReadRespon
 registry.register('UploadAttachmentResponse', UploadAttachmentResponse);
 registry.register('MessagingBootstrapResponse', MessagingBootstrapResponse);
 registry.register('CurrentUserResponse', CurrentUserResponse);
-registry.register('ApiErrorResponse', ApiErrorResponse);
 registry.register('SendMessageBody', SendMessageBody);
 registry.register('NewDirectMessageBody', NewDirectMessageBody);
 registry.register('CreateGroupBody', CreateGroupBody);

@@ -9,14 +9,14 @@ import {
     DeleteConversationResponse,
     MarkConversationAsReadBody,
     MarkConversationAsReadResponse,
-    ApiErrorResponse,
+    errorResponses,
 } from '../../openapi-registry';
 import {
     deleteConversation,
     fetchConversations,
-    handleUnknownError,
     markConversationAsRead,
-    sendValidationError,
+    upstreamError,
+    validationError,
 } from './message_helpers';
 
 const router = Router();
@@ -38,14 +38,11 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            400: 'Invalid query (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            502: 'Message API or Core API is unavailable or failed',
+        }),
     },
 });
 
@@ -66,6 +63,13 @@ registry.registerPath({
                 },
             },
         },
+        ...errorResponses({
+            400: 'Invalid conversation id',
+            401: 'Missing or invalid session',
+            403: 'Only an administrator may delete a conversation',
+            404: 'Unknown conversation, or the caller is not one of its members',
+            502: 'Message API is unavailable or failed',
+        }),
     },
 });
 
@@ -94,14 +98,10 @@ registry.registerPath({
         },
       },
     },
-    503: {
-      description: 'Acquittement indisponible : aucune lecture n’a été persistée',
-      content: {
-        'application/json': {
-          schema: ApiErrorResponse,
-        },
-      },
-    },
+    ...errorResponses({
+      400: 'Invalid conversation id or body (details lists the invalid fields)',
+      503: 'Read acknowledgement unavailable: nothing was persisted',
+    }),
   },
 });
 
@@ -109,7 +109,7 @@ router.get('/', async (req: Request, res: Response) => {
     const queryResult = ConversationsQuery.safeParse(req.query);
 
     if (!queryResult.success) {
-        return sendValidationError(res, queryResult.error.issues);
+        throw validationError('query', queryResult.error.issues);
     }
 
     try {
@@ -120,7 +120,7 @@ router.get('/', async (req: Request, res: Response) => {
         );
         return res.status(200).json({ conversations });
     } catch (error) {
-        return handleUnknownError(res, error);
+        throw upstreamError(error, [401]);
     }
 });
 
@@ -128,18 +128,18 @@ router.delete('/:conversationId', async (req: Request, res: Response) => {
     const paramsResult = ConversationIdParams.safeParse(req.params);
 
     if (!paramsResult.success) {
-        return sendValidationError(res, paramsResult.error.issues);
+        throw validationError('params', paramsResult.error.issues);
     }
 
     try {
         await deleteConversation(paramsResult.data.conversationId, req.headers.authorization);
-        return res.status(200).json({
-            deleted: true,
-            conversationId: paramsResult.data.conversationId,
-        });
     } catch (error) {
-        return handleUnknownError(res, error);
+        throw upstreamError(error, [401, 403, 404]);
     }
+    return res.status(200).json({
+        deleted: true,
+        conversationId: paramsResult.data.conversationId,
+    });
 });
 
 router.post('/:conversationId/read', async (req: Request, res: Response) => {
@@ -147,19 +147,15 @@ router.post('/:conversationId/read', async (req: Request, res: Response) => {
     const bodyResult = MarkConversationAsReadBody.safeParse(req.body);
 
     if (!paramsResult.success) {
-        return sendValidationError(res, paramsResult.error.issues);
+        throw validationError('params', paramsResult.error.issues);
     }
 
     if (!bodyResult.success) {
-        return sendValidationError(res, bodyResult.error.issues);
+        throw validationError('body', bodyResult.error.issues);
     }
 
-    try {
-        const result = await markConversationAsRead(paramsResult.data.conversationId);
-        return res.status(200).json(result);
-    } catch (error) {
-        return handleUnknownError(res, error);
-    }
+    const result = await markConversationAsRead(paramsResult.data.conversationId);
+    return res.status(200).json(result);
 });
 
 export default router;

@@ -3,12 +3,12 @@ import {
     registry,
     CreateGroupBody,
     CreateGroupResponse,
-    ApiErrorResponse,
+    errorResponses,
 } from '../../openapi-registry';
 import {
     createGroupConversation,
-    handleUnknownError,
-    sendValidationError,
+    upstreamError,
+    validationError,
 } from './message_helpers';
 
 const router = Router();
@@ -37,27 +37,27 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            400: 'Invalid body (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            502: 'Message API is unavailable or failed',
+        }),
     },
 });
 
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
     const bodyResult = CreateGroupBody.safeParse(req.body);
 
     if (!bodyResult.success) {
-        return sendValidationError(res, bodyResult.error.issues);
+        throw validationError('body', bodyResult.error.issues);
     }
 
-    createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds, req.headers.authorization)
-        .then((conversation) => res.status(201).json({ conversation }))
-        .catch((error) => handleUnknownError(res, error));
+    try {
+        const conversation = await createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds, req.headers.authorization);
+        res.status(201).json({ conversation });
+    } catch (error) {
+        throw upstreamError(error, [400, 401]);
+    }
 });
 
 export default router;

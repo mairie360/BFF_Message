@@ -1,6 +1,6 @@
-import axios, { AxiosError } from 'axios';
+import { HttpError, mapUpstreamError } from '@mairie360/bffs-lib';
+import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
-import type { Response } from 'express';
 import { z } from 'zod';
 import messageClient from '../../clients/messageClient';
 import { getAuthorizationHeader } from '../../config/token';
@@ -98,22 +98,18 @@ function numericUserIdFromToken(incomingRequestToken?: string): number | undefin
   }
 }
 
-export class HttpError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string) {
-    super(message);
-  }
-}
+export { HttpError };
 
 export async function fetchCurrentUser(incomingRequestToken?: string): Promise<BffCurrentUser> {
   const id = numericUserIdFromToken(incomingRequestToken);
   if (!id) {
-    throw new HttpError(401, 'UNAUTHORIZED', 'User id missing from the token');
+    throw new HttpError(401, 'User id missing from the token');
   }
 
   const user = await getContactUser(id, incomingRequestToken);
 
   if (!user) {
-    throw new HttpError(401, 'UNAUTHORIZED', 'Authenticated user not found');
+    throw new HttpError(401, 'Authenticated user not found');
   }
 
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
@@ -297,44 +293,32 @@ function mapMessageToDto(
   };
 }
 
-export function sendValidationError(res: Response, details: unknown): Response {
-  return res.status(400).json({
-    code: 'BAD_REQUEST',
-    message: 'Validation failed',
-    details,
+/** 400 for a request that fails its zod schema; each issue becomes a detail such as `body.content`. */
+export function validationError(location: 'body' | 'query' | 'params', issues: readonly z.core.$ZodIssue[]): HttpError {
+  return new HttpError(400, 'Validation failed', {
+    details: issues.map((issue) => ({
+      path: [location, ...issue.path.map(String)].join('.'),
+      message: issue.message,
+    })),
   });
 }
 
-export function handleUnknownError(res: Response, error: unknown): Response {
-  if (error instanceof HttpError) {
-    return res.status(error.status).json({ code: error.code, message: error.message });
+/**
+ * Error to throw for a failed upstream call (Message API, Core API). Only the upstream 4xx the route
+ * declares in its contract (`declared`) are kept, with a generic message; any other status and a
+ * network failure become a 502. Upstream messages and bodies are never relayed (information leak).
+ * Anything that is not an upstream failure is returned unchanged: errorHandler() answers it.
+ */
+export function upstreamError(error: unknown, declared: readonly number[] = []): unknown {
+  if (error instanceof HttpError || !axios.isAxiosError(error)) return error;
+
+  const status = error.response?.status;
+  if (status === undefined) {
+    console.error('[BFF] Upstream unreachable', error.message);
+    return new HttpError(502, 'An upstream service is unavailable');
   }
-
-  if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError;
-    const status = axiosError.response?.status ?? 502;
-
-    // Une erreur 5xx (ou réseau) du service amont est une défaillance amont : 502.
-    if (status >= 500) {
-      console.error('[BFF] Upstream error', status, axiosError.message);
-      return res.status(502).json({ code: 'BAD_GATEWAY', message: 'Service amont indisponible' });
-    }
-
-    // Upstream messages and bodies are never relayed to the client (information leak).
-    return res.status(status).json({
-      code: status === 401 ? 'UNAUTHORIZED' : status === 404 ? 'NOT_FOUND' : 'UPSTREAM_ERROR',
-      message: status === 401
-        ? 'Invalid session'
-        : status === 404 ? 'Resource not found' : 'The request was rejected by an upstream service',
-    });
-  }
-
-  // Ne jamais exposer le message d'une erreur interne (fuite d'information).
-  console.error('[BFF] Unexpected error', error);
-  return res.status(500).json({
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'Erreur interne du service',
-  });
+  if (status >= 500) console.error('[BFF] Upstream error', status, error.message);
+  return mapUpstreamError(error, declared);
 }
 
 export async function fetchConversations(
@@ -370,7 +354,7 @@ export async function fetchConversationMessages(
 ): Promise<{ conversation: BffConversation; messages: BffMessage[] }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
-    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
+    throw new HttpError(400, 'Invalid conversation id');
   }
 
   const currentUserId = numericUserIdFromToken(incomingRequestToken);
@@ -402,12 +386,12 @@ export async function sendMessageToConversation(
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
-    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
+    throw new HttpError(400, 'Invalid conversation id');
   }
 
   const currentUserId = numericUserIdFromToken(incomingRequestToken);
   if (currentUserId === undefined) {
-    throw new HttpError(401, 'UNAUTHORIZED', 'Identifiant utilisateur absent du token');
+    throw new HttpError(401, 'User id missing from the token');
   }
 
   const [response, participants, chat] = await Promise.all([
@@ -441,7 +425,7 @@ export async function createDirectMessage(
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const recipientNumericId = parseNumericId(recipientId);
   if (recipientNumericId === null) {
-    throw new HttpError(400, 'BAD_REQUEST', 'Invalid recipient id');
+    throw new HttpError(400, 'Invalid recipient id');
   }
 
   const chat = await messageClient.createChat({
@@ -466,7 +450,7 @@ export async function createGroupConversation(
 export async function deleteConversation(conversationId: string | number, incomingRequestToken?: string): Promise<void> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
-    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
+    throw new HttpError(400, 'Invalid conversation id');
   }
 
   await messageClient.deleteChat(chatId, authOptions(incomingRequestToken));
@@ -474,12 +458,12 @@ export async function deleteConversation(conversationId: string | number, incomi
 
 export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
   if (parseNumericId(conversationId) === null) {
-    throw new HttpError(400, 'BAD_REQUEST', 'Invalid conversation id');
+    throw new HttpError(400, 'Invalid conversation id');
   }
 
   // Message_API has no explicit read operation yet. A fabricated zero would
   // incorrectly tell callers that the unread count was persisted.
-  throw new HttpError(503, 'READ_ACK_UNAVAILABLE', 'Acquittement de lecture indisponible');
+  throw new HttpError(503, 'Read acknowledgement unavailable');
 }
 
 export async function fetchContacts(

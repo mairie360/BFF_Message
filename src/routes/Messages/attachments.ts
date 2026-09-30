@@ -3,10 +3,10 @@ import {
     registry,
     UploadAttachmentBody,
     UploadAttachmentResponse,
-    ApiErrorResponse,
+    errorResponses,
 } from '../../openapi-registry';
 import { getAuthorizationHeader } from '../../config/token';
-import { fetchCurrentUser, handleUnknownError, uploadAttachment } from './message_helpers';
+import { fetchCurrentUser, HttpError, uploadAttachment, upstreamError } from './message_helpers';
 
 const router = Router();
 
@@ -34,26 +34,25 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            401: 'Missing or invalid session',
+            502: 'Core API is unavailable or failed',
+        }),
     },
 });
 
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
     if (!getAuthorizationHeader(req.headers.authorization)) {
-        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authentication required' });
+        throw new HttpError(401, 'Authentication required');
     }
 
     // The session is resolved against Core API (which verifies the token) before accepting any file.
-    return fetchCurrentUser(req.headers.authorization)
-        .then(() => res.status(201).json(uploadAttachment(req.body?.files)))
-        .catch((error) => handleUnknownError(res, error));
+    try {
+        await fetchCurrentUser(req.headers.authorization);
+    } catch (error) {
+        throw upstreamError(error, [401]);
+    }
+    return res.status(201).json(uploadAttachment(req.body?.files));
 });
 
 export default router;

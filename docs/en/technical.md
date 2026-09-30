@@ -73,21 +73,30 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401 |
-| POST | `/attachments` | multipart/form-data | 201, 401 |
-| GET | `/messaging/bootstrap` | — | 200, 401 |
-| GET | `/contacts` | — | 200, 401 |
-| GET | `/conversations` | — | 200, 401 |
-| DELETE | `/conversations/{conversationId}` | — | 200 |
-| POST | `/conversations/{conversationId}/read` | application/json | 200 |
-| POST | `/groups` | application/json | 201, 401 |
-| GET | `/me` | — | 200, 401 |
-| GET | `/conversations/{conversationId}/messages` | — | 200, 401 |
-| POST | `/conversations/{conversationId}/messages` | application/json | 201, 401 |
-| POST | `/direct-messages` | application/json | 201, 401 |
+| POST | `/attachments` | multipart/form-data | 201, 401, 502 |
+| GET | `/messaging/bootstrap` | — | 200, 401, 502 |
+| GET | `/contacts` | — | 200, 400, 401, 502 |
+| GET | `/conversations` | — | 200, 400, 401, 502 |
+| DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502 |
+| POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 503 |
+| POST | `/groups` | application/json | 201, 400, 401, 502 |
+| GET | `/me` | — | 200, 401, 502 |
+| GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502 |
+| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502 |
+| POST | `/direct-messages` | application/json | 201, 400, 401, 502 |
 
 ## Session, permissions and errors
 
 The BFF uses the Authorization header; when absent, middleware can use the `accessToken` cookie. Business clients forward that authorization. Local profiles and read responses must not be interpreted as remote API validation of storage or permissions.
+
+Every error is answered in the envelope shared by all the BFFs (`@mairie360/bffs-lib`, schema
+`ErrorResponse` of the contract): `{ "error": { "code": "NOT_FOUND", "message": "Resource not found", "details": [] } }`.
+`code` follows the status (`BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `BAD_GATEWAY`,
+`SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, ...). A validation failure is a 400 whose `details` lists the
+invalid fields (`{ "path": "body.content", "message": "..." }`). An upstream 4xx is kept only when the
+route declares it (Message API 401/404, and 403 on `DELETE /conversations/{conversationId}`, 400 on the
+message and chat creations), with a generic message; any other upstream status or a network failure
+answers 502. Upstream messages and bodies are never relayed; an unexpected error is a generic 500.
 
 ## Synchronization and verification
 

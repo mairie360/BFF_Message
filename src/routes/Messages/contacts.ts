@@ -3,10 +3,10 @@ import {
     registry,
     ContactsQuery,
     ContactsResponse,
-    ApiErrorResponse,
+    errorResponses,
 } from '../../openapi-registry';
 import { getAuthorizationHeader } from '../../config/token';
-import { fetchContacts, handleUnknownError, sendValidationError } from './message_helpers';
+import { fetchContacts, HttpError, upstreamError, validationError } from './message_helpers';
 
 const router = Router();
 
@@ -27,34 +27,31 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            400: 'Invalid query (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            502: 'Core API is unavailable or failed',
+        }),
     },
 });
 
-router.get('/', (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
     if (!getAuthorizationHeader(req.headers.authorization)) {
-        return res.status(401).json({
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
-        });
+        throw new HttpError(401, 'Authentication required');
     }
 
     const queryResult = ContactsQuery.safeParse(req.query);
 
     if (!queryResult.success) {
-        return sendValidationError(res, queryResult.error.issues);
+        throw validationError('query', queryResult.error.issues);
     }
 
-    fetchContacts(queryResult.data.search, queryResult.data.limit, req.headers.authorization)
-        .then((contacts) => res.status(200).json({ contacts }))
-        .catch((error) => handleUnknownError(res, error));
+    try {
+        const contacts = await fetchContacts(queryResult.data.search, queryResult.data.limit, req.headers.authorization);
+        res.status(200).json({ contacts });
+    } catch (error) {
+        throw upstreamError(error, [401]);
+    }
 });
 
 export default router;

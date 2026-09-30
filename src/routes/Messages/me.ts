@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import {
-    ApiErrorResponse,
     CurrentUserResponse,
+    errorResponses,
     registry,
 } from '../../openapi-registry';
-import { getCurrentUser, handleUnknownError } from './message_helpers';
+import { getCurrentUser, upstreamError } from './message_helpers';
 
 const router = Router();
 
@@ -22,21 +22,19 @@ registry.registerPath({
                 },
             },
         },
-        401: {
-            description: 'Utilisateur non authentifié',
-            content: {
-                'application/json': {
-                    schema: ApiErrorResponse,
-                },
-            },
-        },
+        ...errorResponses({
+            401: 'Missing or invalid session',
+            502: 'Core API is unavailable or failed',
+        }),
     },
 });
 
-router.get('/', (req: Request, res: Response) => {
-    getCurrentUser(req.headers.authorization)
-        .then((user) => res.status(200).json(user))
-        .catch((error) => handleUnknownError(res, error));
+router.get('/', async (req: Request, res: Response) => {
+    try {
+        res.status(200).json(await getCurrentUser(req.headers.authorization));
+    } catch (error) {
+        throw upstreamError(error, [401]);
+    }
 });
 
 // Profile edits are not served here: they go through BFF_Settings (PATCH /settings/profile) → Core_API (PATCH /api/v1/user/me).

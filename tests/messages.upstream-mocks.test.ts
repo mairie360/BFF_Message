@@ -117,11 +117,11 @@ function expectBffContract(method: string, pathname: string, response: request.R
   if (schema) expect(bffContract.validate(schema, response.body)).toEqual([]);
 }
 
-/** Erreur au format ApiErrorResponse du BFF (tous les statuts d'erreur ne sont pas encore documentés par route). */
+/** Error in the envelope shared by every BFF (`ErrorResponse`, @mairie360/bffs-lib): `{ error: { code, message, details } }`. */
 function expectApiError(response: request.Response, status: number, code: string) {
   expect(response.status).toBe(status);
-  expect(bffContract.validate(bffContract.schema('ApiErrorResponse'), response.body)).toEqual([]);
-  expect(response.body.code).toBe(code);
+  expect(bffContract.validate(bffContract.schema('ErrorResponse'), response.body)).toEqual([]);
+  expect(response.body.error.code).toBe(code);
 }
 
 /** Appels reçus par un service simulé, sous la forme `MÉTHODE chemin?query` (tels que les construisent les clients générés). */
@@ -246,7 +246,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       const response = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(agent.id)).send({ readUntilMessageId: 'message-42' });
 
-      expectApiError(response, 503, 'READ_ACK_UNAVAILABLE');
+      expectApiError(response, 503, 'SERVICE_UNAVAILABLE');
       expectBffContract('post', '/conversations/conversation-4/read', response);
       expect(messageApi.requests).toHaveLength(0);
     });
@@ -526,7 +526,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests.map((call) => call.headers.authorization)).toEqual([undefined]);
     });
 
-    test('an upstream 4xx is relayed without its message or body', async () => {
+    test('an upstream 4xx the route does not declare answers 502 without its message or body', async () => {
       mockMessageApi();
       messageApi.on('post', MESSAGE_API.chats, {
         status: 422, body: { error: 'duplicate key value violates unique constraint "chats_pkey"' }, outOfContract: true,
@@ -534,8 +534,9 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       const response = await request(app).post('/groups').set('Authorization', authorizationFor(agent.id)).send({ name: 'Équipe', memberIds: [8] });
 
-      expectApiError(response, 422, 'UPSTREAM_ERROR');
-      expect(response.body).not.toHaveProperty('details');
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expectBffContract('post', '/groups', response);
+      expect(response.body.error.details).toEqual([]);
       expect(JSON.stringify(response.body)).not.toMatch(/duplicate|chats_pkey|status code/i);
     });
   });
@@ -565,8 +566,18 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       const response = await (body === undefined ? call : call.send(body));
 
       expectApiError(response, 400, 'BAD_REQUEST');
+      expectBffContract(method, url.split('?')[0], response);
+      expect(response.body.error.details.length).toBeGreaterThan(0);
       expect(messageApi.requests).toEqual([]);
       expect(coreApi.requests).toEqual([]);
+    });
+
+    test('a validation error lists each invalid field with its location', async () => {
+      const response = await request(app).post('/conversations/conversation-4/messages').set('Authorization', authorizationFor(agent.id)).send({ content: 42 });
+
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expect(response.body.error.message).toBe('Validation failed');
+      expect(response.body.error.details).toEqual([expect.objectContaining({ path: 'body.content' })]);
     });
   });
 
@@ -602,6 +613,27 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       expectApiError(response, 502, 'BAD_GATEWAY');
       expect(JSON.stringify(response.body)).not.toContain('database');
+    });
+
+    test('keeps a declared Message API 403 when a member who is not an administrator deletes a chat', async () => {
+      mockMessageApi();
+      messageApi.on('delete', MESSAGE_API.chat, { status: 403, raw: 'Forbidden', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).delete('/conversations/conversation-4').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 403, 'FORBIDDEN');
+      expectBffContract('delete', '/conversations/conversation-4', response);
+      expect(JSON.stringify(response.body)).not.toContain('Forbidden');
+    });
+
+    test('turns a Message API 4xx the route does not declare into a 502', async () => {
+      mockMessageApi();
+      messageApi.on('get', MESSAGE_API.chats, { status: 409, raw: 'Conflict', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).get('/conversations').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expectBffContract('get', '/conversations', response);
     });
 
     test('maps a dropped Message API connection to 502', async () => {
