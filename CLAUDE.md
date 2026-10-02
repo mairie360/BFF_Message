@@ -35,10 +35,11 @@ locally, `bff-message:local` built from `development.Dockerfile` by the scripts)
 Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `NODE_AUTH_TOKEN` from
 the environment; set it to a token with read access to those packages before `npm ci`.
 
-Env vars for local runs (all optional, each client falls back to a `localhost` default):
-`PORT` (required), `MESSAGE_API_BASE_PATH`, `MESSAGE_API_URL` + `MESSAGE_API_PORT`
+Env vars for local runs: `PORT` and `MESSAGE_API_BASE_PATH` are required (the server exits at start-up
+without them, no localhost fallback); the others fall back to a `localhost` default: `MESSAGE_API_URL` + `MESSAGE_API_PORT`
 (`/check_apis` only), `CORE_API_URL` + `CORE_API_PORT` (directory), `PROJECT_BFF_URL`,
-`CALENDAR_BFF_URL`.
+`CALENDAR_BFF_URL`. `RATE_LIMIT_ENABLED=false` disables the per-caller limit of `GET /business-references`
+(`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, `src/middleware/rateLimit.ts`); the perf stack sets it.
 
 ## Architecture
 
@@ -80,9 +81,12 @@ envelope with `ErrorResponseSchema.clone()` (zod 4 only adds `.openapi()` to sch
 `parseNumericId` extracts the trailing digits before calling upstream (which uses numeric ids).
 When adding fields, keep this mapping in the `map*ToDto` helpers.
 
-**Deliberately non-persistent** (do not "fix" without checking intent): `POST /conversations/:id/read`
-returns `unreadCount: 0` without calling upstream; `POST /attachments` returns fabricated metadata with
-no binary storage (it still requires a session resolved through Core API, 401 otherwise).
+**Not available yet** (MAIR-400, no upstream support): `POST /conversations/:id/read` and `POST /attachments`
+check the session (401) then answer 503; never answer fabricated data. A non-empty `attachmentIds` is
+refused (400) on send. `POST /direct-messages` reuses the caller's existing direct chat with the recipient
+(`findDirectChat`) before creating one. `GET /business-references` bounds its fan-out (constants at the top
+of `business_references.ts`) and is rate limited per caller. Never invent profile/author data: missing
+directory values are left out.
 `GET /me` resolves the caller from its own token through Core API on every request; never keep
 module-level user state, it leaks one caller's profile to the next. There is no `PATCH /me`: profile
 edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).

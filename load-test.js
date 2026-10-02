@@ -79,6 +79,9 @@ function groupBody(name) {
   return { name, description: 'k6 group', memberIds: [CONTACT_ID] };
 }
 
+// Operations that are not available yet answer 503 by design: not counted in http_req_failed.
+const UNAVAILABLE_IS_EXPECTED = http.expectedStatuses(503);
+
 // POST /attachments takes multipart/form-data: the string body is sent as is by coverage.js.
 const BOUNDARY = 'k6-attachment-boundary';
 const ATTACHMENT_BODY =
@@ -115,8 +118,13 @@ const handlers = {
 
   // --- Writes ---
   'POST /attachments': ({ request }) =>
-    check(request({ body: ATTACHMENT_BODY, headers: { 'Content-Type': `multipart/form-data; boundary=${BOUNDARY}` } }), {
-      'attachments 201': (r) => r.status === 201,
+    // No attachment storage exists upstream yet: the BFF answers 503 instead of made-up ids (MAIR-400).
+    check(request({
+      body: ATTACHMENT_BODY,
+      headers: { 'Content-Type': `multipart/form-data; boundary=${BOUNDARY}` },
+      params: { responseCallback: UNAVAILABLE_IS_EXPECTED },
+    }), {
+      'attachments 503': (r) => r.status === 503,
     }),
   // Runs before POST /groups: creates the group it deletes.
   'DELETE /conversations/{conversationId}': ({ request, data }) => {
@@ -130,8 +138,13 @@ const handlers = {
     });
   },
   'POST /conversations/{conversationId}/read': ({ request }) =>
-    check(request({ path: { conversationId: FIXTURE_CONVERSATION }, body: { readUntilMessageId: FIXTURE_MESSAGE } }), {
-      'read 200': (r) => r.status === 200,
+    check(request({
+      path: { conversationId: FIXTURE_CONVERSATION },
+      body: { readUntilMessageId: FIXTURE_MESSAGE },
+      params: { responseCallback: UNAVAILABLE_IS_EXPECTED },
+    }), {
+      // Message API has no read operation yet: nothing is persisted, the BFF answers 503.
+      'read 503': (r) => r.status === 503,
     }),
   'POST /groups': ({ request }) => {
     const res = request({ body: groupBody(unique('k6 group')) });

@@ -2220,6 +2220,8 @@
         "properties": {
           "content": {
             "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
             "pattern": "^[^<>]*$",
             "description": "Contenu du message à envoyer",
             "example": "Bonjour à tous !"
@@ -2240,7 +2242,8 @@
               "description": "Identifiant (attachment-<id> ou entier)",
               "example": 1
             },
-            "description": "Liste des identifiants des pièces jointes du message"
+            "maxItems": 0,
+            "description": "Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped."
           },
           "mentionIds": {
             "type": "array",
@@ -2258,6 +2261,7 @@
               "description": "Identifiant (user-<id> ou entier)",
               "example": 3
             },
+            "maxItems": 100,
             "description": "Liste des identifiants des mentions dans le message"
           }
         },
@@ -2285,6 +2289,8 @@
           },
           "message": {
             "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
             "pattern": "^[^<>]*$",
             "description": "Contenu du message direct à envoyer",
             "example": "Salut ! Comment ça va ?"
@@ -2301,12 +2307,15 @@
         "properties": {
           "name": {
             "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
             "pattern": "^[^<>]*$",
             "description": "Nom du groupe à créer",
             "example": "Marketing team"
           },
           "description": {
             "type": "string",
+            "maxLength": 500,
             "pattern": "^[^<>]*$",
             "description": "Description du groupe à créer",
             "example": "Group of the marketing team"
@@ -2327,6 +2336,7 @@
               "description": "Identifiant (user-<id> ou entier)",
               "example": 3
             },
+            "maxItems": 100,
             "description": "Liste des identifiants des membres à ajouter au groupe"
           }
         },
@@ -2360,10 +2370,14 @@
         "type": "object",
         "properties": {
           "files": {
-            "description": "Fichier à télécharger en tant que pièce jointe",
-            "example": "fichier.pdf"
+            "type": "string",
+            "format": "binary",
+            "description": "File to upload as an attachment (multipart part named `files`)"
           }
         },
+        "required": [
+          "files"
+        ],
         "description": "Corps de la requête pour télécharger une pièce jointe"
       },
       "ConversationsQuery": {
@@ -2371,14 +2385,14 @@
         "properties": {
           "search": {
             "type": "string",
+            "maxLength": 100,
             "description": "Terme de recherche pour filtrer les conversations",
             "example": "Marketing"
           },
           "limit": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
             "description": "Nombre maximum de conversations à retourner",
             "example": 10
           },
@@ -2394,10 +2408,9 @@
         "type": "object",
         "properties": {
           "limit": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
             "description": "Nombre maximum de messages à retourner",
             "example": 20
           },
@@ -2421,14 +2434,14 @@
         "properties": {
           "search": {
             "type": "string",
+            "maxLength": 100,
             "description": "Terme de recherche pour filtrer les contacts",
             "example": "Alice"
           },
           "limit": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
             "description": "Nombre maximum de contacts à retourner",
             "example": 10
           }
@@ -2606,6 +2619,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many requests from this caller: retry after the delay given by `Retry-After`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2615,7 +2638,8 @@
         "tags": [
           "Attachments"
         ],
-        "summary": "Télécharge une pièce jointe",
+        "summary": "Upload an attachment (not available yet: no attachment storage exists upstream)",
+        "description": "Message API has no attachment storage yet. Rather than answering ids of files that are stored nowhere, the operation answers 503 to an authenticated caller; `attachmentIds` is likewise refused on `POST /conversations/{conversationId}/messages`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2624,79 +2648,20 @@
                 "type": "object",
                 "properties": {
                   "files": {
-                    "description": "Fichier à télécharger en tant que pièce jointe",
-                    "example": "fichier.pdf"
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File to upload as an attachment (multipart part named `files`)"
                   }
                 },
+                "required": [
+                  "files"
+                ],
                 "description": "Corps de la requête pour télécharger une pièce jointe"
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Pièce jointe téléchargée avec succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "attachments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "number"
-                              }
-                            ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                            "example": "12345"
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "Nom de la pièce jointe",
-                            "example": "document.pdf"
-                          },
-                          "size": {
-                            "type": "integer",
-                            "description": "Taille de la pièce jointe en octets",
-                            "example": 102400
-                          },
-                          "type": {
-                            "type": "string",
-                            "description": "Type MIME de la pièce jointe",
-                            "example": "application/pdf"
-                          },
-                          "url": {
-                            "type": "string",
-                            "format": "uri",
-                            "description": "URL pour accéder à la pièce jointe",
-                            "example": "https://example.com/document.pdf"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "name"
-                        ],
-                        "description": "Représentation d’une pièce jointe"
-                      },
-                      "description": "Liste des pièces jointes téléchargées"
-                    }
-                  },
-                  "required": [
-                    "attachments"
-                  ],
-                  "description": "Réponse contenant la liste des pièces jointes téléchargées"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid session",
             "content": {
@@ -2709,6 +2674,16 @@
           },
           "502": {
             "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Attachment upload is not available yet: nothing was stored",
             "content": {
               "application/json": {
                 "schema": {
@@ -3172,6 +3147,7 @@
           {
             "schema": {
               "type": "string",
+              "maxLength": 100,
               "description": "Terme de recherche pour filtrer les contacts",
               "example": "Alice"
             },
@@ -3182,10 +3158,9 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "description": "Nombre maximum de contacts à retourner",
               "example": 10
             },
@@ -3318,6 +3293,7 @@
           {
             "schema": {
               "type": "string",
+              "maxLength": 100,
               "description": "Terme de recherche pour filtrer les conversations",
               "example": "Marketing"
             },
@@ -3328,10 +3304,9 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "description": "Nombre maximum de conversations à retourner",
               "example": 10
             },
@@ -3718,6 +3693,26 @@
               }
             }
           },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "503": {
             "description": "Read acknowledgement unavailable: nothing was persisted",
             "content": {
@@ -3746,12 +3741,15 @@
                 "properties": {
                   "name": {
                     "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
                     "pattern": "^[^<>]*$",
                     "description": "Nom du groupe à créer",
                     "example": "Marketing team"
                   },
                   "description": {
                     "type": "string",
+                    "maxLength": 500,
                     "pattern": "^[^<>]*$",
                     "description": "Description du groupe à créer",
                     "example": "Group of the marketing team"
@@ -3772,6 +3770,7 @@
                       "description": "Identifiant (user-<id> ou entier)",
                       "example": 3
                     },
+                    "maxItems": 100,
                     "description": "Liste des identifiants des membres à ajouter au groupe"
                   }
                 },
@@ -4055,10 +4054,9 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "description": "Nombre maximum de messages à retourner",
               "example": 20
             },
@@ -4453,6 +4451,8 @@
                 "properties": {
                   "content": {
                     "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000,
                     "pattern": "^[^<>]*$",
                     "description": "Contenu du message à envoyer",
                     "example": "Bonjour à tous !"
@@ -4473,7 +4473,8 @@
                       "description": "Identifiant (attachment-<id> ou entier)",
                       "example": 1
                     },
-                    "description": "Liste des identifiants des pièces jointes du message"
+                    "maxItems": 0,
+                    "description": "Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped."
                   },
                   "mentionIds": {
                     "type": "array",
@@ -4491,6 +4492,7 @@
                       "description": "Identifiant (user-<id> ou entier)",
                       "example": 3
                     },
+                    "maxItems": 100,
                     "description": "Liste des identifiants des mentions dans le message"
                   }
                 },
@@ -4847,6 +4849,8 @@
                   },
                   "message": {
                     "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000,
                     "pattern": "^[^<>]*$",
                     "description": "Contenu du message direct à envoyer",
                     "example": "Salut ! Comment ça va ?"

@@ -10,9 +10,11 @@ Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre Op
 
 ## Données et persistance
 
-Conversations et messages passent par Message API. Une conversation créée par `POST /direct-messages` (salon Message API nommé `Direct <recipientId>`) qui ne réunit que l’appelant et un contact est renvoyée avec `kind: 'direct'`, `contactId` (identifiant du contact) et le nom du contact ; toute autre conversation est `kind: 'group'`. Le front publie un nouveau message à un contact dans cette conversation (`POST /conversations/{id}/messages`) et n’appelle `POST /direct-messages` que s’il n’en existe pas. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil, les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète.
+Conversations et messages passent par Message API. Une conversation créée par `POST /direct-messages` (salon Message API nommé `Direct <recipientId>`) qui ne réunit que l’appelant et un contact est renvoyée avec `kind: 'direct'`, `contactId` (identifiant du contact) et le nom du contact ; toute autre conversation est `kind: 'group'`. Le front publie un nouveau message à un contact dans cette conversation (`POST /conversations/{id}/messages`) ; `POST /direct-messages` réutilise lui aussi la conversation directe existante de l’appelant avec le destinataire (salon nommé `Direct <id>` d’après l’un ou l’autre, qui ne réunit qu’eux deux) et ne crée un salon que s’il n’en existe pas. Le `authorName` d’un message est le nom de l’auteur dans l’annuaire Core, omis si l’auteur n’est pas un membre trouvé dans l’annuaire ; `GET /me` ne renvoie que ce que l’annuaire connaît (nom, e-mail, rôles), sans rôle, service, poste ou dernière connexion fictifs. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil, les métadonnées de pièces jointes et l’accusé de lecture ne constituent pas une persistance complète.
 
-L’upload de pièces jointes fabrique actuellement des métadonnées et ne fournit pas un stockage binaire durable. Le marquage lu renvoie un compteur nul sans écrire dans Message API. Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
+Les pièces jointes ne sont pas encore prises en charge : `POST /attachments` répond 503 à un appelant authentifié (401 sinon) au lieu d’identifiants inventés, et un `attachmentIds` non vide est refusé en 400 sur `POST /conversations/{id}/messages`. Le marquage lu vérifie la session (401) puis répond 503 : Message API n’a pas encore d’opération de lecture. Les `limit` des listes sont compris entre 1 et 100 ; les messages sont limités à 5000 caractères, les noms de groupe à 100 et les descriptions à 500.
+
+`GET /business-references` borne ses appels amont : une liste BFF Project de 50 projets, le détail des tâches uniquement pour les projets listés qui en ont (au plus 20, 4 à la fois), et une fenêtre BFF Calendar de 182 jours de part et d’autre d’aujourd’hui (moins d’un an). La route est limitée en débit par appelant (voir `BUSINESS_REFERENCES_RATE_LIMIT_*`). Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
 
 ## Installation et lancement local
 
@@ -58,11 +60,13 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 | Variable ou priorité | Exemple / repli indiqué | Rôle |
 | --- | --- | --- |
 | `PORT` | 4003 | Port de cet exemple local. |
-| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Racine de Message API (ses routes sont publiées sous `/api/v1`); le repli du code est `http://localhost:3003`. |
+| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Racine de Message API (ses routes sont publiées sous `/api/v1`). **Obligatoire** : le serveur refuse de démarrer sans elle (aucun repli sur localhost). |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Hôte et port du diagnostic. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source des références projets et tâches. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source des références événements. |
 | `CORE_API_URL` / `CORE_API_PORT` | localhost / — | Annuaire Core API (contacts, utilisateur courant). |
+| `RATE_LIMIT_ENABLED` | true | `false` désactive la limite par appelant de `GET /business-references` (tests de charge). |
+| `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requêtes par appelant (`sub` du JWT) et par fenêtre sur `GET /business-references`, 429 au-delà. |
 
 ## Routes et contrat de données
 
@@ -72,13 +76,13 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | --- | --- | --- | --- |
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
-| GET | `/business-references` | — | 200, 401 |
-| POST | `/attachments` | multipart/form-data | 201, 401, 502 |
+| GET | `/business-references` | — | 200, 401, 429 |
+| POST | `/attachments` | multipart/form-data | 401, 502, 503 |
 | GET | `/messaging/bootstrap` | — | 200, 401, 502 |
 | GET | `/contacts` | — | 200, 400, 401, 502 |
 | GET | `/conversations` | — | 200, 400, 401, 502 |
 | DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502 |
-| POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 503 |
+| POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 401, 502, 503 |
 | POST | `/groups` | application/json | 201, 400, 401, 502 |
 | GET | `/me` | — | 200, 401, 502 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502 |
@@ -129,7 +133,7 @@ Le Dockerfile utilise `node:24-alpine` pour la construction et l’exécution; l
 
 `security_test.sh` lance aussi la gate de couverture OpenAPI de `mairie360/CICD` (`tests/zap/zap_hooks.py`, passé à ZAP avec `--hook`), extraite dans `cicd-repo/` par les jobs CI et clonée au même endroit par les deux scripts au `cicd_version` épinglé (`CICD_VERSION` le remplace). Après le scan, le hook échoue si une opération du contrat n’a jamais été atteinte, ou si une opération qui exige `bearerAuth`/`cookieAuth` n’a reçu que des 401/403. Le contrat exige l’un de ces schémas au niveau racine ; les opérations publiques (`/health`, `/check_apis`) déclarent `security: []` dans leur `registerPath`, une nouvelle route publique doit faire de même. Côté k6, `load-test.js` contient un handler par opération de `contracts/openapi.json` via `coverage.js` : k6 s’arrête à l’init s’il en manque un et échoue sur le seuil `operations_uncovered` si un handler n’envoie pas sa requête. **Ajouter une route implique d’ajouter son handler dans `load-test.js`.**
 
-`load-test.js` lance deux scénarios. `crud` (2 VUs) appelle chaque handler une fois par itération, écritures comprises (pièce jointe, groupe, message, message direct, marqueur de lecture, profil), et supprime les conversations qu’il crée. `reads` (jusqu’à 20 VUs) ne rejoue que les handlers GET sur les fixtures de `init-test.sql` (conversation 101 avec le message 1001, dont l’utilisateur 2 est membre). Chaque opération a un seuil `p(95)` fixé par sa famille : 50 ms pour `/health`, 150 ms pour `/check_apis`, 400 ms pour les lectures, 800 ms pour les écritures ; `http_req_failed` doit rester sous 1 %.
+`load-test.js` lance deux scénarios. `crud` (2 VUs) appelle chaque handler une fois par itération, écritures comprises (pièce jointe et marqueur de lecture, qui doivent répondre 503 et sont exclus de `http_req_failed`, groupe, message, message direct), et supprime les conversations qu’il crée. `reads` (jusqu’à 20 VUs) ne rejoue que les handlers GET sur les fixtures de `init-test.sql` (conversation 101 avec le message 1001, dont l’utilisateur 2 est membre). Chaque opération a un seuil `p(95)` fixé par sa famille : 50 ms pour `/health`, 150 ms pour `/check_apis`, 400 ms pour les lectures, 800 ms pour les écritures ; `http_req_failed` doit rester sous 1 %.
 
 Avant un lancement Docker, vérifier les variables de service, les secrets de build et les réseaux dans les fichiers du dépôt. Une CI verte valide ses jobs; elle ne prouve pas la disponibilité des services métier dans un environnement distant.
 

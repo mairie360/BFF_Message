@@ -14,20 +14,30 @@ export const app = express();
 
 const PORT = process.env.PORT;
 
-// En-têtes de sécurité (CSP, X-Content-Type-Options, Permissions-Policy, CORP…) et
-// suppression de X-Powered-By. upgrade-insecure-requests est retiré car le BFF est
-// servi en HTTP derrière le reverse proxy.
+// Security headers (CSP, X-Content-Type-Options, Permissions-Policy, CORP...) and removal of
+// X-Powered-By. upgrade-insecure-requests is dropped because the BFF is served over HTTP behind
+// the reverse proxy.
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
 app.use(express.json());
 
-function accessTokenFromCookie(cookieHeader?: string): string | undefined {
+/**
+ * Value of the `accessToken` cookie, or `undefined` when it is absent or not valid percent-encoding:
+ * a malformed cookie is ignored (the request goes on unauthenticated) instead of making
+ * `decodeURIComponent` throw a URIError on every route, `/health` included.
+ */
+export function accessTokenFromCookie(cookieHeader?: string): string | undefined {
   const token = cookieHeader
     ?.split(';')
     .map((cookie) => cookie.trim())
     .find((cookie) => cookie.startsWith('accessToken='))
     ?.slice('accessToken='.length);
 
-  return token ? decodeURIComponent(token) : undefined;
+  if (!token) return undefined;
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return undefined;
+  }
 }
 
 app.use((req, _res, next) => {
@@ -44,10 +54,10 @@ app.use((req, _res, next) => {
 
 
 
-// Route pour l'interface visuelle
+// Interactive documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
-// Route pour l'extraction JSON (utilisée par l'Action Composite)
+// JSON spec (read by the CICD composite action)
 app.get('/openapi.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(openApiSpec);
@@ -58,9 +68,14 @@ app.get('/swagger.json', (req, res) => {
   res.send(openApiSpec);
 });
 
-if (require.main === module && !PORT) {
-  console.error('Error: PORT environment variable is not set.');
-  process.exit(1);
+if (require.main === module) {
+  // No silent localhost fallback for the main upstream: a missing setting stops the server at start-up.
+  for (const name of ['PORT', 'MESSAGE_API_BASE_PATH']) {
+    if (!process.env[name]?.trim()) {
+      console.error(`Error: ${name} environment variable is not set.`);
+      process.exit(1);
+    }
+  }
 }
 
 app.use('/health', healthRouter);

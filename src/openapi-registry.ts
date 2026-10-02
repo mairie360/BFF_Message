@@ -42,6 +42,17 @@ function inputId(kind: string, example: number) {
 // Stored texts are rendered by the fronts: `<` and `>` are refused.
 const noMarkup = (schema: z.ZodString) => schema.regex(/^[^<>]*$/, 'Must not contain < or >');
 
+/** Longest message body, conversation name and group description accepted. */
+export const MAX_MESSAGE_LENGTH = 5000;
+export const MAX_NAME_LENGTH = 100;
+export const MAX_DESCRIPTION_LENGTH = 500;
+/** Largest page a listing (`limit`) may ask for, and the most members a group may be created with. */
+export const MAX_LIMIT = 100;
+export const MAX_GROUP_MEMBERS = 100;
+
+// `limit` of the listings: 0 used to return everything and a negative value inverted the slicing.
+const limitQuery = () => z.coerce.number().int().min(1).max(MAX_LIMIT);
+
 export const ConversationKindSchema = z.enum(['direct', 'group']).openapi({
   description: 'Type de conversation, direct ou groupe',
   example: 'direct',
@@ -248,11 +259,11 @@ export const WrittenConversationIdParams = z.object({
 
 
 export const ConversationsQuery = z.object({
-  search: z.string().optional().openapi({
+  search: z.string().max(MAX_NAME_LENGTH).optional().openapi({
     description: 'Terme de recherche pour filtrer les conversations',
     example: 'Marketing',
   }),
-  limit: z.coerce.number().int().optional().openapi({
+  limit: limitQuery().optional().openapi({
     description: 'Nombre maximum de conversations à retourner',
     example: 10,
   }),
@@ -266,7 +277,7 @@ export const ConversationsQuery = z.object({
 
 
 export const MessagesQuery = z.object({
-  limit: z.coerce.number().int().optional().openapi({
+  limit: limitQuery().optional().openapi({
     description: 'Nombre maximum de messages à retourner',
     example: 20,
   }),
@@ -283,11 +294,11 @@ export const MessagesQuery = z.object({
 });
 
 export const ContactsQuery = z.object({
-    search: z.string().optional().openapi({
+    search: z.string().max(MAX_NAME_LENGTH).optional().openapi({
         description: 'Terme de recherche pour filtrer les contacts',
         example: 'Alice'
     }),
-    limit: z.coerce.number().int().optional().openapi({
+    limit: limitQuery().optional().openapi({
         description: 'Nombre maximum de contacts à retourner',
         example: 10
     }),
@@ -298,14 +309,14 @@ export const ContactsQuery = z.object({
 // Requête 
 
 export const SendMessageBody = z.object({
-  content: noMarkup(z.string()).openapi({
+  content: noMarkup(z.string().min(1).max(MAX_MESSAGE_LENGTH)).openapi({
     description: 'Contenu du message à envoyer',
     example: 'Bonjour à tous !',
   }),
-  attachmentIds: z.array(inputId('attachment', 1)).optional().openapi({
-    description: 'Liste des identifiants des pièces jointes du message',
+  attachmentIds: z.array(inputId('attachment', 1)).max(0, 'Attachments are not supported yet').optional().openapi({
+    description: 'Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped.',
   }),
-  mentionIds: z.array(inputId('user', 3)).optional().openapi({
+  mentionIds: z.array(inputId('user', 3)).max(MAX_GROUP_MEMBERS).optional().openapi({
     description: 'Liste des identifiants des mentions dans le message',
   }),
 }).openapi({
@@ -314,7 +325,7 @@ export const SendMessageBody = z.object({
 
 export const NewDirectMessageBody = z.object({
   recipientId: inputId('user', 3),
-  message: noMarkup(z.string()).openapi({
+  message: noMarkup(z.string().min(1).max(MAX_MESSAGE_LENGTH)).openapi({
     description: 'Contenu du message direct à envoyer',
     example: 'Salut ! Comment ça va ?',
   }),
@@ -323,15 +334,15 @@ export const NewDirectMessageBody = z.object({
 });
 
 export const CreateGroupBody = z.object({
-    name: noMarkup(z.string()).openapi({
+    name: noMarkup(z.string().min(1).max(MAX_NAME_LENGTH)).openapi({
         description: 'Nom du groupe à créer',
         example: 'Marketing team',
     }),
-    description: noMarkup(z.string()).optional().openapi({
+    description: noMarkup(z.string().max(MAX_DESCRIPTION_LENGTH)).optional().openapi({
         description: 'Description du groupe à créer',
         example: 'Group of the marketing team',
     }),
-    memberIds: z.array(inputId('user', 3)).openapi({
+    memberIds: z.array(inputId('user', 3)).max(MAX_GROUP_MEMBERS).openapi({
         description: 'Liste des identifiants des membres à ajouter au groupe',
     }),
 }).openapi({
@@ -345,9 +356,10 @@ export const MarkConversationAsReadBody = z.object({
 });
 
 export const UploadAttachmentBody = z.object({
-    files: z.any().openapi({
-        description: 'Fichier à télécharger en tant que pièce jointe',
-        example: 'fichier.pdf',
+    files: z.string().openapi({
+        type: 'string',
+        format: 'binary',
+        description: 'File to upload as an attachment (multipart part named `files`)',
     }),
 }).openapi({
     description: 'Corps de la requête pour télécharger une pièce jointe',

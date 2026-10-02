@@ -30,11 +30,11 @@ This repository contains the BFF server and its contract. Associated web service
 
 ## Data and current state
 
-Conversations and messages use Message API. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Attachment metadata and the read acknowledgement do not provide complete persistence. The profile is read-only here (`GET /me`); profile edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
+Conversations and messages use Message API. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Attachments and the read acknowledgement are not available yet (503). The profile is read-only here (`GET /me`); profile edits go through BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## Scope and limitations
 
-Attachment upload currently creates metadata and does not provide durable binary storage. Mark-as-read returns a zero counter without writing to Message API. Conversation groups use the API.
+Attachment upload is not available yet: `POST /attachments` answers 503 instead of made-up ids, and messages with attachments are refused. Mark-as-read answers 503 (no Message API read operation yet). Conversation groups use the API.
 
 ## Developing or operating this module
 

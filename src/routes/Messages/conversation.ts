@@ -11,9 +11,12 @@ import {
     MarkConversationAsReadResponse,
     errorResponses,
 } from '../../openapi-registry';
+import { getAuthorizationHeader } from '../../config/token';
 import {
     deleteConversation,
     fetchConversations,
+    fetchCurrentUser,
+    HttpError,
     markConversationAsRead,
     upstreamError,
     validationError,
@@ -100,6 +103,8 @@ registry.registerPath({
     },
     ...errorResponses({
       400: 'Invalid conversation id or body (details lists the invalid fields)',
+      401: 'Missing or invalid session',
+      502: 'Core API is unavailable or failed',
       503: 'Read acknowledgement unavailable: nothing was persisted',
     }),
   },
@@ -143,6 +148,13 @@ router.delete('/:conversationId', async (req: Request, res: Response) => {
 });
 
 router.post('/:conversationId/read', async (req: Request, res: Response) => {
+    // The session is checked before answering: an anonymous caller gets 401, not the 503 of the missing
+    // upstream operation. Invalid input is refused before the session is resolved against Core API
+    // (which verifies the token), so it costs no upstream call.
+    if (!getAuthorizationHeader(req.headers.authorization)) {
+        throw new HttpError(401, 'Authentication required');
+    }
+
     const paramsResult = ConversationIdParams.safeParse(req.params);
     const bodyResult = MarkConversationAsReadBody.safeParse(req.body);
 
@@ -152,6 +164,12 @@ router.post('/:conversationId/read', async (req: Request, res: Response) => {
 
     if (!bodyResult.success) {
         throw validationError('body', bodyResult.error.issues);
+    }
+
+    try {
+        await fetchCurrentUser(req.headers.authorization);
+    } catch (error) {
+        throw upstreamError(error, [401]);
     }
 
     const result = await markConversationAsRead(paramsResult.data.conversationId);

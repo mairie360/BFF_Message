@@ -10,28 +10,16 @@ import type {
   MessageView,
 } from '@mairie360/message-api-openapi/model';
 import {
-  AttachmentDtoSchema,
   ContactDtoSchema,
   ConversationDtoSchema,
   CurrentUserDtoSchema,
   MessageDtoSchema,
 } from '../../openapi-registry';
 
-export type BffAttachment = z.infer<typeof AttachmentDtoSchema>;
 export type BffContact = z.infer<typeof ContactDtoSchema>;
 export type BffConversation = z.infer<typeof ConversationDtoSchema>;
 export type BffCurrentUser = z.infer<typeof CurrentUserDtoSchema>;
 export type BffMessage = z.infer<typeof MessageDtoSchema>;
-
-const fallbackCurrentUser: BffCurrentUser = {
-  id: 'user-0',
-  name: 'Utilisateur courant',
-  email: 'user@mairie360.fr',
-  role: 'Agent',
-  service: 'Messagerie',
-  position: 'Agent municipal',
-  lastConnection: new Date().toISOString(),
-};
 
 function authOptions(incomingRequestToken?: string): AxiosRequestConfig {
   const authHeader = getAuthorizationHeader(incomingRequestToken);
@@ -113,14 +101,16 @@ export async function fetchCurrentUser(incomingRequestToken?: string): Promise<B
   }
 
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  const roles = (user.roles ?? []).filter((role) => role.trim());
 
   // Built per request: a module-level user would leak the last caller's profile to the next one.
+  // Only what the Core API directory knows is returned: no placeholder role, service, position or
+  // last connection (the directory has no such fields).
   return {
-    ...fallbackCurrentUser,
     id: publicUserId(id),
     name,
-    email: user.email?.trim() ? user.email : undefined,
-    lastConnection: new Date().toISOString(),
+    ...(user.email?.trim() ? { email: user.email } : {}),
+    ...(roles.length > 0 ? { role: roles.join(', ') } : {}),
   };
 }
 
@@ -129,9 +119,11 @@ type ConversationParticipants = {
   memberIds: number[];
   /** Directory entries of the other members. */
   others: BffContact[];
+  /** Directory entries of every member looked up (the caller only when `includeCaller` was asked). */
+  members: BffContact[];
 };
 
-const noParticipants: ConversationParticipants = { memberIds: [], others: [] };
+const noParticipants: ConversationParticipants = { memberIds: [], others: [], members: [] };
 
 // Name given by `createDirectMessage` to the chats it creates; the id is the recipient's.
 const DIRECT_CHAT_NAME = /^Direct (\d+)$/;
@@ -228,7 +220,7 @@ function mapCoreUserToContact(user: CoreUser): BffContact | null {
     name,
     initials: initials(name),
     presence: 'offline',
-    // L'annuaire Core renvoie une chaîne vide quand l'agent n'a pas d'email.
+    // The Core directory answers an empty string when the agent has no email.
     email: user.email?.trim() ? user.email : undefined,
   };
 }
@@ -237,21 +229,25 @@ async function fetchConversationParticipants(
   chatId: number,
   currentUserId: number | undefined,
   incomingRequestToken?: string,
+  includeCaller = false,
 ): Promise<ConversationParticipants> {
   try {
     const response = await messageClient.getChatUsers(chatId, authOptions(incomingRequestToken));
     const memberIds = [...new Set(response.data.users.map((user) => user.id))];
     const participants = await listContactsByIds(
-      memberIds.filter((userId) => userId !== currentUserId),
+      includeCaller ? memberIds : memberIds.filter((userId) => userId !== currentUserId),
       incomingRequestToken,
     );
+    const members = participants.flatMap((participant) => {
+      const contact = mapCoreUserToContact(participant);
+      return contact ? [contact] : [];
+    });
+    const callerId = currentUserId === undefined ? undefined : publicUserId(currentUserId);
 
     return {
       memberIds,
-      others: participants.flatMap((participant) => {
-        const contact = mapCoreUserToContact(participant);
-        return contact ? [contact] : [];
-      }),
+      others: members.filter((member) => member.id !== callerId),
+      members,
     };
   } catch {
     return noParticipants;
@@ -270,15 +266,21 @@ async function fetchChatSummary(
   }
 }
 
+/**
+ * `authorName` is the author's directory name when the author is a member found in Core API, and is
+ * left out otherwise (former member, directory unavailable): no placeholder name is made up.
+ */
 function mapMessageToDto(
   conversationId: string | number,
   message: MessageView,
   currentUserId?: number,
+  members: BffContact[] = [],
 ): BffMessage {
   const authorId = publicUserId(message.sender_id);
   const currentAuthorId = currentUserId === undefined
     ? undefined
     : publicUserId(currentUserId);
+  const authorName = members.find((member) => member.id === authorId)?.name;
 
   return {
     id: publicMessageId(message.id),
@@ -286,7 +288,7 @@ function mapMessageToDto(
     content: message.content,
     sentAt: message.created_at,
     authorId,
-    authorName: `Utilisateur ${message.sender_id}`,
+    ...(authorName ? { authorName } : {}),
     direction: currentAuthorId === authorId ? 'outgoing' : 'incoming',
     attachments: [],
     mentions: [],
@@ -360,12 +362,12 @@ export async function fetchConversationMessages(
   const currentUserId = numericUserIdFromToken(incomingRequestToken);
   const [response, participants, chat] = await Promise.all([
     messageClient.getChat(chatId, authOptions(incomingRequestToken)),
-    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken),
+    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken, true),
     fetchChatSummary(chatId, incomingRequestToken),
   ]);
   const apiMessages = response.data.messages as MessageView[];
   const messages = apiMessages.map((message) => (
-    mapMessageToDto(conversationId, message, currentUserId)
+    mapMessageToDto(conversationId, message, currentUserId, participants.members)
   ));
 
   return {
@@ -396,7 +398,7 @@ export async function sendMessageToConversation(
 
   const [response, participants, chat] = await Promise.all([
     messageClient.postMessage(chatId, { content }, authOptions(incomingRequestToken)),
-    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken),
+    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken, true),
     fetchChatSummary(chatId, incomingRequestToken),
   ]);
   const now = new Date().toISOString();
@@ -405,7 +407,7 @@ export async function sendMessageToConversation(
     content,
     created_at: now,
     sender_id: currentUserId,
-  }, currentUserId);
+  }, currentUserId, participants.members);
 
   return {
     conversation: mapChatToConversation(
@@ -428,12 +430,47 @@ export async function createDirectMessage(
     throw new HttpError(400, 'Invalid recipient id');
   }
 
-  const chat = await messageClient.createChat({
+  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  if (currentUserId === undefined) {
+    throw new HttpError(401, 'User id missing from the token');
+  }
+  if (recipientNumericId === currentUserId) {
+    throw new HttpError(400, 'A direct message cannot be sent to oneself');
+  }
+
+  // Reuse the direct conversation the caller already has with this contact: a new chat per message
+  // would split the history over duplicated conversations.
+  const existingChatId = await findDirectChat(recipientNumericId, currentUserId, incomingRequestToken);
+  const chatId = existingChatId ?? (await messageClient.createChat({
     name: directMessageName(recipientNumericId),
     members: [recipientNumericId],
-  }, authOptions(incomingRequestToken));
+  }, authOptions(incomingRequestToken))).data.id;
 
-  return sendMessageToConversation(chat.data.id, message, incomingRequestToken);
+  return sendMessageToConversation(chatId, message, incomingRequestToken);
+}
+
+/**
+ * Id of the caller's direct chat with `contactId`, if any. Message API does not expose a chat kind, so
+ * the candidates are the caller's chats named `Direct <id>` after either side (the contact may have
+ * started it), and a candidate is kept only when its members are exactly the caller and the contact.
+ * Only those candidates are inspected, so the lookup costs one listing plus one call per candidate.
+ */
+async function findDirectChat(
+  contactId: number,
+  currentUserId: number,
+  incomingRequestToken?: string,
+): Promise<number | undefined> {
+  const response = await messageClient.getChats(authOptions(incomingRequestToken));
+  const candidateNames = new Set([directMessageName(contactId), directMessageName(currentUserId)]);
+  const candidates = response.data.chats.filter((chat) => candidateNames.has(chat.name));
+
+  for (const chat of candidates) {
+    const members = await messageClient.getChatUsers(chat.id, authOptions(incomingRequestToken));
+    const memberIds = members.data.users.map((user) => user.id);
+    if (directContactId(chat.name, memberIds, currentUserId) === contactId) return chat.id;
+  }
+
+  return undefined;
 }
 
 export async function createGroupConversation(
@@ -514,22 +551,4 @@ export async function fetchMessagingBootstrap(incomingRequestToken?: string): Pr
 
 export async function getCurrentUser(incomingRequestToken?: string): Promise<{ currentUser: BffCurrentUser }> {
   return { currentUser: await fetchCurrentUser(incomingRequestToken) };
-}
-
-export function uploadAttachment(files?: unknown): { attachments: BffAttachment[] } {
-  const fileList = Array.isArray(files) ? files : [files];
-  const attachments = fileList.map((file, index) => {
-    const name = typeof file === 'object' && file !== null && 'name' in file
-      ? String((file as { name: unknown }).name)
-      : `attachment-${index + 1}`;
-
-    return {
-      id: `attachment-${Date.now()}-${index}`,
-      name,
-    };
-  });
-
-  return {
-    attachments,
-  };
 }
