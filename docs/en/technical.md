@@ -10,9 +10,11 @@ Express 5.2.1 server written in TypeScript. Zod schemas and their OpenAPI regist
 
 ## Data and persistence
 
-Conversations and messages use Message API. A conversation created by `POST /direct-messages` (Message API chat named `Direct <recipientId>`) that holds exactly the caller and one contact is returned with `kind: 'direct'`, `contactId` (the contact's id) and the contact's name; every other conversation is `kind: 'group'`. The front posts a new message to a contact in that conversation (`POST /conversations/{id}/messages`) and only calls `POST /direct-messages` when there is none. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Local profile edits, attachment metadata and the read acknowledgement do not provide complete persistence.
+Conversations and messages use Message API. A conversation created by `POST /direct-messages` (Message API chat named `Direct <recipientId>`) that holds exactly the caller and one contact is returned with `kind: 'direct'`, `contactId` (the contact's id) and the contact's name; every other conversation is `kind: 'group'`. The front posts a new message to a contact in that conversation (`POST /conversations/{id}/messages`); `POST /direct-messages` itself also reuses the caller's existing direct conversation with the recipient (chat named `Direct <id>` after either side, holding exactly both of them) and only creates a chat when there is none. Message `authorName` is the author's Core directory name, left out when the author is not a member found in the directory; `GET /me` only returns what the directory knows (name, email, roles), no placeholder role, service, position or last connection. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Local profile edits, attachment metadata and the read acknowledgement do not provide complete persistence.
 
-Attachment upload currently creates metadata and does not provide durable binary storage. Mark-as-read returns a zero counter without writing to Message API. Conversation groups use the API, while some profile data remains local to the process.
+Attachments are not supported yet: `POST /attachments` answers 503 to an authenticated caller (401 otherwise) instead of made-up ids, and a non-empty `attachmentIds` is refused with 400 on `POST /conversations/{id}/messages`. Mark-as-read checks the session (401) then answers 503: Message API has no read operation yet. Listing `limit`s are between 1 and 100; message bodies are limited to 5000 characters, group names to 100 and descriptions to 500.
+
+`GET /business-references` bounds its upstream fan-out: one BFF Project listing of 50 projects, task details only for listed projects that report tasks (at most 20, 4 at a time), and a BFF Calendar window of 182 days on each side of today (under one year). It is rate limited per caller (see `BUSINESS_REFERENCES_RATE_LIMIT_*`). Conversation groups use the API, while some profile data remains local to the process.
 
 ## Installation and local startup
 
@@ -58,11 +60,13 @@ Values below are local examples or explicitly described behavior, not production
 | Variable or precedence | Example / stated fallback | Purpose |
 | --- | --- | --- |
 | `PORT` | 4003 | Port used by this local example. |
-| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Message API root (its routes are published under `/api/v1`); the code fallback is `http://localhost:3003`. |
+| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Message API root (its routes are published under `/api/v1`). **Required**: the server refuses to start without it (no localhost fallback). |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Diagnostic host and port. |
 | `PROJECT_BFF_URL` | http://localhost:4001 | Source of project and task references. |
 | `CALENDAR_BFF_URL` | http://localhost:4002 | Source of event references. |
 | `CORE_API_URL` / `CORE_API_PORT` | localhost / — | Core API directory (contacts, current user). |
+| `RATE_LIMIT_ENABLED` | true | `false` disables the per-caller limit of `GET /business-references` (load tests). |
+| `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requests per caller (JWT `sub`) and window on `GET /business-references`, answered 429 beyond. |
 
 ## Routes and data contract
 
@@ -72,13 +76,13 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | --- | --- | --- | --- |
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
-| GET | `/business-references` | — | 200, 401 |
-| POST | `/attachments` | multipart/form-data | 201, 401, 502 |
+| GET | `/business-references` | — | 200, 401, 429 |
+| POST | `/attachments` | multipart/form-data | 401, 502, 503 |
 | GET | `/messaging/bootstrap` | — | 200, 401, 502 |
 | GET | `/contacts` | — | 200, 400, 401, 502 |
 | GET | `/conversations` | — | 200, 400, 401, 502 |
 | DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502 |
-| POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 503 |
+| POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 401, 502, 503 |
 | POST | `/groups` | application/json | 201, 400, 401, 502 |
 | GET | `/me` | — | 200, 401, 502 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502 |
@@ -87,7 +91,7 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 
 ## Session, permissions and errors
 
-The BFF uses the Authorization header; when absent, middleware can use the `accessToken` cookie. Business clients forward that authorization. Local profiles and read responses must not be interpreted as remote API validation of storage or permissions.
+The BFF uses the Authorization header; when absent, middleware can use the `accessToken` cookie (a malformed, non-decodable cookie is ignored). Business clients forward that authorization. Local profiles and read responses must not be interpreted as remote API validation of storage or permissions.
 
 Every error is answered in the envelope shared by all the BFFs (`@mairie360/bffs-lib`, schema
 `ErrorResponse` of the contract): `{ "error": { "code": "NOT_FOUND", "message": "Resource not found", "details": [] } }`.
@@ -128,7 +132,7 @@ The Dockerfile uses `node:24-alpine` for build and runtime; the image command is
 
 `security_test.sh` also runs the OpenAPI coverage gate of `mairie360/CICD` (`tests/zap/zap_hooks.py`, passed to ZAP with `--hook`), checked out as `cicd-repo/` by the CI jobs and cloned there by both scripts at the pinned `cicd_version` (`CICD_VERSION` overrides it). After the scan, the hook fails when an operation of the contract was never reached, or when an operation that requires `bearerAuth`/`cookieAuth` only got 401/403. The contract requires one of these schemes at the top level; public operations (`/health`, `/check_apis`) declare `security: []` in their `registerPath`, so a new public route must do the same. On the k6 side, `load-test.js` holds one handler per operation of `contracts/openapi.json` through `coverage.js`: k6 aborts at init when one is missing and fails its `operations_uncovered` threshold when a handler does not send its request. **Adding a route means adding its handler in `load-test.js`.**
 
-`load-test.js` runs two scenarios. `crud` (2 VUs) calls every handler once per iteration, writes included (attachment, group, message, direct message, read marker, profile), and deletes the conversations it creates. `reads` (ramp to 20 VUs) replays only the GET handlers against the fixtures of `init-test.sql` (conversation 101 with message 1001, of which user 2 is a member). Every operation has a `p(95)` threshold set by its family: 50 ms for `/health`, 150 ms for `/check_apis`, 400 ms for reads, 800 ms for writes; `http_req_failed` must stay below 1 %.
+`load-test.js` runs two scenarios. `crud` (2 VUs) calls every handler once per iteration, writes included (attachment and read marker, both expected to answer 503 and excluded from `http_req_failed`, group, message, direct message), and deletes the conversations it creates. `reads` (ramp to 20 VUs) replays only the GET handlers against the fixtures of `init-test.sql` (conversation 101 with message 1001, of which user 2 is a member). Every operation has a `p(95)` threshold set by its family: 50 ms for `/health`, 150 ms for `/check_apis`, 400 ms for reads, 800 ms for writes; `http_req_failed` must stay below 1 %.
 
 Before running Docker, check service variables, build secrets and networks in the repository files. Green CI validates its jobs; it does not prove business-service availability in a remote environment.
 

@@ -181,6 +181,8 @@ services:
       MESSAGE_API_BASE_PATH: http://message-api:3003
       CORE_API_URL: core-api
       CORE_API_PORT: 3000
+      # The load test replays GET /business-references from one user at 20 VUs: no per-caller limit.
+      RATE_LIMIT_ENABLED: "false"
     expose:
       - "4003"
     networks:

@@ -2,11 +2,10 @@ import {Router, Request, Response} from 'express';
 import {
     registry,
     UploadAttachmentBody,
-    UploadAttachmentResponse,
     errorResponses,
 } from '../../openapi-registry';
 import { getAuthorizationHeader } from '../../config/token';
-import { fetchCurrentUser, HttpError, uploadAttachment, upstreamError } from './message_helpers';
+import { fetchCurrentUser, HttpError, upstreamError } from './message_helpers';
 
 const router = Router();
 
@@ -14,7 +13,10 @@ registry.registerPath({
     method: 'post',
     path: '/attachments',
     tags: ['Attachments'],
-    summary: 'Télécharge une pièce jointe',
+    summary: 'Upload an attachment (not available yet: no attachment storage exists upstream)',
+    description: 'Message API has no attachment storage yet. Rather than answering ids of files that are '
+        + 'stored nowhere, the operation answers 503 to an authenticated caller; `attachmentIds` is likewise '
+        + 'refused on `POST /conversations/{conversationId}/messages`.',
     request: {
         body: {
             required: true,
@@ -26,33 +28,29 @@ registry.registerPath({
         },
     },
     responses: {
-        201: {
-            description: 'Pièce jointe téléchargée avec succès',
-            content: {
-                'application/json': {
-                    schema: UploadAttachmentResponse,
-                },
-            },
-        },
         ...errorResponses({
             401: 'Missing or invalid session',
+            503: 'Attachment upload is not available yet: nothing was stored',
             502: 'Core API is unavailable or failed',
         }),
     },
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, _res: Response) => {
     if (!getAuthorizationHeader(req.headers.authorization)) {
         throw new HttpError(401, 'Authentication required');
     }
 
-    // The session is resolved against Core API (which verifies the token) before accepting any file.
+    // The session is resolved against Core API (which verifies the token) before answering.
     try {
         await fetchCurrentUser(req.headers.authorization);
     } catch (error) {
         throw upstreamError(error, [401]);
     }
-    return res.status(201).json(uploadAttachment(req.body?.files));
+
+    // No upstream stores attachments yet: answering made-up ids would let the front believe a file
+    // was kept (MAIR-400).
+    throw new HttpError(503, 'Attachment upload is not available yet');
 });
 
 export default router;

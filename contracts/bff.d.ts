@@ -115,6 +115,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Too many requests from this caller: retry after the delay given by `Retry-After` */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -134,7 +143,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Télécharge une pièce jointe */
+        /**
+         * Upload an attachment (not available yet: no attachment storage exists upstream)
+         * @description Message API has no attachment storage yet. Rather than answering ids of files that are stored nowhere, the operation answers 503 to an authenticated caller; `attachmentIds` is likewise refused on `POST /conversations/{conversationId}/messages`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -146,53 +158,14 @@ export interface paths {
                 content: {
                     "multipart/form-data": {
                         /**
-                         * @description Fichier à télécharger en tant que pièce jointe
-                         * @example fichier.pdf
+                         * Format: binary
+                         * @description File to upload as an attachment (multipart part named `files`)
                          */
-                        files?: unknown;
+                        files: string;
                     };
                 };
             };
             responses: {
-                /** @description Pièce jointe téléchargée avec succès */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description Liste des pièces jointes téléchargées */
-                            attachments: {
-                                /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                                 * @example 12345
-                                 */
-                                id: string | number;
-                                /**
-                                 * @description Nom de la pièce jointe
-                                 * @example document.pdf
-                                 */
-                                name: string;
-                                /**
-                                 * @description Taille de la pièce jointe en octets
-                                 * @example 102400
-                                 */
-                                size?: number;
-                                /**
-                                 * @description Type MIME de la pièce jointe
-                                 * @example application/pdf
-                                 */
-                                type?: string;
-                                /**
-                                 * Format: uri
-                                 * @description URL pour accéder à la pièce jointe
-                                 * @example https://example.com/document.pdf
-                                 */
-                                url?: string;
-                            }[];
-                        };
-                    };
-                };
                 /** @description Missing or invalid session */
                 401: {
                     headers: {
@@ -204,6 +177,15 @@ export interface paths {
                 };
                 /** @description Core API is unavailable or failed */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Attachment upload is not available yet: nothing was stored */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -514,7 +496,7 @@ export interface paths {
                     /** @description Terme de recherche pour filtrer les contacts */
                     search?: string;
                     /** @description Nombre maximum de contacts à retourner */
-                    limit?: number | null;
+                    limit?: number;
                 };
                 header?: never;
                 path?: never;
@@ -624,7 +606,7 @@ export interface paths {
                     /** @description Terme de recherche pour filtrer les conversations */
                     search?: string;
                     /** @description Nombre maximum de conversations à retourner */
-                    limit?: number | null;
+                    limit?: number;
                     /** @description Curseur pour la pagination des résultats */
                     cursor?: string;
                 };
@@ -904,6 +886,24 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Core API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Read acknowledgement unavailable: nothing was persisted */
                 503: {
                     headers: {
@@ -1154,7 +1154,7 @@ export interface paths {
             parameters: {
                 query?: {
                     /** @description Nombre maximum de messages à retourner */
-                    limit?: number | null;
+                    limit?: number;
                     /** @description Curseur pour récupérer les messages avant un certain point */
                     before?: string;
                     /** @description Curseur pour récupérer les messages après un certain point */
@@ -1401,7 +1401,7 @@ export interface paths {
                          * @example Bonjour à tous !
                          */
                         content: string;
-                        /** @description Liste des identifiants des pièces jointes du message */
+                        /** @description Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped. */
                         attachmentIds?: (number | string)[];
                         /** @description Liste des identifiants des mentions dans le message */
                         mentionIds?: (number | string)[];
@@ -3147,7 +3147,7 @@ export interface components {
              * @example Bonjour à tous !
              */
             content: string;
-            /** @description Liste des identifiants des pièces jointes du message */
+            /** @description Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped. */
             attachmentIds?: (number | string)[];
             /** @description Liste des identifiants des mentions dans le message */
             mentionIds?: (number | string)[];
@@ -3191,10 +3191,10 @@ export interface components {
         /** @description Corps de la requête pour télécharger une pièce jointe */
         UploadAttachmentBody: {
             /**
-             * @description Fichier à télécharger en tant que pièce jointe
-             * @example fichier.pdf
+             * Format: binary
+             * @description File to upload as an attachment (multipart part named `files`)
              */
-            files?: unknown;
+            files: string;
         };
         /** @description Paramètres de requête pour filtrer et paginer les conversations */
         ConversationsQuery: {
@@ -3207,7 +3207,7 @@ export interface components {
              * @description Nombre maximum de conversations à retourner
              * @example 10
              */
-            limit?: number | null;
+            limit?: number;
             /**
              * @description Curseur pour la pagination des résultats
              * @example abc123
@@ -3220,7 +3220,7 @@ export interface components {
              * @description Nombre maximum de messages à retourner
              * @example 20
              */
-            limit?: number | null;
+            limit?: number;
             /**
              * Format: date-time
              * @description Curseur pour récupérer les messages avant un certain point
@@ -3245,7 +3245,7 @@ export interface components {
              * @description Nombre maximum de contacts à retourner
              * @example 10
              */
-            limit?: number | null;
+            limit?: number;
         };
         /** @description Paramètres pour identifier une conversation */
         ConversationIdParams: {

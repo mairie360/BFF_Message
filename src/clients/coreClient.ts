@@ -9,7 +9,7 @@ const coreApiAxios = axios.create({ timeout: 5_000, headers: { Accept: 'applicat
 
 const coreApi = getCoreAPIMairie360(coreApiAxios);
 
-export type ContactUser = Pick<DirectoryUser, 'id' | 'first_name' | 'last_name' | 'email'>;
+export type ContactUser = Pick<DirectoryUser, 'id' | 'first_name' | 'last_name' | 'email'> & Partial<Pick<DirectoryUser, 'roles'>>;
 
 function normalizeBaseUrl(value: string): string {
   return /^https?:\/\//i.test(value) ? value : `http://${value}`;

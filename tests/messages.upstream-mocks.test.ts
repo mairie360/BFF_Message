@@ -20,6 +20,7 @@ import {
   createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffError, projectBffUrls, projectDetailsResponse,
   projectListItem, projectsPageResponse, taskItem, tokenFor, users,
 } from './support/upstream-fixtures';
+import { MAX_PROJECT_DETAILS, PROJECTS_PAGE_LIMIT } from '../src/routes/Messages/business_references';
 
 const { agent, sophie, thomas } = users;
 
@@ -299,9 +300,24 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         lastMessage: 'Réponse reçue', lastMessageAt: '2026-09-15T09:01:00Z', unreadCount: 1,
       });
       expect(response.body.messages).toEqual([
-        { id: 'message-41', conversationId: 'conversation-4', content: 'Mon message', sentAt: '2026-09-15T09:00:00Z', authorId: 'user-7', authorName: 'Utilisateur 7', direction: 'outgoing', attachments: [], mentions: [] },
-        { id: 'message-42', conversationId: 'conversation-4', content: 'Réponse reçue', sentAt: '2026-09-15T09:01:00Z', authorId: 'user-8', authorName: 'Utilisateur 8', direction: 'incoming', attachments: [], mentions: [] },
+        { id: 'message-41', conversationId: 'conversation-4', content: 'Mon message', sentAt: '2026-09-15T09:00:00Z', authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [] },
+        { id: 'message-42', conversationId: 'conversation-4', content: 'Réponse reçue', sentAt: '2026-09-15T09:01:00Z', authorId: 'user-8', authorName: 'Sophie Leroy', direction: 'incoming', attachments: [], mentions: [] },
       ]);
+    });
+
+    test('GET /conversations/:id/messages leaves authorName out for an author absent from the directory (MAIR-400)', async () => {
+      mockMessageApi({
+        chats: [chatView(4, 'Équipe communication')],
+        messages: { 4: [messageView(43, 99, { content: 'Ancien membre' })] },
+        members: { 4: [agent.id, sophie.id] },
+      });
+
+      const response = await request(app).get('/conversations/conversation-4/messages').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/conversations/conversation-4/messages', response);
+      expect(response.body.messages).toEqual([expect.objectContaining({ id: 'message-43', authorId: 'user-99' })]);
+      expect(response.body.messages[0]).not.toHaveProperty('authorName');
     });
 
     test('GET /conversations/:id/messages names the conversation after its id when Message API does not list it', async () => {
@@ -326,7 +342,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         .toEqual([[messageApiUrls.getPostMessageUrl(4), { content: 'Bonjour à tous' }]]);
       expect(response.body.message).toEqual({
         id: 'message-31', conversationId: 'conversation-4', content: 'Bonjour à tous', sentAt: expect.any(String),
-        authorId: 'user-7', authorName: 'Utilisateur 7', direction: 'outgoing', attachments: [], mentions: [],
+        authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [],
       });
       expect(response.body.conversation).toMatchObject({ id: 'conversation-4', name: 'Équipe communication', department: 'Avec Sophie Leroy' });
     });
@@ -349,21 +365,62 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
-    test('POST /direct-messages creates a direct chat with the recipient then posts the first message in it', async () => {
-      mockMessageApi({ chats: [chatView(21, 'Direct 8')], createdChatId: 21, postedMessageId: 50, members: { 21: [agent.id, sophie.id] } });
+    test('POST /direct-messages creates a direct chat with the recipient when none exists, then posts the first message in it', async () => {
+      // Conversation 7 is named after Sophie but has three members: a group, not the direct conversation.
+      const chats = [chatView(7, 'Direct 8')];
+      mockMessageApi({ chats, createdChatId: 21, postedMessageId: 50, members: { 7: [agent.id, sophie.id, thomas.id], 21: [agent.id, sophie.id] } });
+      messageApi.on('get', MESSAGE_API.chats, () => ({ body: chatsResult(chats) }));
+      messageApi.on('post', MESSAGE_API.chats, () => {
+        chats.push(chatView(21, 'Direct 8'));
+        return { body: createChatResult(21) };
+      });
 
       const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
         .send({ recipientId: 'user-8', message: 'Bonjour Sophie' });
 
       expect(response.status).toBe(201);
       expectBffContract('post', '/direct-messages', response);
-      expect(messageApi.calls(MESSAGE_API.chats, 'POST')[0].body).toEqual({ name: 'Direct 8', members: [sophie.id] });
+      expect(messageApi.calls(MESSAGE_API.chats, 'POST').map((call) => call.body)).toEqual([{ name: 'Direct 8', members: [sophie.id] }]);
       expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => [call.url.pathname, call.body]))
         .toEqual([[messageApiUrls.getPostMessageUrl(21), { content: 'Bonjour Sophie' }]]);
       expect(response.body).toEqual({
         conversation: expect.objectContaining({ id: 'conversation-21', name: 'Sophie Leroy', kind: 'direct', contactId: 'user-8' }),
         message: expect.objectContaining({ id: 'message-50', conversationId: 21, direction: 'outgoing' }),
       });
+    });
+
+    test('POST /direct-messages reuses the existing direct conversation with the contact, whoever started it (MAIR-400)', async () => {
+      // `Direct 7` was started by Sophie (8) for the agent (7): it is the agent's direct conversation with Sophie too.
+      mockMessageApi({
+        chats: [chatView(5, 'Direct 9'), chatView(6, 'Direct 7')],
+        postedMessageId: 51,
+        members: { 5: [agent.id, thomas.id], 6: [agent.id, sophie.id] },
+      });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Encore moi' });
+
+      expect(response.status).toBe(201);
+      expectBffContract('post', '/direct-messages', response);
+      expect(messageApi.calls(MESSAGE_API.chats, 'POST')).toEqual([]);
+      // Only the chats named after either side are inspected.
+      expect(messageApi.calls(MESSAGE_API.users).map((call) => call.pathParams.chatId)).not.toContain('5');
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => [call.url.pathname, call.body]))
+        .toEqual([[messageApiUrls.getPostMessageUrl(6), { content: 'Encore moi' }]]);
+      expect(response.body.conversation).toEqual(expect.objectContaining({ id: 'conversation-6', kind: 'direct', contactId: 'user-8' }));
+    });
+
+    test('POST /direct-messages refuses a message to oneself and an anonymous caller before creating any chat', async () => {
+      mockMessageApi();
+
+      const toSelf = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: `user-${agent.id}`, message: 'Note' });
+      const anonymous = await request(app).post('/direct-messages').send({ recipientId: 'user-8', message: 'Bonjour' });
+
+      expectApiError(toSelf, 400, 'BAD_REQUEST');
+      expectBffContract('post', '/direct-messages', toSelf);
+      expectApiError(anonymous, 401, 'UNAUTHORIZED');
+      expect(messageApi.requests).toEqual([]);
     });
   });
 
@@ -373,7 +430,8 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
 
       expect(response.status).toBe(200);
       expectBffContract('get', '/me', response);
-      expect(response.body.currentUser).toMatchObject({ id: 'user-8', name: 'Sophie Leroy', email: 'sophie.leroy@mairie360.fr' });
+      // Only what the directory knows: no placeholder service, position or last connection (MAIR-400).
+      expect(response.body.currentUser).toEqual({ id: 'user-8', name: 'Sophie Leroy', email: 'sophie.leroy@mairie360.fr', role: 'User' });
       expect(upstreamSequence(coreApi)).toEqual([called('GET', coreApiUrls.getListDirectoryUsersUrl({ ids: String(sophie.id) }))]);
     });
 
@@ -507,12 +565,35 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expectApiError(response, 401, 'UNAUTHORIZED');
     });
 
-    test('POST /attachments accepts an authenticated caller', async () => {
+    test('POST /attachments answers 503 to an authenticated caller instead of made-up attachment ids (MAIR-400)', async () => {
       const response = await request(app).post('/attachments').set('Authorization', authorizationFor(agent.id)).send({ files: [{ name: 'note.pdf' }] });
 
-      expect(response.status).toBe(201);
+      expectApiError(response, 503, 'SERVICE_UNAVAILABLE');
       expectBffContract('post', '/attachments', response);
-      expect(response.body.attachments).toEqual([expect.objectContaining({ name: 'note.pdf' })]);
+      expect(response.body).not.toHaveProperty('attachments');
+    });
+
+    test('POST /conversations/:id/read answers 401 without a session, before the 503 of the missing operation (MAIR-400)', async () => {
+      mockMessageApi();
+
+      const anonymous = await request(app).post('/conversations/conversation-4/read').send({});
+      const unknownUser = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(404)).send({});
+
+      expectApiError(anonymous, 401, 'UNAUTHORIZED');
+      expectBffContract('post', '/conversations/conversation-4/read', anonymous);
+      expectApiError(unknownUser, 401, 'UNAUTHORIZED');
+      expect(messageApi.requests).toEqual([]);
+    });
+
+    test('a malformed accessToken cookie is ignored instead of failing every route (MAIR-400)', async () => {
+      mockMessageApi();
+
+      const health = await request(app).get('/health').set('Cookie', 'accessToken=%E0%A4%A');
+      const conversations = await request(app).get('/conversations').set('Cookie', 'accessToken=%E0%A4%A');
+
+      expect(health.status).toBe(200);
+      expect(conversations.status).not.toBe(500);
+      expect(messageApi.calls(MESSAGE_API.chats).every((call) => call.headers.authorization === undefined)).toBe(true);
     });
 
     test('an anonymous request is forwarded upstream without any default token', async () => {
@@ -559,6 +640,16 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       ['post', '/conversations/conversation-4/messages', { content: '<script>alert(1)</script>' }],
       ['post', '/direct-messages', { recipientId: 'user-8', message: '<img src=x onerror=alert(1)>' }],
       ['post', '/groups', { name: '<b>Équipe</b>', memberIds: [8] }],
+      // MAIR-400: bounded limits and lengths, no attachment silently dropped.
+      ['get', '/conversations?limit=0', undefined],
+      ['get', '/conversations/conversation-4/messages?limit=-1', undefined],
+      ['get', '/contacts?limit=101', undefined],
+      ['post', '/conversations/conversation-4/messages', { content: '' }],
+      ['post', '/conversations/conversation-4/messages', { content: 'a'.repeat(5001) }],
+      ['post', '/conversations/conversation-4/messages', { content: 'Avec pièce jointe', attachmentIds: ['attachment-1'] }],
+      ['post', '/direct-messages', { recipientId: 'user-8', message: 'a'.repeat(5001) }],
+      ['post', '/groups', { name: 'a'.repeat(101), memberIds: [8] }],
+      ['post', '/groups', { name: '', memberIds: [8] }],
     ] as const)('%s %s rejects an invalid payload with 400 before any upstream call', async (method, url, body) => {
       mockMessageApi();
 
@@ -685,14 +776,19 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         sources: { projects: 'available', calendar: 'available' },
       });
 
-      expect(upstreamSequence(projectBff)).toContain(called('GET', projectBffUrls.getGetProjectsPageUrl({ limit: 100 })));
+      expect(upstreamSequence(projectBff)).toContain(called('GET', projectBffUrls.getGetProjectsPageUrl({ limit: PROJECTS_PAGE_LIMIT })));
       // Le BFF encode l'identifiant avant de le passer au client généré, qui l'insère tel quel.
       expect(projectBff.calls(PROJECT_BFF.project).map((call) => call.url.pathname).sort())
         .toEqual([projectBffUrls.getGetProjectsProjectIdUrl('project-42'), projectBffUrls.getGetProjectsProjectIdUrl(encodeURIComponent('project/43'))].sort());
       const [bootstrap] = calendarBff.calls(CALENDAR_BFF.bootstrap);
-      const year = new Date().getUTCFullYear();
       expect(bootstrap.url.pathname).toBe(calendarBffUrls.getGetCalendarBootstrapUrl());
-      expect(Object.fromEntries(bootstrap.url.searchParams)).toEqual({ from: `${year - 1}-01-01`, to: `${year + 1}-12-31` });
+      // About six months around today, never more than one year (MAIR-400).
+      const { from, to } = Object.fromEntries(bootstrap.url.searchParams);
+      const days = (Date.parse(to!) - Date.parse(from!)) / 86_400_000;
+      expect(days).toBeGreaterThan(300);
+      expect(days).toBeLessThanOrEqual(365);
+      expect(Date.parse(from!)).toBeLessThan(Date.now());
+      expect(Date.parse(to!)).toBeGreaterThan(Date.now());
       // from/to sont lus par BFF Calendar mais absents de @mairie360/bff-calendar-openapi@0.3.0.
       expect(bootstrap.undeclaredQuery).toEqual(['from', 'to']);
       expect([...projectBff.requests, ...calendarBff.requests].every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
@@ -710,6 +806,20 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         references: [{ id: 'project:project-42', title: 'Budget participatif', kind: 'project', description: 'Projet' }],
         sources: { projects: 'available', calendar: 'available' },
       });
+    });
+
+    test('details only projects whose listing reports tasks, at most MAX_PROJECT_DETAILS of them (MAIR-400)', async () => {
+      const empty = projectListItem({ id: 'project-empty', title: 'Sans tâche', tasks: { total: 0, completed: 0 } });
+      const busy = Array.from({ length: MAX_PROJECT_DETAILS + 5 }, (_, index) => projectListItem({ id: `project-${index}`, title: `Projet ${index}` }));
+      mockBusinessBffs({ projects: [empty, ...busy] });
+
+      const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.status).toBe(200);
+      expect(response.body.references.filter((reference: { kind: string }) => reference.kind === 'project')).toHaveLength(busy.length + 1);
+      const detailed = projectBff.calls(PROJECT_BFF.project).map((call) => call.pathParams.projectId);
+      expect(detailed).toHaveLength(MAX_PROJECT_DETAILS);
+      expect(detailed).not.toContain('project-empty');
     });
 
     test('marks each failing source unavailable independently', async () => {
