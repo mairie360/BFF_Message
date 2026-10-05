@@ -1,3 +1,4 @@
+import { authorization } from '@mairie360/bffs-lib';
 import {Router, Request, Response} from 'express';
 import {
     registry,
@@ -5,8 +6,7 @@ import {
     ContactsResponse,
     errorResponses,
 } from '../../openapi-registry';
-import { getAuthorizationHeader } from '../../config/token';
-import { fetchContacts, HttpError, upstreamError, validationError } from './message_helpers';
+import { fetchContacts, upstreamError, validationError } from './message_helpers';
 
 const router = Router();
 
@@ -36,9 +36,6 @@ registry.registerPath({
 });
 
 router.get('/', async (req: Request, res: Response) => {
-    if (!getAuthorizationHeader(req.headers.authorization)) {
-        throw new HttpError(401, 'Authentication required');
-    }
 
     const queryResult = ContactsQuery.safeParse(req.query);
 
@@ -47,7 +44,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     try {
-        const contacts = await fetchContacts(queryResult.data.search, queryResult.data.limit, req.headers.authorization);
+        const contacts = await fetchContacts(queryResult.data.search, queryResult.data.limit, authorization(req));
         res.status(200).json({ contacts });
     } catch (error) {
         throw upstreamError(error, [401]);

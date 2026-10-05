@@ -7,19 +7,15 @@ extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
-// Credentials the auth middleware accepts (src/index.ts promotes the accessToken cookie to an
-// Authorization header) and forwards upstream. The document requires one of them on every
-// operation (`openapi.ts`); public operations opt out with `security: []`. The ZAP OpenAPI coverage
-// gate reads this to tell which operations must be reached authenticated.
+// The only credential the BFF accepts (`Authorization: Bearer <token>`, MAIR-429) and forwards
+// upstream: the fronts' proxy turns the accessToken cookie into it, the BFF reads no cookie. The
+// document requires it on every operation (`openapi.ts`); public operations opt out with
+// `security: []`. The ZAP OpenAPI coverage gate reads this to tell which operations must be reached
+// authenticated.
 export const bearerAuth = registry.registerComponent('securitySchemes', 'bearerAuth', {
   type: 'http',
   scheme: 'bearer',
   bearerFormat: 'JWT',
-});
-export const cookieAuth = registry.registerComponent('securitySchemes', 'cookieAuth', {
-  type: 'apiKey',
-  in: 'cookie',
-  name: 'accessToken',
 });
 
 

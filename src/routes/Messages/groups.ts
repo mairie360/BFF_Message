@@ -1,3 +1,4 @@
+import { authorization } from '@mairie360/bffs-lib';
 import {Router, Request, Response} from 'express';
 import {
     registry,
@@ -53,7 +54,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     try {
-        const conversation = await createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds, req.headers.authorization);
+        const conversation = await createGroupConversation(bodyResult.data.name, bodyResult.data.memberIds, authorization(req));
         res.status(201).json({ conversation });
     } catch (error) {
         throw upstreamError(error, [400, 401]);

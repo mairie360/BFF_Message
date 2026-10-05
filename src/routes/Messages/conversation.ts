@@ -1,3 +1,4 @@
+import { authorization } from '@mairie360/bffs-lib';
 import {Router, Request, Response} from 'express';
 
 import {
@@ -11,12 +12,10 @@ import {
     MarkConversationAsReadResponse,
     errorResponses,
 } from '../../openapi-registry';
-import { getAuthorizationHeader } from '../../config/token';
 import {
     deleteConversation,
     fetchConversations,
     fetchCurrentUser,
-    HttpError,
     markConversationAsRead,
     upstreamError,
     validationError,
@@ -121,7 +120,7 @@ router.get('/', async (req: Request, res: Response) => {
         const conversations = await fetchConversations(
             queryResult.data.search,
             queryResult.data.limit,
-            req.headers.authorization,
+            authorization(req),
         );
         return res.status(200).json({ conversations });
     } catch (error) {
@@ -137,7 +136,7 @@ router.delete('/:conversationId', async (req: Request, res: Response) => {
     }
 
     try {
-        await deleteConversation(paramsResult.data.conversationId, req.headers.authorization);
+        await deleteConversation(paramsResult.data.conversationId, authorization(req));
     } catch (error) {
         throw upstreamError(error, [401, 403, 404]);
     }
@@ -148,13 +147,9 @@ router.delete('/:conversationId', async (req: Request, res: Response) => {
 });
 
 router.post('/:conversationId/read', async (req: Request, res: Response) => {
-    // The session is checked before answering: an anonymous caller gets 401, not the 503 of the missing
-    // upstream operation. Invalid input is refused before the session is resolved against Core API
-    // (which verifies the token), so it costs no upstream call.
-    if (!getAuthorizationHeader(req.headers.authorization)) {
-        throw new HttpError(401, 'Authentication required');
-    }
-
+    // requireBearer (routes/Messages/index.ts) already answered 401 to an anonymous caller, before the
+    // 503 of the missing upstream operation. Invalid input is refused before the session is resolved
+    // against Core API (which verifies the token), so it costs no upstream call.
     const paramsResult = ConversationIdParams.safeParse(req.params);
     const bodyResult = MarkConversationAsReadBody.safeParse(req.body);
 
@@ -167,7 +162,7 @@ router.post('/:conversationId/read', async (req: Request, res: Response) => {
     }
 
     try {
-        await fetchCurrentUser(req.headers.authorization);
+        await fetchCurrentUser(authorization(req));
     } catch (error) {
         throw upstreamError(error, [401]);
     }

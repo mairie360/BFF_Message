@@ -1,5 +1,5 @@
 import { openApiDocument as openApiSpec } from './openapi';
-import { errorHandler, notFoundHandler } from '@mairie360/bffs-lib';
+import { errorHandler, notFoundHandler, parseTrustProxy } from '@mairie360/bffs-lib';
 import express from 'express';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
@@ -14,45 +14,14 @@ export const app = express();
 
 const PORT = process.env.PORT;
 
+// Client IP (req.ip) seen behind the ingress, used by the rate limiter: see parseTrustProxy.
+app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
+
 // Security headers (CSP, X-Content-Type-Options, Permissions-Policy, CORP...) and removal of
 // X-Powered-By. upgrade-insecure-requests is dropped because the BFF is served over HTTP behind
 // the reverse proxy.
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
 app.use(express.json());
-
-/**
- * Value of the `accessToken` cookie, or `undefined` when it is absent or not valid percent-encoding:
- * a malformed cookie is ignored (the request goes on unauthenticated) instead of making
- * `decodeURIComponent` throw a URIError on every route, `/health` included.
- */
-export function accessTokenFromCookie(cookieHeader?: string): string | undefined {
-  const token = cookieHeader
-    ?.split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith('accessToken='))
-    ?.slice('accessToken='.length);
-
-  if (!token) return undefined;
-  try {
-    return decodeURIComponent(token);
-  } catch {
-    return undefined;
-  }
-}
-
-app.use((req, _res, next) => {
-  if (!req.headers.authorization) {
-    const accessToken = accessTokenFromCookie(req.headers.cookie);
-
-    if (accessToken) {
-      req.headers.authorization = `Bearer ${accessToken}`;
-    }
-  }
-
-  next();
-});
-
-
 
 // Interactive documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));

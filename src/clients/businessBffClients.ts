@@ -14,17 +14,14 @@ function normalizeBaseUrl(value: string): string {
 }
 
 /** URL relue à chaque appel : les variables d'environnement peuvent changer sans redémarrage. */
-export function projectBffOptions(authorization?: string): AxiosRequestConfig {
+export function projectBffOptions(authorization: string): AxiosRequestConfig {
   return options(process.env.PROJECT_BFF_URL ?? 'http://localhost:4001', authorization);
 }
 
-export function calendarBffOptions(authorization?: string): AxiosRequestConfig {
+export function calendarBffOptions(authorization: string): AxiosRequestConfig {
   return options(process.env.CALENDAR_BFF_URL ?? 'http://localhost:4002', authorization);
 }
 
-function options(configured: string, authorization?: string): AxiosRequestConfig {
-  return {
-    baseURL: normalizeBaseUrl(configured),
-    ...(authorization ? { headers: { Authorization: authorization } } : {}),
-  };
+function options(configured: string, authorization: string): AxiosRequestConfig {
+  return { baseURL: normalizeBaseUrl(configured), headers: { Authorization: authorization } };
 }

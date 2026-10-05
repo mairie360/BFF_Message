@@ -1,3 +1,4 @@
+import { authorization } from '@mairie360/bffs-lib';
 import {Router, Request, Response} from 'express';
 import {
     registry,
@@ -127,7 +128,7 @@ router.get('/conversations/:conversationId/messages', async (req: Request, res: 
     }
 
     try {
-        res.status(200).json(await fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit, req.headers.authorization));
+        res.status(200).json(await fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit, authorization(req)));
     } catch (error) {
         throw upstreamError(error, [401, 404]);
     }
@@ -146,7 +147,7 @@ router.post('/conversations/:conversationId/messages', async (req: Request, res:
     }
 
     try {
-        res.status(201).json(await sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content, req.headers.authorization));
+        res.status(201).json(await sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content, authorization(req)));
     } catch (error) {
         throw upstreamError(error, [400, 401, 404]);
     }
@@ -160,7 +161,7 @@ router.post('/direct-messages', async (req: Request, res: Response) => {
     }
 
     try {
-        res.status(201).json(await createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message, req.headers.authorization));
+        res.status(201).json(await createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message, authorization(req)));
     } catch (error) {
         throw upstreamError(error, [400, 401]);
     }

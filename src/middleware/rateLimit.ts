@@ -1,5 +1,5 @@
-import { buildErrorResponse } from '@mairie360/bffs-lib';
-import type { Request, RequestHandler } from 'express';
+import { buildErrorResponse, sessionKey } from '@mairie360/bffs-lib';
+import type { RequestHandler } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 
 /**
@@ -7,9 +7,11 @@ import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
  * Same building block as BFF User / the BFF template (`express-rate-limit`, shared error envelope,
  * `Retry-After` and `RateLimit` headers), but every request counts, not only failed ones.
  *
- * The key is the caller (JWT `sub`), not the IP: without `TRUST_PROXY` every browser reaches the BFF
- * through the front pods and would share one counter. A request without a usable `sub` falls back to
- * the IP. Counters live in memory, per replica.
+ * The key is the caller's session (`sessionKey`: a hash of its Bearer token), not the IP: without
+ * `TRUST_PROXY` every browser reaches the BFF through the front pods and would share one counter. A JWT
+ * `sub` decoded without verification is never used: a caller could forge it to use or exhaust another
+ * user's counter. A request without a Bearer token falls back to the IP. Counters live in memory, per
+ * replica.
  *
  * Environment:
  * - `RATE_LIMIT_ENABLED`    `false` disables the limiter (load tests), default enabled.
@@ -22,18 +24,6 @@ export const RATE_LIMIT_MESSAGE = 'Too many requests, please try again later';
 function positiveInteger(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-/** JWT `sub` read without verification: only used to spread the counters, never to authorize. */
-function callerOf(req: Request): string | undefined {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-  if (!token) return undefined;
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString()) as { sub?: unknown };
-    return typeof payload.sub === 'string' || typeof payload.sub === 'number' ? String(payload.sub) : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 export interface RateLimiterOptions {
@@ -55,8 +45,8 @@ export function createCallerRateLimiter(options: RateLimiterOptions): RequestHan
     legacyHeaders: false,
     skip: () => !enabled,
     keyGenerator: (req) => {
-      const caller = callerOf(req);
-      return caller ? `user:${caller}` : `ip:${ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')}`;
+      const session = sessionKey(req);
+      return session ? `session:${session}` : `ip:${ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')}`;
     },
     message: buildErrorResponse('TOO_MANY_REQUESTS', RATE_LIMIT_MESSAGE),
   });
