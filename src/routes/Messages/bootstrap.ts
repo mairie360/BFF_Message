@@ -1,3 +1,4 @@
+import { authorization } from '@mairie360/bffs-lib';
 import {Router, Request, Response} from 'express';
 import {
     registry,
@@ -31,7 +32,7 @@ registry.registerPath({
 
 router.get('/', async (req: Request, res: Response) => {
     try {
-        res.status(200).json(await fetchMessagingBootstrap(req.headers.authorization));
+        res.status(200).json(await fetchMessagingBootstrap(authorization(req)));
     } catch (error) {
         throw upstreamError(error, [401]);
     }

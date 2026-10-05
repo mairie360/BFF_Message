@@ -38,21 +38,23 @@ the environment; set it to a token with read access to those packages before `np
 Env vars for local runs: `PORT` and `MESSAGE_API_BASE_PATH` are required (the server exits at start-up
 without them, no localhost fallback); the others fall back to a `localhost` default: `MESSAGE_API_URL` + `MESSAGE_API_PORT`
 (`/check_apis` only), `CORE_API_URL` + `CORE_API_PORT` (directory), `PROJECT_BFF_URL`,
-`CALENDAR_BFF_URL`. `RATE_LIMIT_ENABLED=false` disables the per-caller limit of `GET /business-references`
+`CALENDAR_BFF_URL`. `TRUST_PROXY` sets Express' `trust proxy` (lib `parseTrustProxy`). `RATE_LIMIT_ENABLED=false` disables the per-session limit of `GET /business-references`
 (`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, `src/middleware/rateLimit.ts`); the perf stack sets it.
 
 ## Architecture
 
-**Entry point** `src/index.ts` builds `app` (exported for tests), mounts an auth middleware, the
+**Entry point** `src/index.ts` builds `app` (exported for tests), sets `trust proxy` from `TRUST_PROXY`, the
 Swagger UI at `/docs`, the spec at `/openapi.json` + `/swagger.json`, then `/health`, `/check_apis`,
 and the Messages router at `/`.
 
-**Auth flow.** The middleware promotes an `accessToken` cookie to an `Authorization: Bearer` header
-when none is present. Route handlers pass `req.headers.authorization` down to helpers, which forward
-it to upstream services. There is no default/service token: without a caller token, upstream calls
-carry no `Authorization` header (`getAuthorizationHeader` in `src/config/token.ts`). The current user's
-numeric id is taken from the JWT `sub` claim by base64url-decoding the payload **without signature
-verification** (`numericUserIdFromToken` in `message_helpers.ts`).
+**Auth flow (MAIR-429).** The only credential is `Authorization: Bearer <token>` (the front's proxy turns
+the `accessToken` cookie into it; the BFF reads no cookie, no `x-session-token`). `src/routes/Messages/index.ts`
+mounts `noStore` + `requireBearer` (`@mairie360/bffs-lib`) on every session-bound prefix
+(`SESSION_BOUND_PATHS`), so an anonymous request gets 401 before any upstream call. Route handlers pass
+`authorization(req)` (normalised `Bearer <token>`) down to helpers, which forward it on every upstream
+call; there is no default/service token. The current user's numeric id is the JWT `sub` read with the
+lib's `unverifiedSubject` (**no signature verification**): only to shape requests sent upstream with
+the same token and the message direction, never for access decisions or rate-limit keys.
 
 **Routing.** `src/routes/Messages/index.ts` composes one router per resource
 (`conversation.ts`, `me.ts`, `contacts.ts`, `groups.ts`, `message.ts`, `bootstrap.ts`,
@@ -128,7 +130,7 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
 `security_test.sh` / `performance_test.sh` clone `mairie360/CICD` into `cicd-repo/` (gitignored) at
 the pinned `cicd_version` (`CICD_VERSION=<branch>` overrides it). ZAP runs its
 `tests/zap/zap_hooks.py` with `--hook`: every operation of the served spec must be reached, and
-non-public ones with a non-401/403 answer. The spec declares `bearerAuth` + `cookieAuth` at the top
+non-public ones with a non-401/403 answer. The spec declares `bearerAuth` only at the top
 level (`src/openapi.ts`); public routes (`/health`, `/check_apis`) set `security: []` in
 `registerPath`. `load-test.js` builds on `coverage.js` with **one handler per operation** of
 `contracts/openapi.json`: a new route without a handler makes k6 abort at init. Two scenarios:

@@ -193,13 +193,14 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.calls(MESSAGE_API.users).map((call) => call.pathParams.chatId).sort()).toEqual(['1', '2']);
     });
 
-    test('promotes the accessToken cookie to the Authorization header sent to Message API', async () => {
+    test('ignores the accessToken cookie: Bearer is the only credential (MAIR-429)', async () => {
       mockMessageApi();
 
       const response = await request(app).get('/conversations').set('Cookie', `theme=dark; accessToken=${encodeURIComponent(tokenFor(sophie.id))}`);
 
-      expect(response.status).toBe(200);
-      expect(messageApi.calls(MESSAGE_API.chats)[0].headers.authorization).toBe(authorizationFor(sophie.id));
+      expectApiError(response, 401, 'UNAUTHORIZED');
+      expectBffContract('get', '/conversations', response);
+      expect(messageApi.requests).toEqual([]);
     });
 
     test('degrades to conversations without participants when Message API fails on chat users', async () => {
@@ -545,7 +546,8 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       const anonymous = await request(app).patch('/me').send({ city: 'Lyon' });
       const authenticated = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon' });
 
-      expectApiError(anonymous, 404, 'NOT_FOUND');
+      // `/me` is session-bound: the session is checked before the route lookup (MAIR-429).
+      expectApiError(anonymous, 401, 'UNAUTHORIZED');
       expectApiError(authenticated, 404, 'NOT_FOUND');
       expect(bffContract.match('patch', '/me')?.template).toBeUndefined();
       expect(coreApi.requests).toEqual([]);
@@ -592,19 +594,58 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       const conversations = await request(app).get('/conversations').set('Cookie', 'accessToken=%E0%A4%A');
 
       expect(health.status).toBe(200);
-      expect(conversations.status).not.toBe(500);
-      expect(messageApi.calls(MESSAGE_API.chats).every((call) => call.headers.authorization === undefined)).toBe(true);
+      expectApiError(conversations, 401, 'UNAUTHORIZED');
+      expect(messageApi.requests).toEqual([]);
     });
 
-    test('an anonymous request is forwarded upstream without any default token', async () => {
-      messageApi.on('get', MESSAGE_API.chats, ({ headers }) => (headers.authorization
-        ? { body: chatsResult([]) }
-        : { status: 401, raw: 'Unauthorized', contentType: 'text/plain', outOfContract: true }));
+    // Every session-bound operation answers 401 before any upstream call when the request carries no
+    // Bearer token: no anonymous call reaches Message API, Core API, BFF Project or BFF Calendar (MAIR-429).
+    const sessionBoundOperations = [
+      ['get', '/conversations', undefined],
+      ['delete', '/conversations/conversation-4', undefined],
+      ['post', '/conversations/conversation-4/read', { readUntilMessageId: 'message-42' }],
+      ['get', '/conversations/conversation-4/messages', undefined],
+      ['post', '/conversations/conversation-4/messages', { content: 'Bonjour' }],
+      ['post', '/direct-messages', { recipientId: 'user-8', message: 'Bonjour' }],
+      ['post', '/groups', { name: 'Équipe', memberIds: [8] }],
+      ['get', '/me', undefined],
+      ['get', '/contacts', undefined],
+      ['get', '/messaging/bootstrap', undefined],
+      ['post', '/attachments', { files: [{ name: 'note.pdf' }] }],
+      ['get', '/business-references', undefined],
+    ] as const;
 
-      const response = await request(app).get('/conversations');
+    test.each(sessionBoundOperations)('%s %s answers 401 without a Bearer token, before any upstream call', async (method, url, body) => {
+      mockMessageApi();
+      const credentials: Array<[string, string] | undefined> = [
+        undefined,
+        ['Authorization', `Basic ${Buffer.from('agent:secret').toString('base64')}`],
+        ['Authorization', tokenFor(agent.id)],
+        ['Authorization', 'Bearer'],
+        ['x-session-token', tokenFor(agent.id)],
+        ['Cookie', `session=${tokenFor(agent.id)}`],
+      ];
 
-      expectApiError(response, 401, 'UNAUTHORIZED');
-      expect(messageApi.requests.map((call) => call.headers.authorization)).toEqual([undefined]);
+      for (const credential of credentials) {
+        const call = request(app)[method](url);
+        if (credential) call.set(credential[0], credential[1]);
+        const response = await (body === undefined ? call : call.send(body));
+
+        expectApiError(response, 401, 'UNAUTHORIZED');
+        expectBffContract(method, url, response);
+        expect(response.headers['cache-control']).toBe('no-store');
+      }
+      expect(mocks.flatMap((mock) => mock.requests)).toEqual([]);
+    });
+
+    test('session-bound answers are never cached and forward the normalised Bearer header', async () => {
+      mockMessageApi();
+
+      const response = await request(app).get('/conversations').set('Authorization', `bearer   ${tokenFor(agent.id)}`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe('no-store');
+      expect(messageApi.requests.map((call) => call.headers.authorization)).toEqual([authorizationFor(agent.id)]);
     });
 
     test('an upstream 4xx the route does not declare answers 502 without its message or body', async () => {

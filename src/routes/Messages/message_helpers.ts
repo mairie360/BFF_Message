@@ -1,9 +1,8 @@
-import { HttpError, mapUpstreamError } from '@mairie360/bffs-lib';
+import { HttpError, mapUpstreamError, unverifiedSubject } from '@mairie360/bffs-lib';
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { z } from 'zod';
 import messageClient from '../../clients/messageClient';
-import { getAuthorizationHeader } from '../../config/token';
 import { getContactUser, listContacts, listContactsByIds } from '../../clients/coreClient';
 import type {
   ChatView,
@@ -21,18 +20,9 @@ export type BffConversation = z.infer<typeof ConversationDtoSchema>;
 export type BffCurrentUser = z.infer<typeof CurrentUserDtoSchema>;
 export type BffMessage = z.infer<typeof MessageDtoSchema>;
 
-function authOptions(incomingRequestToken?: string): AxiosRequestConfig {
-  const authHeader = getAuthorizationHeader(incomingRequestToken);
-
-  if (!authHeader) {
-    return {};
-  }
-
-  return {
-    headers: {
-      Authorization: authHeader,
-    },
-  };
+/** Options of a Message API call made on behalf of the caller: its own `Bearer` header, never a default token. */
+function authOptions(authorization: string): AxiosRequestConfig {
+  return { headers: { Authorization: authorization } };
 }
 
 function parseNumericId(value: string | number | undefined): number | null {
@@ -70,31 +60,20 @@ function publicUserId(userId: string | number): string {
   return `user-${userId}`;
 }
 
-function numericUserIdFromToken(incomingRequestToken?: string): number | undefined {
-  const token = getAuthorizationHeader(incomingRequestToken)?.replace(/^Bearer\s+/i, '');
-
-  if (!token) return undefined;
-
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString()) as {
-      sub?: string | number;
-    };
-    const id = Number(payload.sub);
-    return Number.isInteger(id) && id > 0 ? id : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export { HttpError };
 
-export async function fetchCurrentUser(incomingRequestToken?: string): Promise<BffCurrentUser> {
-  const id = numericUserIdFromToken(incomingRequestToken);
+/**
+ * The caller's profile. Its id is the JWT `sub` read **without verifying the signature**
+ * (`unverifiedSubject`): it only shapes requests sent upstream with the same token, which the upstream
+ * verifies, and the message direction; it never grants access by itself.
+ */
+export async function fetchCurrentUser(authorization: string): Promise<BffCurrentUser> {
+  const id = unverifiedSubject(authorization);
   if (!id) {
     throw new HttpError(401, 'User id missing from the token');
   }
 
-  const user = await getContactUser(id, incomingRequestToken);
+  const user = await getContactUser(id, authorization);
 
   if (!user) {
     throw new HttpError(401, 'Authenticated user not found');
@@ -228,15 +207,15 @@ function mapCoreUserToContact(user: CoreUser): BffContact | null {
 async function fetchConversationParticipants(
   chatId: number,
   currentUserId: number | undefined,
-  incomingRequestToken?: string,
+  authorization: string,
   includeCaller = false,
 ): Promise<ConversationParticipants> {
   try {
-    const response = await messageClient.getChatUsers(chatId, authOptions(incomingRequestToken));
+    const response = await messageClient.getChatUsers(chatId, authOptions(authorization));
     const memberIds = [...new Set(response.data.users.map((user) => user.id))];
     const participants = await listContactsByIds(
       includeCaller ? memberIds : memberIds.filter((userId) => userId !== currentUserId),
-      incomingRequestToken,
+      authorization,
     );
     const members = participants.flatMap((participant) => {
       const contact = mapCoreUserToContact(participant);
@@ -256,10 +235,10 @@ async function fetchConversationParticipants(
 
 async function fetchChatSummary(
   chatId: number,
-  incomingRequestToken?: string,
+  authorization: string,
 ): Promise<ChatView | undefined> {
   try {
-    const response = await messageClient.getChats(authOptions(incomingRequestToken));
+    const response = await messageClient.getChats(authOptions(authorization));
     return response.data.chats.find((chat) => chat.id === chatId);
   } catch {
     return undefined;
@@ -324,24 +303,24 @@ export function upstreamError(error: unknown, declared: readonly number[] = []):
 }
 
 export async function fetchConversations(
-  search?: string,
-  limit?: number,
-  incomingRequestToken?: string,
+  search: string | undefined,
+  limit: number | undefined,
+  authorization: string,
 ): Promise<BffConversation[]> {
-  const response = await messageClient.getChats(authOptions(incomingRequestToken));
+  const response = await messageClient.getChats(authOptions(authorization));
   const chats = response.data.chats as ChatView[];
   const filteredChats = search
     ? chats.filter((chat) => chat.name.toLowerCase().includes(search.toLowerCase()))
     : chats;
   const visibleChats = typeof limit === 'number' ? filteredChats.slice(0, limit) : filteredChats;
-  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  const currentUserId = unverifiedSubject(authorization);
 
   return Promise.all(
     visibleChats.map(async (chat) => {
       const participants = await fetchConversationParticipants(
         chat.id,
         currentUserId,
-        incomingRequestToken,
+        authorization,
       );
 
       return mapChatToConversation(chat, [], participants, currentUserId);
@@ -351,19 +330,19 @@ export async function fetchConversations(
 
 export async function fetchConversationMessages(
   conversationId: string | number,
-  limit?: number,
-  incomingRequestToken?: string,
+  limit: number | undefined,
+  authorization: string,
 ): Promise<{ conversation: BffConversation; messages: BffMessage[] }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  const currentUserId = unverifiedSubject(authorization);
   const [response, participants, chat] = await Promise.all([
-    messageClient.getChat(chatId, authOptions(incomingRequestToken)),
-    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken, true),
-    fetchChatSummary(chatId, incomingRequestToken),
+    messageClient.getChat(chatId, authOptions(authorization)),
+    fetchConversationParticipants(chatId, currentUserId, authorization, true),
+    fetchChatSummary(chatId, authorization),
   ]);
   const apiMessages = response.data.messages as MessageView[];
   const messages = apiMessages.map((message) => (
@@ -384,22 +363,22 @@ export async function fetchConversationMessages(
 export async function sendMessageToConversation(
   conversationId: string | number,
   content: string,
-  incomingRequestToken?: string,
+  authorization: string,
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  const currentUserId = unverifiedSubject(authorization);
   if (currentUserId === undefined) {
     throw new HttpError(401, 'User id missing from the token');
   }
 
   const [response, participants, chat] = await Promise.all([
-    messageClient.postMessage(chatId, { content }, authOptions(incomingRequestToken)),
-    fetchConversationParticipants(chatId, currentUserId, incomingRequestToken, true),
-    fetchChatSummary(chatId, incomingRequestToken),
+    messageClient.postMessage(chatId, { content }, authOptions(authorization)),
+    fetchConversationParticipants(chatId, currentUserId, authorization, true),
+    fetchChatSummary(chatId, authorization),
   ]);
   const now = new Date().toISOString();
   const message = mapMessageToDto(conversationId, {
@@ -423,14 +402,14 @@ export async function sendMessageToConversation(
 export async function createDirectMessage(
   recipientId: string | number,
   message: string,
-  incomingRequestToken?: string,
+  authorization: string,
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const recipientNumericId = parseNumericId(recipientId);
   if (recipientNumericId === null) {
     throw new HttpError(400, 'Invalid recipient id');
   }
 
-  const currentUserId = numericUserIdFromToken(incomingRequestToken);
+  const currentUserId = unverifiedSubject(authorization);
   if (currentUserId === undefined) {
     throw new HttpError(401, 'User id missing from the token');
   }
@@ -440,13 +419,13 @@ export async function createDirectMessage(
 
   // Reuse the direct conversation the caller already has with this contact: a new chat per message
   // would split the history over duplicated conversations.
-  const existingChatId = await findDirectChat(recipientNumericId, currentUserId, incomingRequestToken);
+  const existingChatId = await findDirectChat(recipientNumericId, currentUserId, authorization);
   const chatId = existingChatId ?? (await messageClient.createChat({
     name: directMessageName(recipientNumericId),
     members: [recipientNumericId],
-  }, authOptions(incomingRequestToken))).data.id;
+  }, authOptions(authorization))).data.id;
 
-  return sendMessageToConversation(chatId, message, incomingRequestToken);
+  return sendMessageToConversation(chatId, message, authorization);
 }
 
 /**
@@ -458,14 +437,14 @@ export async function createDirectMessage(
 async function findDirectChat(
   contactId: number,
   currentUserId: number,
-  incomingRequestToken?: string,
+  authorization: string,
 ): Promise<number | undefined> {
-  const response = await messageClient.getChats(authOptions(incomingRequestToken));
+  const response = await messageClient.getChats(authOptions(authorization));
   const candidateNames = new Set([directMessageName(contactId), directMessageName(currentUserId)]);
   const candidates = response.data.chats.filter((chat) => candidateNames.has(chat.name));
 
   for (const chat of candidates) {
-    const members = await messageClient.getChatUsers(chat.id, authOptions(incomingRequestToken));
+    const members = await messageClient.getChatUsers(chat.id, authOptions(authorization));
     const memberIds = members.data.users.map((user) => user.id);
     if (directContactId(chat.name, memberIds, currentUserId) === contactId) return chat.id;
   }
@@ -476,21 +455,21 @@ async function findDirectChat(
 export async function createGroupConversation(
   name: string,
   memberIds: Array<string | number>,
-  incomingRequestToken?: string,
+  authorization: string,
 ): Promise<BffConversation> {
   const members = memberIds.map(parseNumericId).filter((id): id is number => id !== null);
-  const response = await messageClient.createChat({ name, members }, authOptions(incomingRequestToken));
+  const response = await messageClient.createChat({ name, members }, authOptions(authorization));
 
   return mapChatToConversation({ id: response.data.id, name });
 }
 
-export async function deleteConversation(conversationId: string | number, incomingRequestToken?: string): Promise<void> {
+export async function deleteConversation(conversationId: string | number, authorization: string): Promise<void> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  await messageClient.deleteChat(chatId, authOptions(incomingRequestToken));
+  await messageClient.deleteChat(chatId, authOptions(authorization));
 }
 
 export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
@@ -504,17 +483,17 @@ export async function markConversationAsRead(conversationId: string | number): P
 }
 
 export async function fetchContacts(
-  search?: string,
-  limit?: number,
-  incomingRequestToken?: string,
+  search: string | undefined,
+  limit: number | undefined,
+  authorization: string,
 ): Promise<BffContact[]> {
-  const user = await fetchCurrentUser(incomingRequestToken);
+  const user = await fetchCurrentUser(authorization);
   const currentUserId = Number(String(user.id).replace(/^user-/, ''));
   const users = await listContacts(
     search,
     limit,
     Number.isInteger(currentUserId) ? currentUserId : undefined,
-    incomingRequestToken,
+    authorization,
   );
   const contacts = users
     .map((user) => mapCoreUserToContact(user as CoreUser))
@@ -523,7 +502,7 @@ export async function fetchContacts(
   return contacts;
 }
 
-export async function fetchMessagingBootstrap(incomingRequestToken?: string): Promise<{
+export async function fetchMessagingBootstrap(authorization: string): Promise<{
   currentUser: BffCurrentUser;
   conversations: BffConversation[];
   contacts: BffContact[];
@@ -531,13 +510,13 @@ export async function fetchMessagingBootstrap(incomingRequestToken?: string): Pr
   messages: BffMessage[];
 }> {
   const [user, conversations, contacts] = await Promise.all([
-    fetchCurrentUser(incomingRequestToken),
-    fetchConversations(undefined, 20, incomingRequestToken),
-    fetchContacts(undefined, undefined, incomingRequestToken),
+    fetchCurrentUser(authorization),
+    fetchConversations(undefined, 20, authorization),
+    fetchContacts(undefined, undefined, authorization),
   ]);
   const activeConversationId = conversations[0]?.id;
   const activeConversation = activeConversationId
-    ? await fetchConversationMessages(activeConversationId, 30, incomingRequestToken)
+    ? await fetchConversationMessages(activeConversationId, 30, authorization)
     : undefined;
 
   return {
@@ -549,6 +528,6 @@ export async function fetchMessagingBootstrap(incomingRequestToken?: string): Pr
   };
 }
 
-export async function getCurrentUser(incomingRequestToken?: string): Promise<{ currentUser: BffCurrentUser }> {
-  return { currentUser: await fetchCurrentUser(incomingRequestToken) };
+export async function getCurrentUser(authorization: string): Promise<{ currentUser: BffCurrentUser }> {
+  return { currentUser: await fetchCurrentUser(authorization) };
 }

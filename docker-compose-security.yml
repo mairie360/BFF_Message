@@ -211,7 +211,7 @@ services:
     #   so every operation is scanned as an authenticated admin.
     # --hook zap_hooks.py: OpenAPI coverage gate (mairie360/CICD tests/zap). After the scan it
     #   maps every request ZAP sent to an operation of the spec and exits 1 when an operation was
-    #   never reached, or when an operation that requires bearerAuth/cookieAuth only got 401/403
+    #   never reached, or when an operation that requires bearerAuth only got 401/403
     #   (public operations declare `security: []`).
     # -silent: no check-for-update or telemetry when the ZAP daemon starts (otherwise
     #   it can hang on add-on updates and fail with "Failed to connect to ZAP").

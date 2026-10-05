@@ -1,10 +1,10 @@
+import { authorization } from '@mairie360/bffs-lib';
 import {Router, Request, Response} from 'express';
 import {
     registry,
     UploadAttachmentBody,
     errorResponses,
 } from '../../openapi-registry';
-import { getAuthorizationHeader } from '../../config/token';
 import { fetchCurrentUser, HttpError, upstreamError } from './message_helpers';
 
 const router = Router();
@@ -37,13 +37,9 @@ registry.registerPath({
 });
 
 router.post('/', async (req: Request, _res: Response) => {
-    if (!getAuthorizationHeader(req.headers.authorization)) {
-        throw new HttpError(401, 'Authentication required');
-    }
-
     // The session is resolved against Core API (which verifies the token) before answering.
     try {
-        await fetchCurrentUser(req.headers.authorization);
+        await fetchCurrentUser(authorization(req));
     } catch (error) {
         throw upstreamError(error, [401]);
     }

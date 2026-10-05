@@ -1,4 +1,4 @@
-import { Request, Router } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 import {
   calendarBff,
@@ -6,7 +6,7 @@ import {
   projectBff,
   projectBffOptions,
 } from '../../clients/businessBffClients';
-import { addDays, HttpError, parisDate } from '@mairie360/bffs-lib';
+import { addDays, authorization, parisDate, requireBearer } from '@mairie360/bffs-lib';
 import { errorResponses, registry } from '../../openapi-registry';
 import { createCallerRateLimiter } from '../../middleware/rateLimit';
 const router = Router();
@@ -42,10 +42,6 @@ type BusinessReference = {
   description?: string;
 };
 
-function getAuthorizationHeader(request: Request) {
-  return request.headers.authorization;
-}
-
 /** `Promise.allSettled` over `items` with at most `concurrency` calls of `task` in flight. */
 export async function settleWithConcurrency<T, R>(
   items: readonly T[],
@@ -68,8 +64,8 @@ export async function settleWithConcurrency<T, R>(
   return results;
 }
 
-async function loadProjectReferences(authorization?: string): Promise<BusinessReference[]> {
-  const options = projectBffOptions(authorization);
+async function loadProjectReferences(callerAuthorization: string): Promise<BusinessReference[]> {
+  const options = projectBffOptions(callerAuthorization);
   const projectsPage = await projectBff.getProjectsPage({ limit: PROJECTS_PAGE_LIMIT }, options);
   const projects = projectsPage.data.projects ?? [];
   // The listing already counts each project's tasks: only projects that have some are detailed, and
@@ -116,11 +112,11 @@ export function calendarDateRange(at: Date = new Date()) {
   };
 }
 
-async function loadCalendarReferences(authorization?: string): Promise<BusinessReference[]> {
+async function loadCalendarReferences(callerAuthorization: string): Promise<BusinessReference[]> {
   const { from, to } = calendarDateRange();
   // from and to are read by BFF Calendar but not declared yet by its published contract.
   const calendar = await calendarBff.getCalendarBootstrap({
-    ...calendarBffOptions(authorization),
+    ...calendarBffOptions(callerAuthorization),
     params: { from, to },
   });
 
@@ -136,22 +132,19 @@ async function loadCalendarReferences(authorization?: string): Promise<BusinessR
   });
 }
 
-// Checked before the rate limiter: an anonymous request costs no upstream call and must not consume
-// the counter of the IP it shares with other callers.
-router.get('/', (request, _response, next) => {
-  if (!getAuthorizationHeader(request)) throw new HttpError(401, 'Invalid session.');
-  next();
-}, createCallerRateLimiter({ identifier: 'business-references' }), async (request, response) => {
-  const authorization = getAuthorizationHeader(request);
+// The session is checked before the rate limiter: an anonymous request costs no upstream call and
+// consumes no counter. The caller's session is forwarded as `Bearer <token>`.
+router.get('/', requireBearer, createCallerRateLimiter({ identifier: 'business-references' }), async (request, response) => {
+  const callerAuthorization = authorization(request);
   const results = await Promise.allSettled([
-    loadProjectReferences(authorization),
-    loadCalendarReferences(authorization),
+    loadProjectReferences(callerAuthorization),
+    loadCalendarReferences(callerAuthorization),
   ]);
   const references = results.flatMap((result) =>
     result.status === "fulfilled" ? result.value : [],
   );
 
-  return response.setHeader("Cache-Control", "no-store").json(
+  return response.json(
     {
       references,
       sources: {
