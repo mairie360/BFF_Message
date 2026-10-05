@@ -6,7 +6,7 @@
 
 Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre OpenAPI décrivent les objets échangés; les routeurs adaptent les services amont aux besoins des interfaces.
 
-`src/index.ts` monte le routeur Messages à la racine. Les helpers convertissent les identifiants et objets du client généré; `coreClient.ts` lit l’annuaire de Core API. `business_references.ts` appelle les BFF métier avec la session. Le bootstrap charge au maximum 20 conversations puis 30 messages de la première conversation.
+`src/app.ts` construit l’application Express (en-têtes de sécurité communs de `@mairie360/bffs-lib`, documentation, `/health`, `/check_apis`, routeur Messages à la racine, gestionnaires d’erreurs) ; `src/index.ts` charge `.env`, vérifie la configuration des services amont et écoute. Les helpers convertissent les identifiants et objets du client généré; `coreClient.ts` lit l’annuaire de Core API. `business_references.ts` appelle les BFF métier avec la session. Le bootstrap charge au maximum 20 conversations puis 30 messages de la première conversation.
 
 ## Données et persistance
 
@@ -18,7 +18,7 @@ Les pièces jointes ne sont pas encore prises en charge : `POST /attachments` r�
 
 ## Installation et lancement local
 
-Utiliser Node.js 22 pour reproduire le job de contrats et npm avec le fichier de verrouillage versionné. Les versions des autres jobs et de Docker sont précisées plus bas.
+Utiliser Node.js 24 (CI et images Docker) pour reproduire le job de contrats et npm avec le fichier de verrouillage versionné. Les versions des autres jobs et de Docker sont précisées plus bas.
 
 Les dépendances privées `@mairie360/*` nécessitent un accès GitHub Packages. Configurer `NODE_AUTH_TOKEN` dans l’environnement avec un jeton autorisé à lire ces packages, conformément à `.npmrc`. Ne pas enregistrer la valeur dans Git.
 
@@ -26,24 +26,23 @@ Les dépendances privées `@mairie360/*` nécessitent un accès GitHub Packages.
 npm ci
 ```
 
-Créer `.env` à la racine. Exemple de configuration HTTP locale à adapter aux services démarrés:
+Copier `.env.example` en `.env` à la racine et l’adapter aux services démarrés :
 
 ```dotenv
 PORT=4003
-MESSAGE_API_BASE_PATH=http://localhost:3003
-MESSAGE_API_URL=localhost
-MESSAGE_API_PORT=3003
+MESSAGE_API_URL=http://localhost:3003
+CORE_API_URL=http://localhost:3000
 PROJECT_BFF_URL=http://localhost:4001
 CALENDAR_BFF_URL=http://localhost:4002
 ```
 
-Compléter `CORE_API_URL` et `CORE_API_PORT` pour joindre l’annuaire de Core API. Ces variables et les éventuels secrets listés ci-dessous restent à fournir; l’exemple HTTP ne prépare pas de données.
+`.env` est chargé par `import 'dotenv/config'`, première ligne de `src/index.ts`. Chaque service amont est configuré par `<SERVICE>_URL` (schéma facultatif, `http` par défaut) et un `<SERVICE>_PORT` facultatif utilisé quand l’URL n’a pas de port, relus à chaque appel (MAIR-431). Il n’y a aucune valeur par défaut `localhost` : le serveur refuse de démarrer si l’une des quatre URL manque ou est invalide, et une route qui appellerait un service amont non configuré répond 503. L’exemple HTTP ne prépare pas de données.
 
 ```bash
 npm run start
 ```
 
-`PORT` est obligatoire pour ce BFF; cet exemple utilise `4003`.
+`PORT` vaut `4003` par défaut.
 
 Vérifier le processus puis consulter la documentation interactive:
 
@@ -59,14 +58,14 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 
 | Variable ou priorité | Exemple / repli indiqué | Rôle |
 | --- | --- | --- |
-| `PORT` | 4003 | Port de cet exemple local. |
-| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Racine de Message API (ses routes sont publiées sous `/api/v1`). **Obligatoire** : le serveur refuse de démarrer sans elle (aucun repli sur localhost). |
-| `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Hôte et port du diagnostic. |
-| `PROJECT_BFF_URL` | http://localhost:4001 | Source des références projets et tâches. |
-| `CALENDAR_BFF_URL` | http://localhost:4002 | Source des références événements. |
-| `CORE_API_URL` / `CORE_API_PORT` | localhost / — | Annuaire Core API (contacts, utilisateur courant). |
+| `PORT` | 4003 (défaut) | Port d’écoute. |
+| `MESSAGE_API_URL` / `MESSAGE_API_PORT` | http://localhost:3003 / — | Racine de Message API (ses routes sont publiées sous `/api/v1`), aussi sondée par `/check_apis`. **Obligatoire**. Remplace `MESSAGE_API_BASE_PATH` (supprimée). |
+| `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Annuaire Core API (contacts, utilisateur courant), aussi sondé par `/check_apis`. **Obligatoire**. |
+| `PROJECT_BFF_URL` / `PROJECT_BFF_PORT` | http://localhost:4001 / — | Source des références projets et tâches. **Obligatoire**. |
+| `CALENDAR_BFF_URL` / `CALENDAR_BFF_PORT` | http://localhost:4002 / — | Source des références événements. **Obligatoire**. |
 | `RATE_LIMIT_ENABLED` | true | `false` désactive la limite par appelant de `GET /business-references` (tests de charge). |
-| `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requêtes par appelant (`sub` du JWT) et par fenêtre sur `GET /business-references`, 429 au-delà. |
+| `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requêtes par session (empreinte du jeton Bearer, jamais le `sub` du JWT non vérifié) et par fenêtre sur `GET /business-references`, 429 au-delà. |
+| `TRUST_PROXY` | non définie (aucun proxy de confiance) | `trust proxy` d’Express (`true`, un nombre de sauts ou des adresses de confiance), pour que `req.ip` soit le vrai client derrière l’ingress. |
 
 ## Routes et contrat de données
 
@@ -78,20 +77,20 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401, 429 |
 | POST | `/attachments` | multipart/form-data | 401, 502, 503 |
-| GET | `/messaging/bootstrap` | — | 200, 401, 502 |
-| GET | `/contacts` | — | 200, 400, 401, 502 |
-| GET | `/conversations` | — | 200, 400, 401, 502 |
-| DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502 |
+| GET | `/messaging/bootstrap` | — | 200, 401, 502, 503 |
+| GET | `/contacts` | — | 200, 400, 401, 502, 503 |
+| GET | `/conversations` | — | 200, 400, 401, 502, 503 |
+| DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502, 503 |
 | POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 401, 502, 503 |
-| POST | `/groups` | application/json | 201, 400, 401, 502 |
-| GET | `/me` | — | 200, 401, 502 |
-| GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502 |
-| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502 |
-| POST | `/direct-messages` | application/json | 201, 400, 401, 502 |
+| POST | `/groups` | application/json | 201, 400, 401, 502, 503 |
+| GET | `/me` | — | 200, 401, 502, 503 |
+| GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502, 503 |
+| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502, 503 |
+| POST | `/direct-messages` | application/json | 201, 400, 401, 502, 503 |
 
 ## Session, permissions et erreurs
 
-Le BFF utilise l’en-tête Authorization; en son absence, le middleware peut reprendre le cookie `accessToken`. Les clients métier transmettent cette autorisation. Les profils locaux et réponses de lecture ne doivent pas être interprétés comme une validation de stockage ou de droits par l’API distante.
+Le seul identifiant accepté par le BFF est `Authorization: Bearer <token>` (MAIR-429) : le proxy du web service transforme le cookie `accessToken` en cet en-tête. Les cookies, `x-session-token` et les autres schémas sont ignorés. Toutes les routes sauf `/health`, `/check_apis` et la documentation sont liées à la session : sans jeton Bearer, elles répondent 401 avant tout appel amont, et leurs réponses portent `Cache-Control: no-store`. Le jeton de l’appelant, normalisé en `Bearer <token>`, est transmis à chaque appel amont (Message API, Core API, BFF Project, BFF Calendar) ; il n’y a aucun jeton par défaut. Le `sub` du JWT est lu sans vérifier la signature, uniquement pour construire les requêtes envoyées en amont avec ce même jeton et le sens des messages, jamais pour accorder un accès ni comme clé de limitation de débit. Les profils locaux et réponses de lecture ne doivent pas être interprétés comme une validation de stockage ou de droits par l’API distante.
 
 Toutes les erreurs sont renvoyées dans l’enveloppe commune à tous les BFFs (`@mairie360/bffs-lib`,
 schéma `ErrorResponse` du contrat) : `{ "error": { "code": "NOT_FOUND", "message": "Resource not found", "details": [] } }`.
@@ -99,8 +98,16 @@ schéma `ErrorResponse` du contrat) : `{ "error": { "code": "NOT_FOUND", "messag
 `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, ...). Un échec de validation est un 400 dont `details` liste les
 champs invalides (`{ "path": "body.content", "message": "..." }`). Un 4xx amont n’est conservé que si la
 route le déclare (401/404 de Message API, 403 sur `DELETE /conversations/{conversationId}`, 400 sur les
-créations de messages et de conversations), avec un message générique ; tout autre statut amont ou une
-panne réseau donne 502. Les messages et corps amont ne sont jamais relayés ; une erreur inattendue donne
+créations de messages et de conversations), avec un message générique ; tout autre statut amont, une
+panne réseau ou une réponse invalide donne un 502 qui nomme le service (`The MESSAGE_API service is unavailable.`),
+et un service amont non configuré un 503. Les lectures idempotentes de Message API et Core API sont
+retentées une fois sur une panne transitoire. Tous les appels amont et leur traduction passent par
+`callUpstream` / `asCaller` de `@mairie360/bffs-lib`.
+
+`/check_apis` sonde l’opération `/health` de Message API et Core API avec les mêmes variables que les
+vrais appels et répond `{ status, message_api, core_api }` (`Connected` / `Unreachable`), 200 si les deux
+répondent, 502 sinon. BFF Project et BFF Calendar ne sont pas sondés : `GET /business-references` les
+signale source par source. Les messages et corps amont ne sont jamais relayés ; une erreur inattendue donne
 un 500 générique.
 
 ## Synchronisation et vérifications
@@ -121,17 +128,17 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1` dans `scripts/
 
 ## CI/CD et exécution Docker
 
-Le job `contracts.yml` utilise Node.js 22, `actions/checkout@v7` et `actions/setup-node@v7`. Il s’exécute sur push, pull request et lancement manuel; il installe avec `npm ci`, contrôle les contrats et lance les tests dédiés.
+Le job `contracts.yml` utilise Node.js 24, `actions/checkout@v7` et `actions/setup-node@v7`. Il s’exécute sur push, pull request et lancement manuel; il installe avec `npm ci`, contrôle les contrats et lance les tests dédiés.
 
-`cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v3.0.0`, avec `cicd_version: v3.0.0` et `node_version: "22"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs.
+`cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v3.2.0`, avec `cicd_version: v3.2.0` et `node_version: "24"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs.
 
-Le Dockerfile utilise `node:24-alpine` pour la construction et l’exécution; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). Cette version est distincte du job de contrats Node.js 22.
+Le Dockerfile utilise `node:24-alpine`, épinglée par digest (comme `development.Dockerfile`), pour la construction et l’exécution ; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). La CI, le job de contrats et les images utilisent tous Node.js 24.
 
 `security_test.sh` et `performance_test.sh` testent l’image désignée par `IMAGE_REF`: en CI, l’image que `release-dev` vient de publier, soit l’artefact ensuite promu en staging puis en prod. Quand `IMAGE_REF` est vide (usage local), ils construisent d’abord `bff-message:local` depuis `development.Dockerfile`, ce qui demande `NODE_AUTH_TOKEN` et `./.npmrc`.
 
 `security_test.sh` lance la stack OWASP ZAP de `docker-compose-security.yml`: ZAP rejoue chaque opération de `/openapi.json` avec un JWT admin statique (`sub=1`, HS256, `JWT_SECRET=b"secret"` dans tous les services des stacks de sécurité et de performance) et remplit corps et paramètres avec les exemples du contrat. `init-test.sql` crée les lignes que ces exemples désignent (utilisateurs 1, 2, 3 et 10, conversation 101 avec le message 1001, conversation 102 pour la route DELETE et conversation 201 pour les messages postés); garder exemples et seed alignés en ajoutant une route. Les identifiants reçus du client doivent être un entier positif ou un identifiant public (`user-3`, `conversation-101`), et `<` / `>` sont refusés dans les contenus de message, noms et descriptions de groupe.
 
-`security_test.sh` lance aussi la gate de couverture OpenAPI de `mairie360/CICD` (`tests/zap/zap_hooks.py`, passé à ZAP avec `--hook`), extraite dans `cicd-repo/` par les jobs CI et clonée au même endroit par les deux scripts au `cicd_version` épinglé (`CICD_VERSION` le remplace). Après le scan, le hook échoue si une opération du contrat n’a jamais été atteinte, ou si une opération qui exige `bearerAuth`/`cookieAuth` n’a reçu que des 401/403. Le contrat exige l’un de ces schémas au niveau racine ; les opérations publiques (`/health`, `/check_apis`) déclarent `security: []` dans leur `registerPath`, une nouvelle route publique doit faire de même. Côté k6, `load-test.js` contient un handler par opération de `contracts/openapi.json` via `coverage.js` : k6 s’arrête à l’init s’il en manque un et échoue sur le seuil `operations_uncovered` si un handler n’envoie pas sa requête. **Ajouter une route implique d’ajouter son handler dans `load-test.js`.**
+`security_test.sh` lance aussi la gate de couverture OpenAPI de `mairie360/CICD` (`tests/zap/zap_hooks.py`, passé à ZAP avec `--hook`), extraite dans `cicd-repo/` par les jobs CI et clonée au même endroit par les deux scripts au `cicd_version` épinglé (`CICD_VERSION` le remplace). Après le scan, le hook échoue si une opération du contrat n’a jamais été atteinte, ou si une opération qui exige `bearerAuth` n’a reçu que des 401/403. Le contrat exige ce schéma au niveau racine ; les opérations publiques (`/health`, `/check_apis`) déclarent `security: []` dans leur `registerPath`, une nouvelle route publique doit faire de même. Côté k6, `load-test.js` contient un handler par opération de `contracts/openapi.json` via `coverage.js` : k6 s’arrête à l’init s’il en manque un et échoue sur le seuil `operations_uncovered` si un handler n’envoie pas sa requête. **Ajouter une route implique d’ajouter son handler dans `load-test.js`.**
 
 `load-test.js` lance deux scénarios. `crud` (2 VUs) appelle chaque handler une fois par itération, écritures comprises (pièce jointe et marqueur de lecture, qui doivent répondre 503 et sont exclus de `http_req_failed`, groupe, message, message direct), et supprime les conversations qu’il crée. `reads` (jusqu’à 20 VUs) ne rejoue que les handlers GET sur les fixtures de `init-test.sql` (conversation 101 avec le message 1001, dont l’utilisateur 2 est membre). Chaque opération a un seuil `p(95)` fixé par sa famille : 50 ms pour `/health`, 150 ms pour `/check_apis`, 400 ms pour les lectures, 800 ms pour les écritures ; `http_req_failed` doit rester sous 1 %.
 
@@ -144,6 +151,7 @@ Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si 
 ## Repères dans le dépôt
 
 - [src/index.ts](../../src/index.ts)
+- [src/app.ts](../../src/app.ts)
 - [src/routes/Messages/index.ts](../../src/routes/Messages/index.ts)
 - [src/routes/Messages/message_helpers.ts](../../src/routes/Messages/message_helpers.ts)
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)

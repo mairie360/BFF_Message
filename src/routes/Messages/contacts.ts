@@ -1,12 +1,12 @@
-import {Router, Request, Response} from 'express';
+import { parseRequest } from '@mairie360/bffs-lib';
+import { Router } from 'express';
 import {
     registry,
     ContactsQuery,
     ContactsResponse,
     errorResponses,
 } from '../../openapi-registry';
-import { getAuthorizationHeader } from '../../config/token';
-import { fetchContacts, HttpError, upstreamError, validationError } from './message_helpers';
+import { fetchContacts } from './message_helpers';
 
 const router = Router();
 
@@ -31,27 +31,15 @@ registry.registerPath({
             400: 'Invalid query (details lists the invalid fields)',
             401: 'Missing or invalid session',
             502: 'Core API is unavailable or failed',
+            503: 'Core API is not configured on the BFF',
         }),
     },
 });
 
-router.get('/', async (req: Request, res: Response) => {
-    if (!getAuthorizationHeader(req.headers.authorization)) {
-        throw new HttpError(401, 'Authentication required');
-    }
-
-    const queryResult = ContactsQuery.safeParse(req.query);
-
-    if (!queryResult.success) {
-        throw validationError('query', queryResult.error.issues);
-    }
-
-    try {
-        const contacts = await fetchContacts(queryResult.data.search, queryResult.data.limit, req.headers.authorization);
-        res.status(200).json({ contacts });
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
+router.get('/', async (req, res) => {
+    const query = parseRequest(ContactsQuery, req.query, 'query');
+    const contacts = await fetchContacts(query.search, query.limit, { req, declared: [401] });
+    res.status(200).json({ contacts });
 });
 
 export default router;

@@ -49,6 +49,7 @@ services:
       retries: 10
 
   liquibase:
+    # Database >= MAIR-413 only seeds the template admin (users.id = 1) with -Dallow_template_admin=true.
     image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:1.3.0}
     container_name: bff-message-sec-liquibase
     depends_on:
@@ -62,6 +63,7 @@ services:
     command: >
       --changelog-file=changelog.xml
       update
+      -Dallow_template_admin=true
     networks:
       - backend
 
@@ -76,7 +78,7 @@ services:
     environment:
       PGPASSWORD: password
     command: >
-      sh -c "psql -h postgres -U postgres -d mairie_360_database -f /init-test.sql"
+      sh -c "psql -v ON_ERROR_STOP=1 -h postgres -U postgres -d mairie_360_database -f /init-test.sql"
     networks:
       - backend
 
@@ -104,6 +106,11 @@ services:
       redis:
         condition: service_healthy
     environment:
+      # mairie360_api_lib >= 2.0 refuses the well-known b"secret" without this flag. Throwaway test
+      # stack only: a deployment uses a random secret of at least 32 bytes (MAIR-428).
+      JWT_ALLOW_WEAK_SECRET: "true"
+      # Lift the API rate limit (MAIR-425): the scan and the load test hammer it as one user.
+      RATE_LIMIT_PER_SECOND: "0"
       <<: *db-env
       HOST: "0.0.0.0"
       PORT: 3003
@@ -139,6 +146,16 @@ services:
       redis:
         condition: service_healthy
     environment:
+      # Lift the API rate limit (MAIR-425): the scan and the load test hammer it as one user.
+      RATE_LIMIT_ENABLED: "false"
+      # mairie360_api_lib >= 2.0 refuses the well-known b"secret" without this flag. Throwaway test
+      # stack only: a deployment uses a random secret of at least 32 bytes (MAIR-428).
+      JWT_ALLOW_WEAK_SECRET: "true"
+      EMAIL_FROM: "noreply.mairie360@test.local"
+      SMTP_HOST: "localhost"
+      SMTP_PORT: "1025"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
       <<: *db-env
       HOST: "0.0.0.0"
       PORT: 3000
@@ -180,9 +197,13 @@ services:
       PORT: 4003
       MESSAGE_API_URL: message-api
       MESSAGE_API_PORT: 3003
-      MESSAGE_API_BASE_PATH: http://message-api:3003
       CORE_API_URL: core-api
       CORE_API_PORT: 3000
+      # Required at start-up (no localhost default). BFF Project and BFF Calendar are not part of this
+      # stack: GET /business-references answers 200 with both sources `unavailable`. They point at a closed
+      # local port, refused at once: an unknown host name would stall every call on DNS resolution.
+      PROJECT_BFF_URL: http://127.0.0.1:9
+      CALENDAR_BFF_URL: http://127.0.0.1:9
     expose:
       - "4003"
     networks:
@@ -211,7 +232,7 @@ services:
     #   so every operation is scanned as an authenticated admin.
     # --hook zap_hooks.py: OpenAPI coverage gate (mairie360/CICD tests/zap). After the scan it
     #   maps every request ZAP sent to an operation of the spec and exits 1 when an operation was
-    #   never reached, or when an operation that requires bearerAuth/cookieAuth only got 401/403
+    #   never reached, or when an operation that requires bearerAuth only got 401/403
     #   (public operations declare `security: []`).
     # -silent: no check-for-update or telemetry when the ZAP daemon starts (otherwise
     #   it can hang on add-on updates and fail with "Failed to connect to ZAP").

@@ -1,14 +1,8 @@
+import { addDays, asCaller, createRateLimiter, parisDate, requireBearer, sessionKey } from '@mairie360/bffs-lib';
 import { Request, Router } from 'express';
 import { z } from 'zod';
-import {
-  calendarBff,
-  calendarBffOptions,
-  projectBff,
-  projectBffOptions,
-} from '../../clients/businessBffClients';
-import { addDays, HttpError, parisDate } from '@mairie360/bffs-lib';
+import { calendarBff, projectBff } from '../../clients/businessBffClients';
 import { errorResponses, registry } from '../../openapi-registry';
-import { createCallerRateLimiter } from '../../middleware/rateLimit';
 const router = Router();
 export const BusinessReferencesSchema = registry.register('BusinessReferencesResponse', z.object({
   references: z.array(z.object({ id: z.string(), title: z.string(), kind: z.enum(['project', 'task', 'event']), description: z.string().optional() })),
@@ -42,10 +36,6 @@ type BusinessReference = {
   description?: string;
 };
 
-function getAuthorizationHeader(request: Request) {
-  return request.headers.authorization;
-}
-
 /** `Promise.allSettled` over `items` with at most `concurrency` calls of `task` in flight. */
 export async function settleWithConcurrency<T, R>(
   items: readonly T[],
@@ -68,8 +58,11 @@ export async function settleWithConcurrency<T, R>(
   return results;
 }
 
-async function loadProjectReferences(authorization?: string): Promise<BusinessReference[]> {
-  const options = projectBffOptions(authorization);
+/** Timeout of each call to BFF Project / BFF Calendar, in ms. */
+const BUSINESS_BFF_TIMEOUT_MS = 8_000;
+
+async function loadProjectReferences(req: Request): Promise<BusinessReference[]> {
+  const options = asCaller('PROJECT_BFF', req, BUSINESS_BFF_TIMEOUT_MS);
   const projectsPage = await projectBff.getProjectsPage({ limit: PROJECTS_PAGE_LIMIT }, options);
   const projects = projectsPage.data.projects ?? [];
   // The listing already counts each project's tasks: only projects that have some are detailed, and
@@ -116,11 +109,11 @@ export function calendarDateRange(at: Date = new Date()) {
   };
 }
 
-async function loadCalendarReferences(authorization?: string): Promise<BusinessReference[]> {
+async function loadCalendarReferences(req: Request): Promise<BusinessReference[]> {
   const { from, to } = calendarDateRange();
   // from and to are read by BFF Calendar but not declared yet by its published contract.
   const calendar = await calendarBff.getCalendarBootstrap({
-    ...calendarBffOptions(authorization),
+    ...asCaller('CALENDAR_BFF', req, BUSINESS_BFF_TIMEOUT_MS),
     params: { from, to },
   });
 
@@ -136,22 +129,40 @@ async function loadCalendarReferences(authorization?: string): Promise<BusinessR
   });
 }
 
-// Checked before the rate limiter: an anonymous request costs no upstream call and must not consume
-// the counter of the IP it shares with other callers.
-router.get('/', (request, _response, next) => {
-  if (!getAuthorizationHeader(request)) throw new HttpError(401, 'Invalid session.');
-  next();
-}, createCallerRateLimiter({ identifier: 'business-references' }), async (request, response) => {
-  const authorization = getAuthorizationHeader(request);
+/**
+ * Per-session limit of `GET /business-references`, which fans out to several upstream calls: every
+ * request counts (not only failed ones). The key is the client IP plus `sessionKey` (a hash of the
+ * Bearer token), never a JWT `sub` decoded without verification, which a caller could forge to use or
+ * exhaust another user's counter. Counters live in memory, per replica.
+ *
+ * Environment: `BUSINESS_REFERENCES_RATE_LIMIT_MAX` (default 30) and `_WINDOW_MS` (default 1 minute);
+ * `RATE_LIMIT_ENABLED=false` disables it (load tests).
+ */
+export function createBusinessReferencesRateLimiter() {
+  const prefix = 'BUSINESS_REFERENCES_RATE_LIMIT';
+  return createRateLimiter({
+    envPrefix: prefix,
+    // The lib's defaults (15 minutes, 10 requests) are meant for sign-in routes: keep this route's own.
+    windowMs: process.env[`${prefix}_WINDOW_MS`] ? undefined : 60_000,
+    limit: process.env[`${prefix}_MAX`] ? undefined : 30,
+    failedOnly: false,
+    keyOf: sessionKey,
+    enabled: process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== 'false',
+  });
+}
+
+// The session is checked before the rate limiter: an anonymous request costs no upstream call and
+// consumes no counter. The caller's session is forwarded as `Bearer <token>`.
+router.get('/', requireBearer, createBusinessReferencesRateLimiter(), async (request, response) => {
   const results = await Promise.allSettled([
-    loadProjectReferences(authorization),
-    loadCalendarReferences(authorization),
+    loadProjectReferences(request),
+    loadCalendarReferences(request),
   ]);
   const references = results.flatMap((result) =>
     result.status === "fulfilled" ? result.value : [],
   );
 
-  return response.setHeader("Cache-Control", "no-store").json(
+  return response.json(
     {
       references,
       sources: {

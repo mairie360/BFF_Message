@@ -45,7 +45,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Vérifie la connexion avec l'API Message et Core API (annuaire) */
+        /**
+         * Checks that Message API and Core API (directory) are reachable
+         * @description BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source (`sources.projects` / `sources.calendar`) when they are unavailable.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -55,21 +58,23 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Connexion réussie */
+                /** @description Every upstream answered its /health operation */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CheckApiResponse"];
+                        "application/json": components["schemas"]["CheckApisResponse"];
                     };
                 };
-                /** @description API Message injoignable */
+                /** @description At least one upstream is unreachable or not configured */
                 502: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["CheckApisResponse"];
+                    };
                 };
             };
         };
@@ -184,7 +189,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Attachment upload is not available yet: nothing was stored */
+                /** @description Attachment upload is not available yet: nothing was stored (also when Core API is not configured) */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -472,6 +477,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Message API or Core API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -575,6 +589,15 @@ export interface paths {
                 };
                 /** @description Core API is unavailable or failed */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Core API is not configured on the BFF */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -719,6 +742,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Message API or Core API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -818,6 +850,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         options?: never;
@@ -904,7 +945,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Read acknowledgement unavailable: nothing was persisted */
+                /** @description Read acknowledgement unavailable: nothing was persisted (also when Core API is not configured) */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -1055,6 +1096,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1125,6 +1175,15 @@ export interface paths {
                 };
                 /** @description Core API is unavailable or failed */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Core API is not configured on the BFF */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1379,6 +1438,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Message API or Core API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1607,6 +1675,15 @@ export interface paths {
                 };
                 /** @description Message API or Core API is unavailable or failed */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is not configured on the BFF */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1845,6 +1922,15 @@ export interface paths {
                 };
                 /** @description Message API or Core API is unavailable or failed */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API or Core API is not configured on the BFF */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3255,13 +3341,13 @@ export interface components {
              */
             conversationId: number | string;
         };
-        CheckApiResponse: {
-            /** @example OK */
-            status: string;
-            /** @example Connected */
-            message_api: string;
-            /** @example Connected */
-            core_api: string;
+        CheckApisResponse: {
+            /** @enum {string} */
+            status: "OK" | "Error";
+            /** @enum {string} */
+            message_api: "Connected" | "Unreachable";
+            /** @enum {string} */
+            core_api: "Connected" | "Unreachable";
         };
         BusinessReferencesResponse: {
             references: {

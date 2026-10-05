@@ -1,46 +1,40 @@
+import { checkApis, checkApisResponseSchema, withoutSession } from '@mairie360/bffs-lib';
 import { Router } from 'express';
-import axios from 'axios';
 import { checkCoreApi } from '../clients/coreClient';
-import { CheckApiResponse, CheckApiResponseSchema } from '../views/check_api_view';
+import messageClient from '../clients/messageClient';
 import { registry } from '../openapi-registry';
 
 const router = Router();
 
-const MESSAGE_FULL_URL = `http://${process.env.MESSAGE_API_URL}:${process.env.MESSAGE_API_PORT}`;
+/** Probe timeout, in ms. */
+const PROBE_TIMEOUT_MS = 5_000;
+
+export const CheckApisResponse = registry.register('CheckApisResponse', checkApisResponseSchema(['message_api', 'core_api']));
 
 registry.registerPath({
   method: 'get',
   path: '/check_apis',
   security: [],
   tags: ['Connectivity'],
-  summary: "Vérifie la connexion avec l'API Message et Core API (annuaire)",
+  summary: 'Checks that Message API and Core API (directory) are reachable',
+  description: 'BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source '
+    + '(`sources.projects` / `sources.calendar`) when they are unavailable.',
   responses: {
     200: {
-      description: 'Connexion réussie',
-      content: {
-        'application/json': {
-          schema: CheckApiResponseSchema,
-        },
-      },
+      description: 'Every upstream answered its /health operation',
+      content: { 'application/json': { schema: CheckApisResponse } },
     },
     502: {
-      description: 'API Message injoignable',
+      description: 'At least one upstream is unreachable or not configured',
+      content: { 'application/json': { schema: CheckApisResponse } },
     },
   },
 });
 
-router.get('/', async (_, res) => {
-  const [message, core] = await Promise.allSettled([
-    axios.get(`${MESSAGE_FULL_URL}/health`, { timeout: 5000 }),
-    checkCoreApi(),
-  ]);
-  const result: CheckApiResponse = {
-    status: message.status === 'fulfilled' && core.status === 'fulfilled' ? 'OK' : 'Error',
-    message_api: message.status === 'fulfilled' ? 'Connected' : 'Unreachable',
-    core_api: core.status === 'fulfilled' ? 'Connected' : 'Unreachable',
-  };
-
-  res.status(result.status === 'OK' ? 200 : 502).json(result);
-});
+// Each probe reads the same <SERVICE>_URL as the real calls; a missing one counts as unreachable.
+router.get('/', checkApis({
+  message_api: () => messageClient.health(withoutSession('MESSAGE_API', PROBE_TIMEOUT_MS)),
+  core_api: () => checkCoreApi(),
+}));
 
 export default router;

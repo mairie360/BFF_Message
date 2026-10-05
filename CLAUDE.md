@@ -14,7 +14,7 @@ owns the data contract; the web service owns the screens. Docs live in `docs/{en
 
 ```bash
 npm ci                          # install (needs NODE_AUTH_TOKEN, see below)
-npm run start                   # ts-node src/index.ts (PORT env var is REQUIRED)
+npm run start                   # tsx watch src/index.ts (PORT defaults to 4003)
 npm run build                   # tsc -> dist/
 npm run lint                    # eslint . --ext .ts    (lint:fix to autofix; only src/**/*.ts is actually linted, see eslint.config.cjs)
 npm test                        # jest (all tests/**/*.test.ts)
@@ -27,50 +27,63 @@ npm run contracts:check         # fails if contracts/ is stale (CI gate)
 
 `npm run build` type-checks with `tsc --noEmit` then bundles `dist/index.js` with esbuild
 (`scripts/build.mjs`): the `@mairie360/*` clients are published as TypeScript, so they are inlined
-while the other dependencies stay external. Node **22** is required to reproduce the contract job / CI (`.github/workflows/contracts.yml`,
-`cicd.yml` → `mairie360/CICD` reusable workflow). The Docker images use `node:24-alpine`. The production image runs `node dist/index.js` (bundle);
+while the other dependencies stay external. Node **24** everywhere: the contract job / CI (`.github/workflows/contracts.yml`,
+`cicd.yml` → `mairie360/CICD` reusable workflow, `node_version: "24"`) and the Docker images (`node:24-alpine`, pinned by digest). The production image runs `node dist/index.js` (bundle);
 the test stacks run the image named by `IMAGE_REF` (in CI, the image published by `release-dev`;
 locally, `bff-message:local` built from `development.Dockerfile` by the scripts).
 
 Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `NODE_AUTH_TOKEN` from
 the environment; set it to a token with read access to those packages before `npm ci`.
 
-Env vars for local runs: `PORT` and `MESSAGE_API_BASE_PATH` are required (the server exits at start-up
-without them, no localhost fallback); the others fall back to a `localhost` default: `MESSAGE_API_URL` + `MESSAGE_API_PORT`
-(`/check_apis` only), `CORE_API_URL` + `CORE_API_PORT` (directory), `PROJECT_BFF_URL`,
-`CALENDAR_BFF_URL`. `RATE_LIMIT_ENABLED=false` disables the per-caller limit of `GET /business-references`
-(`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, `src/middleware/rateLimit.ts`); the perf stack sets it.
+Env vars for local runs (`.env.example`, loaded by `import 'dotenv/config'` on the first line of
+`src/index.ts` and `src/app.ts`): `PORT` (default 4003), and one `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`) per upstream, read on
+every call by the lib's `baseUrl` (MAIR-431): `MESSAGE_API_URL`, `CORE_API_URL`, `PROJECT_BFF_URL`,
+`CALENDAR_BFF_URL`. There is no localhost default: `assertConfigured(UPSTREAMS)` stops the server at
+start-up when one is missing (under `require.main === module`, so tests are not affected), and a route
+calling an unconfigured upstream answers 503 (declared in the contract). `TRUST_PROXY` sets Express' `trust proxy` (lib `parseTrustProxy`). `RATE_LIMIT_ENABLED=false` disables the per-session limit of `GET /business-references`
+(`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, defaults 30 / 60000, lib `createRateLimiter` keyed on
+`sessionKey` in `business_references.ts`); the perf stack sets it.
 
 ## Architecture
 
-**Entry point** `src/index.ts` builds `app` (exported for tests), mounts an auth middleware, the
-Swagger UI at `/docs`, the spec at `/openapi.json` + `/swagger.json`, then `/health`, `/check_apis`,
-and the Messages router at `/`.
+**Entry point** (structure of `Bff_Template_Repo`). `src/app.ts` builds and exports `app` (imported by the
+tests): `trust proxy` from `TRUST_PROXY`, the lib's `securityHeaders` + `apiOnlyHeaders()`, the Swagger UI
+at `/docs`, the spec at `/openapi.json` + `/swagger.json`, then `/health`, `/check_apis`, the Messages
+router at `/`, `notFoundHandler` and `errorHandler()`. `src/index.ts` loads `.env`, runs
+`assertConfigured(UPSTREAMS)` and listens, both under `require.main === module`.
 
-**Auth flow.** The middleware promotes an `accessToken` cookie to an `Authorization: Bearer` header
-when none is present. Route handlers pass `req.headers.authorization` down to helpers, which forward
-it to upstream services. There is no default/service token: without a caller token, upstream calls
-carry no `Authorization` header (`getAuthorizationHeader` in `src/config/token.ts`). The current user's
-numeric id is taken from the JWT `sub` claim by base64url-decoding the payload **without signature
-verification** (`numericUserIdFromToken` in `message_helpers.ts`).
+**Auth flow (MAIR-429).** The only credential is `Authorization: Bearer <token>` (the front's proxy turns
+the `accessToken` cookie into it; the BFF reads no cookie, no `x-session-token`). `src/routes/Messages/index.ts`
+mounts `noStore` + `requireBearer` (`@mairie360/bffs-lib`) on every session-bound prefix
+(`SESSION_BOUND_PATHS`), so an anonymous request gets 401 before any upstream call. Route handlers pass
+`authorization(req)` (normalised `Bearer <token>`) down to helpers, which forward it on every upstream
+call; there is no default/service token. The current user's numeric id is the JWT `sub` read with the
+lib's `unverifiedSubject` (**no signature verification**): only to shape requests sent upstream with
+the same token and the message direction, never for access decisions or rate-limit keys.
 
 **Routing.** `src/routes/Messages/index.ts` composes one router per resource
 (`conversation.ts`, `me.ts`, `contacts.ts`, `groups.ts`, `message.ts`, `bootstrap.ts`,
 `attachments.ts`, `business_references.ts`). Nearly all business logic lives in
-`src/routes/Messages/message_helpers.ts`; route files are thin (zod `safeParse` → call helper →
-`throw upstreamError(error, declared)`).
+`src/routes/Messages/message_helpers.ts`; route files are thin (`parseRequest(schema, value, location)` →
+call a helper with a `CallContext` `{ req, declared }` (`src/clients/context.ts`), `declared` being the
+upstream 4xx the route documents).
 
 **Errors.** Every error is `{ error: { code, message, details } }` (`@mairie360/bffs-lib`,
 `ErrorResponse` in the contract, declared through `errorResponses({...})` on every operation).
-Routes throw `HttpError` or `validationError(location, issues)` (400, one detail per invalid field);
-Express 5 hands async rejections to `errorHandler()`, mounted last in `src/index.ts` after
-`notFoundHandler`. `upstreamError(error, declared)` keeps only the upstream 4xx the route declares and
-turns any other status or a network failure into 502; never relay upstream bodies. Register the
+Routes throw `HttpError` or the 400 of the lib's `parseRequest` (`Validation failed`, one detail per
+invalid field); Express 5 hands async rejections to `errorHandler()`, mounted last in `src/app.ts` after
+`notFoundHandler`. Every upstream call goes through the lib's `callUpstream(service, call, { declared,
+retry })` with `asCaller(service, req)` options: it keeps only the upstream 4xx the route declares and turns
+any other status, a network failure or an invalid answer into 502 naming the service; never relay upstream
+bodies. `retry: true` only on idempotent GETs to Message API and Core API. Register the
 envelope with `ErrorResponseSchema.clone()` (zod 4 only adds `.openapi()` to schemas created after
 `extendZodWithOpenApi`). When a route starts answering a new status, declare it in its `registerPath`.
 
-**Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (base URL from `MESSAGE_API_BASE_PATH` with
-`http://` normalization) into the generated `@mairie360/message-api-openapi` client.
+**Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (headers only) into the
+generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('MESSAGE_API', req, 5_000)`
+(base URL read now + the caller's token) on every call. `/check_apis` uses the lib's `checkApis` with
+`withoutSession(...)` probes of Message API and Core API (`message_api`, `core_api`, schema
+`CheckApisResponse`); BFF Project / BFF Calendar are not probed, business references degrade per source.
 `src/clients/coreClient.ts` reads the directory (contacts and current user) through Core API's
 `GET /api/v1/user/` — the BFF has no database access.
 `business_references.ts` calls BFF Project and BFF Calendar through their published clients
@@ -118,8 +131,8 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
   operations and fixtures. Orval loses error statuses (success is exposed as `2XX`): every mocked
   error reply needs `outOfContract: true`; known upstream contract bugs go through
   `allowDeviation(pattern, reason)`. BFF responses are validated against `contracts/openapi.json`.
-- `messageClient` and `check_apis` read their upstream URL at module load, so the app is imported
-  after the env vars are set; the other clients read theirs on each call.
+- Every client reads its upstream URL on each call, so tests may change `<SERVICE>_URL` at any time
+  (the `upstream configuration (MAIR-431)` tests unset them to check the 503s).
 - `openapi-contract.ts`, `contract-mock-server.ts` and `orval-contract.ts` are shared verbatim with
   `BFF_Calendar` and `BFF_Dashboard`; keep the copies identical.
 
@@ -128,7 +141,7 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
 `security_test.sh` / `performance_test.sh` clone `mairie360/CICD` into `cicd-repo/` (gitignored) at
 the pinned `cicd_version` (`CICD_VERSION=<branch>` overrides it). ZAP runs its
 `tests/zap/zap_hooks.py` with `--hook`: every operation of the served spec must be reached, and
-non-public ones with a non-401/403 answer. The spec declares `bearerAuth` + `cookieAuth` at the top
+non-public ones with a non-401/403 answer. The spec declares `bearerAuth` only at the top
 level (`src/openapi.ts`); public routes (`/health`, `/check_apis`) set `security: []` in
 `registerPath`. `load-test.js` builds on `coverage.js` with **one handler per operation** of
 `contracts/openapi.json`: a new route without a handler makes k6 abort at init. Two scenarios:

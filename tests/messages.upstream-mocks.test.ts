@@ -37,6 +37,7 @@ const MESSAGE_API = {
   chat: '/api/v1/{chatId}/',
   messages: '/api/v1/{chatId}/messages/',
   users: '/api/v1/{chatId}/users/',
+  member: '/api/v1/{chatId}/users/{userId}/',
   health: '/health',
 } as const;
 const CORE_API = { directory: '/api/v1/user/', health: '/health' } as const;
@@ -47,19 +48,16 @@ let app: Express;
 
 beforeAll(async () => {
   await Promise.all(mocks.map((mock) => mock.start()));
-  // messageClient et check_apis lisent leurs URL amont au chargement : l'application est importée après.
+  // Upstream URLs are read on every call (MAIR-431); a full URL and a host + port pair are both covered.
   // Former service-token fallback: it must be ignored even when set (MAIR-224).
   process.env.DEFAULT_JWT_TOKEN = 'Bearer service-token-must-not-leak';
-  process.env.MESSAGE_API_BASE_PATH = messageApi.url;
-  const messageApiUrl = new URL(messageApi.url);
-  process.env.MESSAGE_API_URL = messageApiUrl.hostname;
-  process.env.MESSAGE_API_PORT = messageApiUrl.port;
+  process.env.MESSAGE_API_URL = messageApi.url;
   const coreApiUrl = new URL(coreApi.url);
   process.env.CORE_API_URL = coreApiUrl.hostname;
   process.env.CORE_API_PORT = coreApiUrl.port;
   process.env.PROJECT_BFF_URL = projectBff.url;
   process.env.CALENDAR_BFF_URL = calendarBff.url;
-  ({ app } = await import('../src/index'));
+  ({ app } = await import('../src/app'));
 });
 afterAll(async () => { await Promise.all(mocks.map((mock) => mock.stop())); });
 
@@ -104,7 +102,7 @@ function mockMessageApi({ chats = [], messages = {}, members = {}, createdChatId
     // 404 renvoyé par l'API réelle pour un salon inconnu ; les erreurs ne sont pas typées par orval.
     return found ? { body: chatResult(found) } : { status: 404, raw: 'Chat not found', contentType: 'text/plain', outOfContract: true };
   });
-  messageApi.on('delete', MESSAGE_API.chat, { status: 200 });
+  messageApi.on('delete', MESSAGE_API.member, { status: 200 });
   messageApi.on('post', MESSAGE_API.messages, { body: postMessageResult(postedMessageId) });
   messageApi.on('get', MESSAGE_API.users, ({ pathParams }) => ({ body: chatUsers(members[Number(pathParams.chatId)] ?? []) }));
 }
@@ -193,13 +191,14 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.calls(MESSAGE_API.users).map((call) => call.pathParams.chatId).sort()).toEqual(['1', '2']);
     });
 
-    test('promotes the accessToken cookie to the Authorization header sent to Message API', async () => {
+    test('ignores the accessToken cookie: Bearer is the only credential (MAIR-429)', async () => {
       mockMessageApi();
 
       const response = await request(app).get('/conversations').set('Cookie', `theme=dark; accessToken=${encodeURIComponent(tokenFor(sophie.id))}`);
 
-      expect(response.status).toBe(200);
-      expect(messageApi.calls(MESSAGE_API.chats)[0].headers.authorization).toBe(authorizationFor(sophie.id));
+      expectApiError(response, 401, 'UNAUTHORIZED');
+      expectBffContract('get', '/conversations', response);
+      expect(messageApi.requests).toEqual([]);
     });
 
     test('degrades to conversations without participants when Message API fails on chat users', async () => {
@@ -222,7 +221,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
-    test('DELETE /conversations/:id deletes the Message API chat by its numeric id', async () => {
+    test('DELETE /conversations/:id makes the caller leave the Message API chat (deleted with its last member)', async () => {
       mockMessageApi();
 
       const response = await request(app).delete('/conversations/conversation-4').set('Authorization', authorizationFor(agent.id));
@@ -230,7 +229,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(200);
       expectBffContract('delete', '/conversations/conversation-4', response);
       expect(response.body).toEqual({ deleted: true, conversationId: 'conversation-4' });
-      expect(upstreamSequence(messageApi)).toEqual([called('DELETE', messageApiUrls.getDeleteChatUrl(4))]);
+      expect(upstreamSequence(messageApi)).toEqual([called('DELETE', messageApiUrls.getRemoveUserFromChatUrl(4, agent.id))]);
     });
 
     test('DELETE /conversations/:id rejects an id without digits before calling Message API', async () => {
@@ -545,7 +544,8 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       const anonymous = await request(app).patch('/me').send({ city: 'Lyon' });
       const authenticated = await request(app).patch('/me').set('Authorization', authorizationFor(agent.id)).send({ city: 'Lyon' });
 
-      expectApiError(anonymous, 404, 'NOT_FOUND');
+      // `/me` is session-bound: the session is checked before the route lookup (MAIR-429).
+      expectApiError(anonymous, 401, 'UNAUTHORIZED');
       expectApiError(authenticated, 404, 'NOT_FOUND');
       expect(bffContract.match('patch', '/me')?.template).toBeUndefined();
       expect(coreApi.requests).toEqual([]);
@@ -592,19 +592,58 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       const conversations = await request(app).get('/conversations').set('Cookie', 'accessToken=%E0%A4%A');
 
       expect(health.status).toBe(200);
-      expect(conversations.status).not.toBe(500);
-      expect(messageApi.calls(MESSAGE_API.chats).every((call) => call.headers.authorization === undefined)).toBe(true);
+      expectApiError(conversations, 401, 'UNAUTHORIZED');
+      expect(messageApi.requests).toEqual([]);
     });
 
-    test('an anonymous request is forwarded upstream without any default token', async () => {
-      messageApi.on('get', MESSAGE_API.chats, ({ headers }) => (headers.authorization
-        ? { body: chatsResult([]) }
-        : { status: 401, raw: 'Unauthorized', contentType: 'text/plain', outOfContract: true }));
+    // Every session-bound operation answers 401 before any upstream call when the request carries no
+    // Bearer token: no anonymous call reaches Message API, Core API, BFF Project or BFF Calendar (MAIR-429).
+    const sessionBoundOperations = [
+      ['get', '/conversations', undefined],
+      ['delete', '/conversations/conversation-4', undefined],
+      ['post', '/conversations/conversation-4/read', { readUntilMessageId: 'message-42' }],
+      ['get', '/conversations/conversation-4/messages', undefined],
+      ['post', '/conversations/conversation-4/messages', { content: 'Bonjour' }],
+      ['post', '/direct-messages', { recipientId: 'user-8', message: 'Bonjour' }],
+      ['post', '/groups', { name: 'Équipe', memberIds: [8] }],
+      ['get', '/me', undefined],
+      ['get', '/contacts', undefined],
+      ['get', '/messaging/bootstrap', undefined],
+      ['post', '/attachments', { files: [{ name: 'note.pdf' }] }],
+      ['get', '/business-references', undefined],
+    ] as const;
 
-      const response = await request(app).get('/conversations');
+    test.each(sessionBoundOperations)('%s %s answers 401 without a Bearer token, before any upstream call', async (method, url, body) => {
+      mockMessageApi();
+      const credentials: Array<[string, string] | undefined> = [
+        undefined,
+        ['Authorization', `Basic ${Buffer.from('agent:secret').toString('base64')}`],
+        ['Authorization', tokenFor(agent.id)],
+        ['Authorization', 'Bearer'],
+        ['x-session-token', tokenFor(agent.id)],
+        ['Cookie', `session=${tokenFor(agent.id)}`],
+      ];
 
-      expectApiError(response, 401, 'UNAUTHORIZED');
-      expect(messageApi.requests.map((call) => call.headers.authorization)).toEqual([undefined]);
+      for (const credential of credentials) {
+        const call = request(app)[method](url);
+        if (credential) call.set(credential[0], credential[1]);
+        const response = await (body === undefined ? call : call.send(body));
+
+        expectApiError(response, 401, 'UNAUTHORIZED');
+        expectBffContract(method, url, response);
+        expect(response.headers['cache-control']).toBe('no-store');
+      }
+      expect(mocks.flatMap((mock) => mock.requests)).toEqual([]);
+    });
+
+    test('session-bound answers are never cached and forward the normalised Bearer header', async () => {
+      mockMessageApi();
+
+      const response = await request(app).get('/conversations').set('Authorization', `bearer   ${tokenFor(agent.id)}`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe('no-store');
+      expect(messageApi.requests.map((call) => call.headers.authorization)).toEqual([authorizationFor(agent.id)]);
     });
 
     test('an upstream 4xx the route does not declare answers 502 without its message or body', async () => {
@@ -706,9 +745,9 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(JSON.stringify(response.body)).not.toContain('database');
     });
 
-    test('keeps a declared Message API 403 when a member who is not an administrator deletes a chat', async () => {
+    test('keeps a declared Message API 403 when the caller may not leave the chat', async () => {
       mockMessageApi();
-      messageApi.on('delete', MESSAGE_API.chat, { status: 403, raw: 'Forbidden', contentType: 'text/plain', outOfContract: true });
+      messageApi.on('delete', MESSAGE_API.member, { status: 403, raw: 'Forbidden', contentType: 'text/plain', outOfContract: true });
 
       const response = await request(app).delete('/conversations/conversation-4').set('Authorization', authorizationFor(agent.id));
 
@@ -851,6 +890,99 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(401);
       expectBffContract('get', '/business-references', response);
       expect([...projectBff.requests, ...calendarBff.requests]).toHaveLength(0);
+    });
+  });
+
+  describe('upstream configuration (MAIR-431)', () => {
+    /** Runs `call` with `<service>_URL` unset, then restores it. */
+    async function withoutUrl<T>(service: string, call: () => Promise<T>): Promise<T> {
+      const saved = process.env[`${service}_URL`];
+      delete process.env[`${service}_URL`];
+      try {
+        return await call();
+      } finally {
+        process.env[`${service}_URL`] = saved;
+      }
+    }
+
+    test.each([
+      ['MESSAGE_API', 'get', '/conversations', undefined],
+      ['MESSAGE_API', 'delete', '/conversations/conversation-4', undefined],
+      ['MESSAGE_API', 'get', '/conversations/conversation-4/messages', undefined],
+      ['MESSAGE_API', 'post', '/conversations/conversation-4/messages', { content: 'Bonjour' }],
+      ['MESSAGE_API', 'post', '/direct-messages', { recipientId: 'user-8', message: 'Bonjour' }],
+      ['MESSAGE_API', 'post', '/groups', { name: 'Équipe', memberIds: [8] }],
+      ['MESSAGE_API', 'get', '/messaging/bootstrap', undefined],
+      ['CORE_API', 'get', '/me', undefined],
+      ['CORE_API', 'get', '/contacts', undefined],
+      ['CORE_API', 'post', '/conversations/conversation-4/read', { readUntilMessageId: 'message-42' }],
+      ['CORE_API', 'post', '/attachments', { files: [{ name: 'note.pdf' }] }],
+    ] as const)('without %s_URL, %s %s answers a declared 503 and calls no default host', async (service, method, url, body) => {
+      mockMessageApi({ chats: [chatView(4, 'Équipe communication')], members: { 4: [agent.id, sophie.id] } });
+
+      const response = await withoutUrl(service, () => {
+        const call = request(app)[method](url).set('Authorization', authorizationFor(agent.id));
+        return body === undefined ? call : call.send(body);
+      });
+
+      expectApiError(response, 503, 'SERVICE_UNAVAILABLE');
+      expectBffContract(method, url, response);
+      expect((service === 'MESSAGE_API' ? messageApi : coreApi).requests).toEqual([]);
+      // GET /messaging/bootstrap answers as soon as one branch fails: let its other (Core API) calls end
+      // before the next test resets the mocks.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    test('names the missing service in the 503', async () => {
+      const response = await withoutUrl('CORE_API', () => request(app).get('/me').set('Authorization', authorizationFor(agent.id)));
+
+      expect(response.body.error.message).toBe('The CORE_API service is not configured.');
+    });
+
+    test.each([
+      ['PROJECT_BFF', { projects: 'unavailable', calendar: 'available' }],
+      ['CALENDAR_BFF', { projects: 'available', calendar: 'unavailable' }],
+    ] as const)('GET /business-references marks the source unavailable without %s_URL', async (service, sources) => {
+      projectBff.on('get', PROJECT_BFF.page, { body: projectsPageResponse([]) });
+      calendarBff.on('get', CALENDAR_BFF.bootstrap, { body: calendarBootstrapResponse([]) });
+
+      const response = await withoutUrl(service, () => request(app).get('/business-references').set('Authorization', authorizationFor(agent.id)));
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/business-references', response);
+      expect(response.body.sources).toEqual(sources);
+      expect((service === 'PROJECT_BFF' ? projectBff : calendarBff).requests).toEqual([]);
+    });
+
+    test('reads the upstream URL on every call, not at import time', async () => {
+      mockMessageApi();
+      const other = new ContractMockServer('MESSAGE_API', loadOrvalContract('@mairie360/message-api-openapi'));
+      await other.start();
+      other.on('get', MESSAGE_API.chats, { body: chatsResult([]) });
+      const saved = process.env.MESSAGE_API_URL;
+      process.env.MESSAGE_API_URL = other.url;
+      try {
+        const response = await request(app).get('/conversations').set('Authorization', authorizationFor(agent.id));
+
+        expect(response.status).toBe(200);
+        expect(other.requests).toHaveLength(1);
+        expect(messageApi.requests).toEqual([]);
+        expect(other.violations).toEqual([]);
+      } finally {
+        process.env.MESSAGE_API_URL = saved;
+        await other.stop();
+      }
+    });
+
+    test('GET /check_apis reports an unconfigured upstream as unreachable', async () => {
+      coreApi.on('get', CORE_API.health, { raw: 'OK', contentType: 'text/plain' });
+      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+      const response = await withoutUrl('MESSAGE_API', () => request(app).get('/check_apis'));
+
+      expect(response.status).toBe(502);
+      expectBffContract('get', '/check_apis', response);
+      expect(response.body).toEqual({ status: 'Error', message_api: 'Unreachable', core_api: 'Connected' });
     });
   });
 

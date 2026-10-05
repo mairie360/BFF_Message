@@ -1,4 +1,5 @@
-import {Router, Request, Response} from 'express';
+import { parseRequest } from '@mairie360/bffs-lib';
+import { Router } from 'express';
 import {
     registry,
     MessagesQuery,
@@ -15,8 +16,6 @@ import {
     createDirectMessage,
     fetchConversationMessages,
     sendMessageToConversation,
-    upstreamError,
-    validationError,
 } from './message_helpers';
 
 const router = Router();
@@ -44,6 +43,7 @@ registry.registerPath({
             401: 'Missing or invalid session',
             404: 'Unknown conversation, or the caller is not one of its members',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
@@ -78,6 +78,7 @@ registry.registerPath({
             401: 'Missing or invalid session',
             404: 'Unknown conversation, or the caller is not one of its members',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
@@ -110,60 +111,26 @@ registry.registerPath({
             400: 'Invalid body (details lists the invalid fields)',
             401: 'Missing or invalid session',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
 
-router.get('/conversations/:conversationId/messages', async (req: Request, res: Response) => {
-    const paramsResult = ConversationIdParams.safeParse(req.params);
-    const queryResult = MessagesQuery.safeParse(req.query);
-
-    if (!paramsResult.success) {
-        throw validationError('params', paramsResult.error.issues);
-    }
-
-    if (!queryResult.success) {
-        throw validationError('query', queryResult.error.issues);
-    }
-
-    try {
-        res.status(200).json(await fetchConversationMessages(paramsResult.data.conversationId, queryResult.data.limit, req.headers.authorization));
-    } catch (error) {
-        throw upstreamError(error, [401, 404]);
-    }
+router.get('/conversations/:conversationId/messages', async (req, res) => {
+    const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
+    const query = parseRequest(MessagesQuery, req.query, 'query');
+    res.status(200).json(await fetchConversationMessages(conversationId, query.limit, { req, declared: [401, 404] }));
 });
 
-router.post('/conversations/:conversationId/messages', async (req: Request, res: Response) => {
-    const paramsResult = ConversationIdParams.safeParse(req.params);
-    const bodyResult = SendMessageBody.safeParse(req.body);
-
-    if (!paramsResult.success) {
-        throw validationError('params', paramsResult.error.issues);
-    }
-
-    if (!bodyResult.success) {
-        throw validationError('body', bodyResult.error.issues);
-    }
-
-    try {
-        res.status(201).json(await sendMessageToConversation(paramsResult.data.conversationId, bodyResult.data.content, req.headers.authorization));
-    } catch (error) {
-        throw upstreamError(error, [400, 401, 404]);
-    }
+router.post('/conversations/:conversationId/messages', async (req, res) => {
+    const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
+    const body = parseRequest(SendMessageBody, req.body, 'body');
+    res.status(201).json(await sendMessageToConversation(conversationId, body.content, { req, declared: [400, 401, 404] }));
 });
 
-router.post('/direct-messages', async (req: Request, res: Response) => {
-    const bodyResult = NewDirectMessageBody.safeParse(req.body);
-
-    if (!bodyResult.success) {
-        throw validationError('body', bodyResult.error.issues);
-    }
-
-    try {
-        res.status(201).json(await createDirectMessage(bodyResult.data.recipientId, bodyResult.data.message, req.headers.authorization));
-    } catch (error) {
-        throw upstreamError(error, [400, 401]);
-    }
+router.post('/direct-messages', async (req, res) => {
+    const body = parseRequest(NewDirectMessageBody, req.body, 'body');
+    res.status(201).json(await createDirectMessage(body.recipientId, body.message, { req, declared: [400, 401] }));
 });
 
 export default router;
