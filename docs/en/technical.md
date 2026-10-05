@@ -6,7 +6,7 @@
 
 Express 5.2.1 server written in TypeScript. Zod schemas and their OpenAPI registry describe exchanged objects; routers adapt upstream services to interface needs.
 
-`src/index.ts` mounts the Messages router at the root. Helpers convert identifiers and generated-client objects; `coreClient.ts` reads the Core API directory. `business_references.ts` calls business BFFs with the session. Bootstrap loads up to 20 conversations and then 30 messages from the first conversation.
+`src/app.ts` builds the Express app (shared security headers of `@mairie360/bffs-lib`, documentation, `/health`, `/check_apis`, the Messages router at the root, error handlers); `src/index.ts` loads `.env`, checks the upstream configuration and listens. Helpers convert identifiers and generated-client objects; `coreClient.ts` reads the Core API directory. `business_references.ts` calls business BFFs with the session. Bootstrap loads up to 20 conversations and then 30 messages from the first conversation.
 
 ## Data and persistence
 
@@ -42,7 +42,7 @@ CALENDAR_BFF_URL=http://localhost:4002
 npm run start
 ```
 
-`PORT` is required by this BFF; this example uses `4003`.
+`PORT` defaults to `4003`.
 
 Check the process, then open the interactive documentation:
 
@@ -58,7 +58,7 @@ Values below are local examples or explicitly described behavior, not production
 
 | Variable or precedence | Example / stated fallback | Purpose |
 | --- | --- | --- |
-| `PORT` | 4003 | Port used by this local example. |
+| `PORT` | 4003 (default) | Listening port. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | http://localhost:3003 / — | Message API root (its routes are published under `/api/v1`), also probed by `/check_apis`. **Required**. Replaces `MESSAGE_API_BASE_PATH` (removed). |
 | `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Core API directory (contacts, current user), also probed by `/check_apis`. **Required**. |
 | `PROJECT_BFF_URL` / `PROJECT_BFF_PORT` | http://localhost:4001 / — | Source of project and task references. **Required**. |
@@ -98,8 +98,15 @@ Every error is answered in the envelope shared by all the BFFs (`@mairie360/bffs
 `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, ...). A validation failure is a 400 whose `details` lists the
 invalid fields (`{ "path": "body.content", "message": "..." }`). An upstream 4xx is kept only when the
 route declares it (Message API 401/404, and 403 on `DELETE /conversations/{conversationId}`, 400 on the
-message and chat creations), with a generic message; any other upstream status or a network failure
-answers 502. Upstream messages and bodies are never relayed; an unexpected error is a generic 500.
+message and chat creations), with a generic message; any other upstream status, a network failure or an
+invalid answer is a 502 naming the service (`The MESSAGE_API service is unavailable.`), and an
+unconfigured upstream a 503. Idempotent reads of Message API and Core API are retried once on a transient
+failure. Every upstream call and the mapping go through `callUpstream` / `asCaller` of `@mairie360/bffs-lib`.
+
+`/check_apis` probes the `/health` operation of Message API and Core API with the same variables as the
+real calls and answers `{ status, message_api, core_api }` (`Connected` / `Unreachable`), 200 when both
+answer, 502 otherwise. BFF Project and BFF Calendar are not probed: `GET /business-references` reports them
+per source. Upstream messages and bodies are never relayed; an unexpected error is a generic 500.
 
 ## Synchronization and verification
 
@@ -142,6 +149,7 @@ If conversations work but contacts do not, check Core API. If only business refe
 ## Repository reference
 
 - [src/index.ts](../../src/index.ts)
+- [src/app.ts](../../src/app.ts)
 - [src/routes/Messages/index.ts](../../src/routes/Messages/index.ts)
 - [src/routes/Messages/message_helpers.ts](../../src/routes/Messages/message_helpers.ts)
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)

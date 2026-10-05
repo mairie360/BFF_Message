@@ -14,7 +14,7 @@ owns the data contract; the web service owns the screens. Docs live in `docs/{en
 
 ```bash
 npm ci                          # install (needs NODE_AUTH_TOKEN, see below)
-npm run start                   # ts-node src/index.ts (PORT env var is REQUIRED)
+npm run start                   # tsx watch src/index.ts (PORT defaults to 4003)
 npm run build                   # tsc -> dist/
 npm run lint                    # eslint . --ext .ts    (lint:fix to autofix; only src/**/*.ts is actually linted, see eslint.config.cjs)
 npm test                        # jest (all tests/**/*.test.ts)
@@ -36,18 +36,21 @@ Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `N
 the environment; set it to a token with read access to those packages before `npm ci`.
 
 Env vars for local runs (`.env.example`, loaded by `import 'dotenv/config'` on the first line of
-`src/index.ts`): `PORT`, and one `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`) per upstream, read on
+`src/index.ts` and `src/app.ts`): `PORT` (default 4003), and one `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`) per upstream, read on
 every call by the lib's `baseUrl` (MAIR-431): `MESSAGE_API_URL`, `CORE_API_URL`, `PROJECT_BFF_URL`,
 `CALENDAR_BFF_URL`. There is no localhost default: `assertConfigured(UPSTREAMS)` stops the server at
 start-up when one is missing (under `require.main === module`, so tests are not affected), and a route
 calling an unconfigured upstream answers 503 (declared in the contract). `TRUST_PROXY` sets Express' `trust proxy` (lib `parseTrustProxy`). `RATE_LIMIT_ENABLED=false` disables the per-session limit of `GET /business-references`
-(`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, `src/middleware/rateLimit.ts`); the perf stack sets it.
+(`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, defaults 30 / 60000, lib `createRateLimiter` keyed on
+`sessionKey` in `business_references.ts`); the perf stack sets it.
 
 ## Architecture
 
-**Entry point** `src/index.ts` builds `app` (exported for tests), sets `trust proxy` from `TRUST_PROXY`, the
-Swagger UI at `/docs`, the spec at `/openapi.json` + `/swagger.json`, then `/health`, `/check_apis`,
-and the Messages router at `/`.
+**Entry point** (structure of `Bff_Template_Repo`). `src/app.ts` builds and exports `app` (imported by the
+tests): `trust proxy` from `TRUST_PROXY`, the lib's `securityHeaders` + `apiOnlyHeaders()`, the Swagger UI
+at `/docs`, the spec at `/openapi.json` + `/swagger.json`, then `/health`, `/check_apis`, the Messages
+router at `/`, `notFoundHandler` and `errorHandler()`. `src/index.ts` loads `.env`, runs
+`assertConfigured(UPSTREAMS)` and listens, both under `require.main === module`.
 
 **Auth flow (MAIR-429).** The only credential is `Authorization: Bearer <token>` (the front's proxy turns
 the `accessToken` cookie into it; the BFF reads no cookie, no `x-session-token`). `src/routes/Messages/index.ts`
@@ -61,21 +64,26 @@ the same token and the message direction, never for access decisions or rate-lim
 **Routing.** `src/routes/Messages/index.ts` composes one router per resource
 (`conversation.ts`, `me.ts`, `contacts.ts`, `groups.ts`, `message.ts`, `bootstrap.ts`,
 `attachments.ts`, `business_references.ts`). Nearly all business logic lives in
-`src/routes/Messages/message_helpers.ts`; route files are thin (zod `safeParse` → call helper →
-`throw upstreamError(error, declared)`).
+`src/routes/Messages/message_helpers.ts`; route files are thin (`parseRequest(schema, value, location)` →
+call a helper with a `CallContext` `{ req, declared }` (`src/clients/context.ts`), `declared` being the
+upstream 4xx the route documents).
 
 **Errors.** Every error is `{ error: { code, message, details } }` (`@mairie360/bffs-lib`,
 `ErrorResponse` in the contract, declared through `errorResponses({...})` on every operation).
-Routes throw `HttpError` or `validationError(location, issues)` (400, one detail per invalid field);
-Express 5 hands async rejections to `errorHandler()`, mounted last in `src/index.ts` after
-`notFoundHandler`. `upstreamError(error, declared)` keeps only the upstream 4xx the route declares and
-turns any other status or a network failure into 502; never relay upstream bodies. Register the
+Routes throw `HttpError` or the 400 of the lib's `parseRequest` (`Validation failed`, one detail per
+invalid field); Express 5 hands async rejections to `errorHandler()`, mounted last in `src/app.ts` after
+`notFoundHandler`. Every upstream call goes through the lib's `callUpstream(service, call, { declared,
+retry })` with `asCaller(service, req)` options: it keeps only the upstream 4xx the route declares and turns
+any other status, a network failure or an invalid answer into 502 naming the service; never relay upstream
+bodies. `retry: true` only on idempotent GETs to Message API and Core API. Register the
 envelope with `ErrorResponseSchema.clone()` (zod 4 only adds `.openapi()` to schemas created after
 `extendZodWithOpenApi`). When a route starts answering a new status, declare it in its `registerPath`.
 
-**Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (timeout and headers only)
-into the generated `@mairie360/message-api-openapi` client; the helpers pass `baseURL: baseUrl('MESSAGE_API')`
-and the caller's token on every call.
+**Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (headers only) into the
+generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('MESSAGE_API', req, 5_000)`
+(base URL read now + the caller's token) on every call. `/check_apis` uses the lib's `checkApis` with
+`withoutSession(...)` probes of Message API and Core API (`message_api`, `core_api`, schema
+`CheckApisResponse`); BFF Project / BFF Calendar are not probed, business references degrade per source.
 `src/clients/coreClient.ts` reads the directory (contacts and current user) through Core API's
 `GET /api/v1/user/` — the BFF has no database access.
 `business_references.ts` calls BFF Project and BFF Calendar through their published clients

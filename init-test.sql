@@ -5,12 +5,14 @@
 --   * sub = "2": User role only. load-test.js signs a token for it on the fly.
 -- User 3 exists so that /contacts (every user but the caller) returns at least one entry.
 
+-- Passwords must be argon2id hashes (chk_users_password_hashed, MAIR-169): this is the
+-- Database template hash, nobody signs in with it (the tests use forged JWTs).
 INSERT INTO users (id, first_name, last_name, email, password, status)
 VALUES
-    (1, 'Security', 'Admin', 'security-admin@mairie360.fr', 'dummy', 'active'),
-    (2, 'Perf', 'Tester', 'perf-tester@mairie360.fr', 'dummy', 'active'),
-    (3, 'Contact', 'Sample', 'contact-sample@mairie360.fr', 'dummy', 'active'),
-    (10, 'Scan', 'Recipient', 'scan-recipient@mairie360.fr', 'dummy', 'active')
+    (1, 'Security', 'Admin', 'security-admin@mairie360.fr', '$argon2id$v=19$m=19456,t=2,p=1$/iKF9PbiDRDs4EKPjlIIhg$UKx9vfwwps250mEP/bYp63CXbEnQGULeUAhDq+az9Aw', 'active'),
+    (2, 'Perf', 'Tester', 'perf-tester@mairie360.fr', '$argon2id$v=19$m=19456,t=2,p=1$/iKF9PbiDRDs4EKPjlIIhg$UKx9vfwwps250mEP/bYp63CXbEnQGULeUAhDq+az9Aw', 'active'),
+    (3, 'Contact', 'Sample', 'contact-sample@mairie360.fr', '$argon2id$v=19$m=19456,t=2,p=1$/iKF9PbiDRDs4EKPjlIIhg$UKx9vfwwps250mEP/bYp63CXbEnQGULeUAhDq+az9Aw', 'active'),
+    (10, 'Scan', 'Recipient', 'scan-recipient@mairie360.fr', '$argon2id$v=19$m=19456,t=2,p=1$/iKF9PbiDRDs4EKPjlIIhg$UKx9vfwwps250mEP/bYp63CXbEnQGULeUAhDq+az9Aw', 'active')
 ON CONFLICT (id) DO NOTHING;
 
 -- Core API >= 1.1.1 requires at least one role on the user for GET /user/me.

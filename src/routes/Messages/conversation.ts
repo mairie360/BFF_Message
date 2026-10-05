@@ -1,5 +1,5 @@
-import { authorization } from '@mairie360/bffs-lib';
-import {Router, Request, Response} from 'express';
+import { parseRequest } from '@mairie360/bffs-lib';
+import { Router } from 'express';
 
 import {
     registry,
@@ -17,8 +17,6 @@ import {
     fetchConversations,
     fetchCurrentUser,
     markConversationAsRead,
-    upstreamError,
-    validationError,
 } from './message_helpers';
 
 const router = Router();
@@ -111,66 +109,28 @@ registry.registerPath({
   },
 });
 
-router.get('/', async (req: Request, res: Response) => {
-    const queryResult = ConversationsQuery.safeParse(req.query);
-
-    if (!queryResult.success) {
-        throw validationError('query', queryResult.error.issues);
-    }
-
-    try {
-        const conversations = await fetchConversations(
-            queryResult.data.search,
-            queryResult.data.limit,
-            authorization(req),
-        );
-        return res.status(200).json({ conversations });
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
+router.get('/', async (req, res) => {
+    const query = parseRequest(ConversationsQuery, req.query, 'query');
+    const conversations = await fetchConversations(query.search, query.limit, { req, declared: [401] });
+    res.status(200).json({ conversations });
 });
 
-router.delete('/:conversationId', async (req: Request, res: Response) => {
-    const paramsResult = ConversationIdParams.safeParse(req.params);
-
-    if (!paramsResult.success) {
-        throw validationError('params', paramsResult.error.issues);
-    }
-
-    try {
-        await deleteConversation(paramsResult.data.conversationId, authorization(req));
-    } catch (error) {
-        throw upstreamError(error, [401, 403, 404]);
-    }
-    return res.status(200).json({
-        deleted: true,
-        conversationId: paramsResult.data.conversationId,
-    });
+router.delete('/:conversationId', async (req, res) => {
+    const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
+    await deleteConversation(conversationId, { req, declared: [401, 403, 404] });
+    res.status(200).json({ deleted: true, conversationId });
 });
 
-router.post('/:conversationId/read', async (req: Request, res: Response) => {
+router.post('/:conversationId/read', async (req, res) => {
     // requireBearer (routes/Messages/index.ts) already answered 401 to an anonymous caller, before the
     // 503 of the missing upstream operation. Invalid input is refused before the session is resolved
     // against Core API (which verifies the token), so it costs no upstream call.
-    const paramsResult = ConversationIdParams.safeParse(req.params);
-    const bodyResult = MarkConversationAsReadBody.safeParse(req.body);
+    const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
+    parseRequest(MarkConversationAsReadBody, req.body, 'body');
 
-    if (!paramsResult.success) {
-        throw validationError('params', paramsResult.error.issues);
-    }
+    await fetchCurrentUser({ req, declared: [401] });
 
-    if (!bodyResult.success) {
-        throw validationError('body', bodyResult.error.issues);
-    }
-
-    try {
-        await fetchCurrentUser(authorization(req));
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
-
-    const result = await markConversationAsRead(paramsResult.data.conversationId);
-    return res.status(200).json(result);
+    res.status(200).json(await markConversationAsRead(conversationId));
 });
 
 export default router;

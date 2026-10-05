@@ -1,23 +1,29 @@
 import express from 'express';
 import request from 'supertest';
 import { errorHandler } from '@mairie360/bffs-lib';
-import { createCallerRateLimiter } from '../src/middleware/rateLimit';
-import { calendarDateRange, CALENDAR_WINDOW_HALF_DAYS, settleWithConcurrency } from '../src/routes/Messages/business_references';
+import {
+  calendarDateRange, CALENDAR_WINDOW_HALF_DAYS, createBusinessReferencesRateLimiter, settleWithConcurrency,
+} from '../src/routes/Messages/business_references';
 import { authorizationFor, tokenFor } from './support/upstream-fixtures';
 
 // MAIR-400: bounds of GET /business-references (rate limit, bounded fan-out, calendar window).
 
-function limitedApp(limit: number) {
+const savedEnv = { ...process.env };
+afterEach(() => { process.env = { ...savedEnv }; });
+
+/** An app limited like GET /business-references, with `BUSINESS_REFERENCES_RATE_LIMIT_MAX=max`. */
+function limitedApp(max: number) {
+  process.env.BUSINESS_REFERENCES_RATE_LIMIT_MAX = String(max);
   const app = express();
-  app.get('/limited', createCallerRateLimiter({ identifier: 'test', limit, windowMs: 60_000, enabled: true }), (_req, res) => {
+  app.get('/limited', createBusinessReferencesRateLimiter(), (_req, res) => {
     res.json({ ok: true });
   });
   app.use(errorHandler());
   return app;
 }
 
-describe('caller rate limiter', () => {
-  test('answers 429 in the shared error envelope once a caller exceeds its budget', async () => {
+describe('business references rate limiter', () => {
+  test('answers 429 in the shared error envelope once a session exceeds its budget', async () => {
     const app = limitedApp(2);
 
     await request(app).get('/limited').set('Authorization', authorizationFor(7)).expect(200);
@@ -29,7 +35,7 @@ describe('caller rate limiter', () => {
     expect(limited.headers['retry-after']).toBeDefined();
   });
 
-  test('counts each caller separately, even behind one shared IP', async () => {
+  test('counts each session separately, even behind one shared IP', async () => {
     const app = limitedApp(1);
 
     await request(app).get('/limited').set('Authorization', authorizationFor(7)).expect(200);
@@ -47,9 +53,23 @@ describe('caller rate limiter', () => {
     await request(app).get('/limited').set('Authorization', forged).expect(429);
   });
 
-  test('is skipped when disabled', async () => {
+  test('allows 30 requests per minute by default', async () => {
     const app = express();
-    app.get('/limited', createCallerRateLimiter({ identifier: 'off', limit: 1, enabled: false }), (_req, res) => { res.json({}); });
+    app.get('/limited', createBusinessReferencesRateLimiter(), (_req, res) => { res.json({}); });
+
+    const responses = [];
+    for (let index = 0; index < 31; index += 1) {
+      responses.push(await request(app).get('/limited').set('Authorization', authorizationFor(7)));
+    }
+
+    expect(responses.slice(0, 30).every((response) => response.status === 200)).toBe(true);
+    expect(responses[30].status).toBe(429);
+    expect(responses[0].headers.ratelimit).toMatch(/r=29; t=60/);
+  });
+
+  test('is skipped when RATE_LIMIT_ENABLED=false', async () => {
+    process.env.RATE_LIMIT_ENABLED = 'false';
+    const app = limitedApp(1);
 
     await request(app).get('/limited').expect(200);
     await request(app).get('/limited').expect(200);

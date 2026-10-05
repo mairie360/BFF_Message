@@ -1,11 +1,11 @@
-import { authorization } from '@mairie360/bffs-lib';
-import {Router, Request, Response} from 'express';
+import { HttpError } from '@mairie360/bffs-lib';
+import { Router } from 'express';
 import {
     registry,
     UploadAttachmentBody,
     errorResponses,
 } from '../../openapi-registry';
-import { fetchCurrentUser, HttpError, upstreamError } from './message_helpers';
+import { fetchCurrentUser } from './message_helpers';
 
 const router = Router();
 
@@ -36,13 +36,10 @@ registry.registerPath({
     },
 });
 
-router.post('/', async (req: Request, _res: Response) => {
-    // The session is resolved against Core API (which verifies the token) before answering.
-    try {
-        await fetchCurrentUser(authorization(req));
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
+router.post('/', async (req) => {
+    // The session is resolved against Core API (which verifies the token) before answering; a Core API
+    // 401 is relayed, anything else is a 502.
+    await fetchCurrentUser({ req, declared: [401] });
 
     // No upstream stores attachments yet: answering made-up ids would let the front believe a file
     // was kept (MAIR-400).

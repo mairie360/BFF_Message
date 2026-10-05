@@ -3,7 +3,7 @@ import request from 'supertest';
 import express from 'express';
 import { errorHandler, notFoundHandler } from '@mairie360/bffs-lib';
 import businessReferencesRouter from '../src/routes/Messages/business_references';
-import { app as bff } from '../src/index';
+import { app as bff } from '../src/app';
 import { MessagingBootstrapResponse } from '../src/openapi-registry';
 
 // Les appels amont passent par les clients générés : leur comportement est vérifié contre de vrais

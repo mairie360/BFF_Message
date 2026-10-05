@@ -1,11 +1,10 @@
-import { authorization } from '@mairie360/bffs-lib';
-import {Router, Request, Response} from 'express';
+import { Router } from 'express';
 import {
     registry,
     MessagingBootstrapResponse,
     errorResponses,
 } from '../../openapi-registry';
-import { fetchMessagingBootstrap, upstreamError } from './message_helpers';
+import { fetchMessagingBootstrap } from './message_helpers';
 
 const router = Router();
 
@@ -31,12 +30,8 @@ registry.registerPath({
     },
 });
 
-router.get('/', async (req: Request, res: Response) => {
-    try {
-        res.status(200).json(await fetchMessagingBootstrap(authorization(req)));
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
+router.get('/', async (req, res) => {
+    res.status(200).json(await fetchMessagingBootstrap({ req, declared: [401] }));
 });
 
 export default router;

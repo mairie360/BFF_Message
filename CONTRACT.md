@@ -9,7 +9,7 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | Méthode | Route | Réponse / schéma |
 | --- | --- | --- |
 | GET | `/health` | 200 OK |
-| GET | `/check_apis` | 200 CheckApiResponse |
+| GET | `/check_apis` | 200 / 502 CheckApisResponse |
 | GET | `/business-references` | 200 BusinessReferencesResponse |
 | POST | `/attachments` | 503 Attachment upload not available yet (401 without a session) |
 | GET | `/messaging/bootstrap` | 200 Informations de démarrage pour l’utilisateur actuel |
