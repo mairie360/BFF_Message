@@ -44,6 +44,7 @@ registry.registerPath({
             400: 'Invalid query (details lists the invalid fields)',
             401: 'Missing or invalid session',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
@@ -71,6 +72,7 @@ registry.registerPath({
             403: 'Only an administrator may delete a conversation',
             404: 'Unknown conversation, or the caller is not one of its members',
             502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
         }),
     },
 });
@@ -104,7 +106,7 @@ registry.registerPath({
       400: 'Invalid conversation id or body (details lists the invalid fields)',
       401: 'Missing or invalid session',
       502: 'Core API is unavailable or failed',
-      503: 'Read acknowledgement unavailable: nothing was persisted',
+      503: 'Read acknowledgement unavailable: nothing was persisted (also when Core API is not configured)',
     }),
   },
 });

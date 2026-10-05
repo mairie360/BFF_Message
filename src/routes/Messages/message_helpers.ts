@@ -1,4 +1,4 @@
-import { HttpError, mapUpstreamError, unverifiedSubject } from '@mairie360/bffs-lib';
+import { baseUrl, HttpError, mapUpstreamError, unverifiedSubject } from '@mairie360/bffs-lib';
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { z } from 'zod';
@@ -20,9 +20,12 @@ export type BffConversation = z.infer<typeof ConversationDtoSchema>;
 export type BffCurrentUser = z.infer<typeof CurrentUserDtoSchema>;
 export type BffMessage = z.infer<typeof MessageDtoSchema>;
 
-/** Options of a Message API call made on behalf of the caller: its own `Bearer` header, never a default token. */
+/**
+ * Options of a Message API call made on behalf of the caller: MESSAGE_API_URL (+ MESSAGE_API_PORT) read
+ * now (503 when missing, no localhost default) and the caller's own `Bearer` header, never a default token.
+ */
 function authOptions(authorization: string): AxiosRequestConfig {
-  return { headers: { Authorization: authorization } };
+  return { baseURL: baseUrl('MESSAGE_API'), headers: { Authorization: authorization } };
 }
 
 function parseNumericId(value: string | number | undefined): number | null {

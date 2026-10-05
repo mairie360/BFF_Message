@@ -1,27 +1,21 @@
 import { getBffCalendar } from '@mairie360/bff-calendar-openapi/endpoints/bffCalendar';
 import { getBffProject } from '@mairie360/bff-project-openapi/endpoints/bffProject';
+import { baseUrl } from '@mairie360/bffs-lib';
 import axios, { type AxiosRequestConfig } from 'axios';
 
-// Les références métier viennent des BFF Projets et Calendrier, par les opérations de leurs contrats
-// publiés (@mairie360/bff-project-openapi, @mairie360/bff-calendar-openapi).
+// Business references come from BFF Project and BFF Calendar, through the operations of their
+// published contracts (@mairie360/bff-project-openapi, @mairie360/bff-calendar-openapi).
 const businessAxios = axios.create({ timeout: 8_000, headers: { Accept: 'application/json' } });
 
 export const projectBff = getBffProject(businessAxios);
 export const calendarBff = getBffCalendar(businessAxios);
 
-function normalizeBaseUrl(value: string): string {
-  return (/^https?:\/\//i.test(value) ? value : `http://${value}`).replace(/\/+$/, '');
-}
-
-/** URL relue à chaque appel : les variables d'environnement peuvent changer sans redémarrage. */
+/** PROJECT_BFF_URL (+ _PORT) read on every call: no localhost default, 503 when missing. */
 export function projectBffOptions(authorization: string): AxiosRequestConfig {
-  return options(process.env.PROJECT_BFF_URL ?? 'http://localhost:4001', authorization);
+  return { baseURL: baseUrl('PROJECT_BFF'), headers: { Authorization: authorization } };
 }
 
+/** CALENDAR_BFF_URL (+ _PORT) read on every call: no localhost default, 503 when missing. */
 export function calendarBffOptions(authorization: string): AxiosRequestConfig {
-  return options(process.env.CALENDAR_BFF_URL ?? 'http://localhost:4002', authorization);
-}
-
-function options(configured: string, authorization: string): AxiosRequestConfig {
-  return { baseURL: normalizeBaseUrl(configured), headers: { Authorization: authorization } };
+  return { baseURL: baseUrl('CALENDAR_BFF'), headers: { Authorization: authorization } };
 }

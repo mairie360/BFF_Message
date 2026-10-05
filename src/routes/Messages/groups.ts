@@ -42,6 +42,7 @@ registry.registerPath({
             400: 'Invalid body (details lists the invalid fields)',
             401: 'Missing or invalid session',
             502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
         }),
     },
 });

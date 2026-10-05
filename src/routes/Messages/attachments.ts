@@ -30,7 +30,7 @@ registry.registerPath({
     responses: {
         ...errorResponses({
             401: 'Missing or invalid session',
-            503: 'Attachment upload is not available yet: nothing was stored',
+            503: 'Attachment upload is not available yet: nothing was stored (also when Core API is not configured)',
             502: 'Core API is unavailable or failed',
         }),
     },

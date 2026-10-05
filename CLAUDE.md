@@ -27,18 +27,20 @@ npm run contracts:check         # fails if contracts/ is stale (CI gate)
 
 `npm run build` type-checks with `tsc --noEmit` then bundles `dist/index.js` with esbuild
 (`scripts/build.mjs`): the `@mairie360/*` clients are published as TypeScript, so they are inlined
-while the other dependencies stay external. Node **22** is required to reproduce the contract job / CI (`.github/workflows/contracts.yml`,
-`cicd.yml` → `mairie360/CICD` reusable workflow). The Docker images use `node:24-alpine`. The production image runs `node dist/index.js` (bundle);
+while the other dependencies stay external. Node **24** everywhere: the contract job / CI (`.github/workflows/contracts.yml`,
+`cicd.yml` → `mairie360/CICD` reusable workflow, `node_version: "24"`) and the Docker images (`node:24-alpine`, pinned by digest). The production image runs `node dist/index.js` (bundle);
 the test stacks run the image named by `IMAGE_REF` (in CI, the image published by `release-dev`;
 locally, `bff-message:local` built from `development.Dockerfile` by the scripts).
 
 Private `@mairie360/*` dependencies come from GitHub Packages. `.npmrc` reads `NODE_AUTH_TOKEN` from
 the environment; set it to a token with read access to those packages before `npm ci`.
 
-Env vars for local runs: `PORT` and `MESSAGE_API_BASE_PATH` are required (the server exits at start-up
-without them, no localhost fallback); the others fall back to a `localhost` default: `MESSAGE_API_URL` + `MESSAGE_API_PORT`
-(`/check_apis` only), `CORE_API_URL` + `CORE_API_PORT` (directory), `PROJECT_BFF_URL`,
-`CALENDAR_BFF_URL`. `TRUST_PROXY` sets Express' `trust proxy` (lib `parseTrustProxy`). `RATE_LIMIT_ENABLED=false` disables the per-session limit of `GET /business-references`
+Env vars for local runs (`.env.example`, loaded by `import 'dotenv/config'` on the first line of
+`src/index.ts`): `PORT`, and one `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`) per upstream, read on
+every call by the lib's `baseUrl` (MAIR-431): `MESSAGE_API_URL`, `CORE_API_URL`, `PROJECT_BFF_URL`,
+`CALENDAR_BFF_URL`. There is no localhost default: `assertConfigured(UPSTREAMS)` stops the server at
+start-up when one is missing (under `require.main === module`, so tests are not affected), and a route
+calling an unconfigured upstream answers 503 (declared in the contract). `TRUST_PROXY` sets Express' `trust proxy` (lib `parseTrustProxy`). `RATE_LIMIT_ENABLED=false` disables the per-session limit of `GET /business-references`
 (`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, `src/middleware/rateLimit.ts`); the perf stack sets it.
 
 ## Architecture
@@ -71,8 +73,9 @@ turns any other status or a network failure into 502; never relay upstream bodie
 envelope with `ErrorResponseSchema.clone()` (zod 4 only adds `.openapi()` to schemas created after
 `extendZodWithOpenApi`). When a route starts answering a new status, declare it in its `registerPath`.
 
-**Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (base URL from `MESSAGE_API_BASE_PATH` with
-`http://` normalization) into the generated `@mairie360/message-api-openapi` client.
+**Upstream clients.** `src/clients/messageClient.ts` injects an axios instance (timeout and headers only)
+into the generated `@mairie360/message-api-openapi` client; the helpers pass `baseURL: baseUrl('MESSAGE_API')`
+and the caller's token on every call.
 `src/clients/coreClient.ts` reads the directory (contacts and current user) through Core API's
 `GET /api/v1/user/` — the BFF has no database access.
 `business_references.ts` calls BFF Project and BFF Calendar through their published clients
@@ -120,8 +123,8 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
   operations and fixtures. Orval loses error statuses (success is exposed as `2XX`): every mocked
   error reply needs `outOfContract: true`; known upstream contract bugs go through
   `allowDeviation(pattern, reason)`. BFF responses are validated against `contracts/openapi.json`.
-- `messageClient` and `check_apis` read their upstream URL at module load, so the app is imported
-  after the env vars are set; the other clients read theirs on each call.
+- Every client reads its upstream URL on each call, so tests may change `<SERVICE>_URL` at any time
+  (the `upstream configuration (MAIR-431)` tests unset them to check the 503s).
 - `openapi-contract.ts`, `contract-mock-server.ts` and `orval-contract.ts` are shared verbatim with
   `BFF_Calendar` and `BFF_Dashboard`; keep the copies identical.
 

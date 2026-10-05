@@ -26,6 +26,7 @@ registry.registerPath({
         ...errorResponses({
             401: 'Missing or invalid session',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });

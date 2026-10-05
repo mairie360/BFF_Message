@@ -2675,7 +2675,7 @@
             }
           },
           "503": {
-            "description": "Attachment upload is not available yet: nothing was stored",
+            "description": "Attachment upload is not available yet: nothing was stored (also when Core API is not configured)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3125,6 +3125,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Message API or Core API is not configured on the BFF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3264,6 +3274,16 @@
           },
           "502": {
             "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Core API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -3463,6 +3483,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Message API or Core API is not configured on the BFF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3574,6 +3604,16 @@
           },
           "502": {
             "description": "Message API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Message API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -3706,7 +3746,7 @@
             }
           },
           "503": {
-            "description": "Read acknowledgement unavailable: nothing was persisted",
+            "description": "Read acknowledgement unavailable: nothing was persisted (also when Core API is not configured)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3910,6 +3950,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Message API is not configured on the BFF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4006,6 +4056,16 @@
           },
           "502": {
             "description": "Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Core API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -4397,6 +4457,16 @@
           },
           "502": {
             "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Message API or Core API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -4808,6 +4878,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Message API or Core API is not configured on the BFF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -5153,6 +5233,16 @@
           },
           "502": {
             "description": "Message API or Core API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Message API or Core API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {

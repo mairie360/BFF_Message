@@ -1,31 +1,25 @@
 import { getCoreAPIMairie360 } from '@mairie360/core-api-openapi/endpoints/coreAPIMairie360';
 import type { DirectoryUser } from '@mairie360/core-api-openapi/model';
+import { baseUrl } from '@mairie360/bffs-lib';
 import axios, { type AxiosRequestConfig } from 'axios';
 
-// L'annuaire des agents vient de Core API, par les opérations de son contrat publié
-// (@mairie360/core-api-openapi) : le BFF n'interroge plus la table `users` directement.
+// The agents directory comes from Core API, through the operations of its published contract
+// (@mairie360/core-api-openapi): the BFF has no database access.
 const coreApiAxios = axios.create({ timeout: 5_000, headers: { Accept: 'application/json' } });
 
 const coreApi = getCoreAPIMairie360(coreApiAxios);
 
 export type ContactUser = Pick<DirectoryUser, 'id' | 'first_name' | 'last_name' | 'email'> & Partial<Pick<DirectoryUser, 'roles'>>;
 
-function normalizeBaseUrl(value: string): string {
-  return /^https?:\/\//i.test(value) ? value : `http://${value}`;
-}
-
-/** URL relue à chaque appel : les variables d'environnement peuvent changer sans redémarrage. */
+/** CORE_API_URL (+ CORE_API_PORT) read on every call: no localhost default, 503 when missing. */
 function coreOptions(authorization?: string): AxiosRequestConfig {
-  const url = new URL(normalizeBaseUrl(process.env.CORE_API_URL ?? 'localhost'));
-  if (!url.port && process.env.CORE_API_PORT) url.port = process.env.CORE_API_PORT;
-
   return {
-    baseURL: url.toString().replace(/\/+$/, ''),
+    baseURL: baseUrl('CORE_API'),
     ...(authorization ? { headers: { Authorization: authorization } } : {}),
   };
 }
 
-/** Agents non archivés, hors utilisateur connecté, triés par nom puis prénom. */
+/** Non-archived agents, without the current user, sorted by last name then first name. */
 export async function listContacts(
   search: string | undefined,
   limit: number | undefined,
@@ -40,7 +34,7 @@ export async function listContacts(
   return response.data.users.filter((user) => user.id !== excludedUserId);
 }
 
-/** Agents demandés par identifiant, en un seul appel (les inconnus sont absents du résultat). */
+/** Agents by id, in a single call (unknown ids are absent from the result). */
 export async function listContactsByIds(
   ids: number[],
   authorization: string,
@@ -55,7 +49,7 @@ export async function listContactsByIds(
   return response.data.users;
 }
 
-/** Agent d'identifiant `id`, ou `undefined` s'il est inconnu ou archivé. */
+/** Agent `id`, or `undefined` when unknown or archived. */
 export async function getContactUser(
   id: number,
   authorization: string,

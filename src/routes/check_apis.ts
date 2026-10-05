@@ -1,12 +1,11 @@
 import { Router } from 'express';
-import axios from 'axios';
+import { baseUrl } from '@mairie360/bffs-lib';
+import messageClient from '../clients/messageClient';
 import { checkCoreApi } from '../clients/coreClient';
 import { CheckApiResponse, CheckApiResponseSchema } from '../views/check_api_view';
 import { registry } from '../openapi-registry';
 
 const router = Router();
-
-const MESSAGE_FULL_URL = `http://${process.env.MESSAGE_API_URL}:${process.env.MESSAGE_API_PORT}`;
 
 registry.registerPath({
   method: 'get',
@@ -31,7 +30,8 @@ registry.registerPath({
 
 router.get('/', async (_, res) => {
   const [message, core] = await Promise.allSettled([
-    axios.get(`${MESSAGE_FULL_URL}/health`, { timeout: 5000 }),
+    // Same MESSAGE_API_URL (+ _PORT) as the real calls, read now; a missing one counts as unreachable.
+    (async () => messageClient.health({ baseURL: baseUrl('MESSAGE_API'), timeout: 5000 }))(),
     checkCoreApi(),
   ]);
   const result: CheckApiResponse = {

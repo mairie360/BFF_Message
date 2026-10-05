@@ -45,6 +45,7 @@ registry.registerPath({
             401: 'Missing or invalid session',
             404: 'Unknown conversation, or the caller is not one of its members',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
@@ -79,6 +80,7 @@ registry.registerPath({
             401: 'Missing or invalid session',
             404: 'Unknown conversation, or the caller is not one of its members',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
@@ -111,6 +113,7 @@ registry.registerPath({
             400: 'Invalid body (details lists the invalid fields)',
             401: 'Missing or invalid session',
             502: 'Message API or Core API is unavailable or failed',
+            503: 'Message API or Core API is not configured on the BFF',
         }),
     },
 });
