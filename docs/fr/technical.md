@@ -18,7 +18,7 @@ Les pièces jointes ne sont pas encore prises en charge : `POST /attachments` r�
 
 ## Installation et lancement local
 
-Utiliser Node.js 22 pour reproduire le job de contrats et npm avec le fichier de verrouillage versionné. Les versions des autres jobs et de Docker sont précisées plus bas.
+Utiliser Node.js 24 (CI et images Docker) pour reproduire le job de contrats et npm avec le fichier de verrouillage versionné. Les versions des autres jobs et de Docker sont précisées plus bas.
 
 Les dépendances privées `@mairie360/*` nécessitent un accès GitHub Packages. Configurer `NODE_AUTH_TOKEN` dans l’environnement avec un jeton autorisé à lire ces packages, conformément à `.npmrc`. Ne pas enregistrer la valeur dans Git.
 
@@ -26,18 +26,17 @@ Les dépendances privées `@mairie360/*` nécessitent un accès GitHub Packages.
 npm ci
 ```
 
-Créer `.env` à la racine. Exemple de configuration HTTP locale à adapter aux services démarrés:
+Copier `.env.example` en `.env` à la racine et l’adapter aux services démarrés :
 
 ```dotenv
 PORT=4003
-MESSAGE_API_BASE_PATH=http://localhost:3003
-MESSAGE_API_URL=localhost
-MESSAGE_API_PORT=3003
+MESSAGE_API_URL=http://localhost:3003
+CORE_API_URL=http://localhost:3000
 PROJECT_BFF_URL=http://localhost:4001
 CALENDAR_BFF_URL=http://localhost:4002
 ```
 
-Compléter `CORE_API_URL` et `CORE_API_PORT` pour joindre l’annuaire de Core API. Ces variables et les éventuels secrets listés ci-dessous restent à fournir; l’exemple HTTP ne prépare pas de données.
+`.env` est chargé par `import 'dotenv/config'`, première ligne de `src/index.ts`. Chaque service amont est configuré par `<SERVICE>_URL` (schéma facultatif, `http` par défaut) et un `<SERVICE>_PORT` facultatif utilisé quand l’URL n’a pas de port, relus à chaque appel (MAIR-431). Il n’y a aucune valeur par défaut `localhost` : le serveur refuse de démarrer si l’une des quatre URL manque ou est invalide, et une route qui appellerait un service amont non configuré répond 503. L’exemple HTTP ne prépare pas de données.
 
 ```bash
 npm run start
@@ -60,11 +59,10 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 | Variable ou priorité | Exemple / repli indiqué | Rôle |
 | --- | --- | --- |
 | `PORT` | 4003 | Port de cet exemple local. |
-| `MESSAGE_API_BASE_PATH` | http://localhost:3003 | Racine de Message API (ses routes sont publiées sous `/api/v1`). **Obligatoire** : le serveur refuse de démarrer sans elle (aucun repli sur localhost). |
-| `MESSAGE_API_URL` / `MESSAGE_API_PORT` | localhost / 3003 | Hôte et port du diagnostic. |
-| `PROJECT_BFF_URL` | http://localhost:4001 | Source des références projets et tâches. |
-| `CALENDAR_BFF_URL` | http://localhost:4002 | Source des références événements. |
-| `CORE_API_URL` / `CORE_API_PORT` | localhost / — | Annuaire Core API (contacts, utilisateur courant). |
+| `MESSAGE_API_URL` / `MESSAGE_API_PORT` | http://localhost:3003 / — | Racine de Message API (ses routes sont publiées sous `/api/v1`), aussi sondée par `/check_apis`. **Obligatoire**. Remplace `MESSAGE_API_BASE_PATH` (supprimée). |
+| `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Annuaire Core API (contacts, utilisateur courant), aussi sondé par `/check_apis`. **Obligatoire**. |
+| `PROJECT_BFF_URL` / `PROJECT_BFF_PORT` | http://localhost:4001 / — | Source des références projets et tâches. **Obligatoire**. |
+| `CALENDAR_BFF_URL` / `CALENDAR_BFF_PORT` | http://localhost:4002 / — | Source des références événements. **Obligatoire**. |
 | `RATE_LIMIT_ENABLED` | true | `false` désactive la limite par appelant de `GET /business-references` (tests de charge). |
 | `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requêtes par session (empreinte du jeton Bearer, jamais le `sub` du JWT non vérifié) et par fenêtre sur `GET /business-references`, 429 au-delà. |
 | `TRUST_PROXY` | non définie (aucun proxy de confiance) | `trust proxy` d’Express (`true`, un nombre de sauts ou des adresses de confiance), pour que `req.ip` soit le vrai client derrière l’ingress. |
@@ -79,16 +77,16 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401, 429 |
 | POST | `/attachments` | multipart/form-data | 401, 502, 503 |
-| GET | `/messaging/bootstrap` | — | 200, 401, 502 |
-| GET | `/contacts` | — | 200, 400, 401, 502 |
-| GET | `/conversations` | — | 200, 400, 401, 502 |
-| DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502 |
+| GET | `/messaging/bootstrap` | — | 200, 401, 502, 503 |
+| GET | `/contacts` | — | 200, 400, 401, 502, 503 |
+| GET | `/conversations` | — | 200, 400, 401, 502, 503 |
+| DELETE | `/conversations/{conversationId}` | — | 200, 400, 401, 403, 404, 502, 503 |
 | POST | `/conversations/{conversationId}/read` | application/json | 200, 400, 401, 502, 503 |
-| POST | `/groups` | application/json | 201, 400, 401, 502 |
-| GET | `/me` | — | 200, 401, 502 |
-| GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502 |
-| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502 |
-| POST | `/direct-messages` | application/json | 201, 400, 401, 502 |
+| POST | `/groups` | application/json | 201, 400, 401, 502, 503 |
+| GET | `/me` | — | 200, 401, 502, 503 |
+| GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502, 503 |
+| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502, 503 |
+| POST | `/direct-messages` | application/json | 201, 400, 401, 502, 503 |
 
 ## Session, permissions et erreurs
 
@@ -122,11 +120,11 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1` dans `scripts/
 
 ## CI/CD et exécution Docker
 
-Le job `contracts.yml` utilise Node.js 22, `actions/checkout@v7` et `actions/setup-node@v7`. Il s’exécute sur push, pull request et lancement manuel; il installe avec `npm ci`, contrôle les contrats et lance les tests dédiés.
+Le job `contracts.yml` utilise Node.js 24, `actions/checkout@v7` et `actions/setup-node@v7`. Il s’exécute sur push, pull request et lancement manuel; il installe avec `npm ci`, contrôle les contrats et lance les tests dédiés.
 
-`cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v3.0.0`, avec `cicd_version: v3.0.0` et `node_version: "22"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs.
+`cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v3.2.0`, avec `cicd_version: v3.2.0` et `node_version: "24"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs.
 
-Le Dockerfile utilise `node:24-alpine` pour la construction et l’exécution; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). Cette version est distincte du job de contrats Node.js 22.
+Le Dockerfile utilise `node:24-alpine`, épinglée par digest (comme `development.Dockerfile`), pour la construction et l’exécution ; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). La CI, le job de contrats et les images utilisent tous Node.js 24.
 
 `security_test.sh` et `performance_test.sh` testent l’image désignée par `IMAGE_REF`: en CI, l’image que `release-dev` vient de publier, soit l’artefact ensuite promu en staging puis en prod. Quand `IMAGE_REF` est vide (usage local), ils construisent d’abord `bff-message:local` depuis `development.Dockerfile`, ce qui demande `NODE_AUTH_TOKEN` et `./.npmrc`.
 

@@ -1,15 +1,12 @@
+import 'dotenv/config';
 import { openApiDocument as openApiSpec } from './openapi';
-import { errorHandler, notFoundHandler, parseTrustProxy } from '@mairie360/bffs-lib';
+import { assertConfigured, errorHandler, notFoundHandler, parseTrustProxy } from '@mairie360/bffs-lib';
 import express from 'express';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import healthRouter from './routes/health';
 import checkApis from './routes/check_apis';
 import messagesRouter from './routes/Messages';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
 export const app = express();
 
 const PORT = process.env.PORT;
@@ -37,13 +34,15 @@ app.get('/swagger.json', (req, res) => {
   res.send(openApiSpec);
 });
 
+/** Every upstream the BFF calls, configured by `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`). */
+export const UPSTREAMS = ['MESSAGE_API', 'CORE_API', 'PROJECT_BFF', 'CALENDAR_BFF'] as const;
+
 if (require.main === module) {
-  // No silent localhost fallback for the main upstream: a missing setting stops the server at start-up.
-  for (const name of ['PORT', 'MESSAGE_API_BASE_PATH']) {
-    if (!process.env[name]?.trim()) {
-      console.error(`Error: ${name} environment variable is not set.`);
-      process.exit(1);
-    }
+  // Fail fast: no localhost fallback, a missing or invalid upstream URL stops the server at start-up.
+  assertConfigured(UPSTREAMS);
+  if (!PORT?.trim()) {
+    console.error('Error: PORT environment variable is not set.');
+    process.exit(1);
   }
 }
 

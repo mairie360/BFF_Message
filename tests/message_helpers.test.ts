@@ -30,6 +30,10 @@ jest.mock('../src/clients/coreClient', () => ({
 
 const { agent, sophie, thomas } = users;
 const authorization = authorizationFor(agent.id);
+// Read on every call by the helpers (MAIR-431); the client itself is mocked.
+const MESSAGE_API_URL = 'http://message-api.test:3003';
+const callOptions = { baseURL: MESSAGE_API_URL, headers: { Authorization: authorization } };
+process.env.MESSAGE_API_URL = MESSAGE_API_URL;
 
 describe('message helpers author direction', () => {
   beforeEach(() => {
@@ -46,7 +50,7 @@ describe('message helpers author direction', () => {
     expect(user.id).toBe(`user-${agent.id}`);
     expect(result.message.authorId).toBe(user.id);
     expect(result.message.direction).toBe('outgoing');
-    expect(messageClient.postMessage).toHaveBeenCalledWith(4, { content: 'Message envoyé' }, { headers: { Authorization: authorization } });
+    expect(messageClient.postMessage).toHaveBeenCalledWith(4, { content: 'Message envoyé' }, callOptions);
   });
 
   it('marks only messages from the authenticated user as outgoing', async () => {
@@ -64,7 +68,7 @@ describe('message helpers author direction', () => {
       expect.objectContaining({ authorId: `user-${sophie.id}`, direction: 'incoming' }),
     ]);
     expect(result.conversation.name).toBe('Équipe communication');
-    expect(messageClient.getChat).toHaveBeenCalledWith(4, { headers: { Authorization: authorization } });
+    expect(messageClient.getChat).toHaveBeenCalledWith(4, callOptions);
   });
 
   it('adds the other participants next to the conversation name', async () => {

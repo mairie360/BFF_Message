@@ -88,13 +88,15 @@ services:
       - user_backend
     environment:
       <<: *common-env
-      # IMPORTANT : On utilise le nom du service Docker pour communiquer
+      # Upstreams are reached through their Docker service names (<SERVICE>_URL + optional _PORT).
       MESSAGE_API_URL: "message-api"
       MESSAGE_API_PORT: 3003
-      MESSAGE_API_BASE_PATH: "http://message-api:3003"
-      # L'annuaire des agents vient de Core API, servie par la stack de BFF User.
+      # The agents directory comes from Core API, served by the BFF User stack.
       CORE_API_URL: ${CORE_API_HOST:-core-api}
       CORE_API_PORT: ${CORE_API_PORT:-3000}
+      # Business references: BFF Project and BFF Calendar, run from their own repositories on the host.
+      PROJECT_BFF_URL: ${PROJECT_BFF_URL:-http://host.docker.internal:4001}
+      CALENDAR_BFF_URL: ${CALENDAR_BFF_URL:-http://host.docker.internal:4002}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

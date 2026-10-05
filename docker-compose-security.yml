@@ -180,9 +180,12 @@ services:
       PORT: 4003
       MESSAGE_API_URL: message-api
       MESSAGE_API_PORT: 3003
-      MESSAGE_API_BASE_PATH: http://message-api:3003
       CORE_API_URL: core-api
       CORE_API_PORT: 3000
+      # Required at start-up (no localhost default). BFF Project and BFF Calendar are not part of this
+      # stack: GET /business-references answers 200 with both sources `unavailable`.
+      PROJECT_BFF_URL: bff-project:4001
+      CALENDAR_BFF_URL: bff-calendar:4002
     expose:
       - "4003"
     networks:

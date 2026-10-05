@@ -31,6 +31,7 @@ registry.registerPath({
             400: 'Invalid query (details lists the invalid fields)',
             401: 'Missing or invalid session',
             502: 'Core API is unavailable or failed',
+            503: 'Core API is not configured on the BFF',
         }),
     },
 });

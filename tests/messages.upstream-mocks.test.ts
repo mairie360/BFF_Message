@@ -47,13 +47,10 @@ let app: Express;
 
 beforeAll(async () => {
   await Promise.all(mocks.map((mock) => mock.start()));
-  // messageClient et check_apis lisent leurs URL amont au chargement : l'application est importée après.
+  // Upstream URLs are read on every call (MAIR-431); a full URL and a host + port pair are both covered.
   // Former service-token fallback: it must be ignored even when set (MAIR-224).
   process.env.DEFAULT_JWT_TOKEN = 'Bearer service-token-must-not-leak';
-  process.env.MESSAGE_API_BASE_PATH = messageApi.url;
-  const messageApiUrl = new URL(messageApi.url);
-  process.env.MESSAGE_API_URL = messageApiUrl.hostname;
-  process.env.MESSAGE_API_PORT = messageApiUrl.port;
+  process.env.MESSAGE_API_URL = messageApi.url;
   const coreApiUrl = new URL(coreApi.url);
   process.env.CORE_API_URL = coreApiUrl.hostname;
   process.env.CORE_API_PORT = coreApiUrl.port;
@@ -892,6 +889,99 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(401);
       expectBffContract('get', '/business-references', response);
       expect([...projectBff.requests, ...calendarBff.requests]).toHaveLength(0);
+    });
+  });
+
+  describe('upstream configuration (MAIR-431)', () => {
+    /** Runs `call` with `<service>_URL` unset, then restores it. */
+    async function withoutUrl<T>(service: string, call: () => Promise<T>): Promise<T> {
+      const saved = process.env[`${service}_URL`];
+      delete process.env[`${service}_URL`];
+      try {
+        return await call();
+      } finally {
+        process.env[`${service}_URL`] = saved;
+      }
+    }
+
+    test.each([
+      ['MESSAGE_API', 'get', '/conversations', undefined],
+      ['MESSAGE_API', 'delete', '/conversations/conversation-4', undefined],
+      ['MESSAGE_API', 'get', '/conversations/conversation-4/messages', undefined],
+      ['MESSAGE_API', 'post', '/conversations/conversation-4/messages', { content: 'Bonjour' }],
+      ['MESSAGE_API', 'post', '/direct-messages', { recipientId: 'user-8', message: 'Bonjour' }],
+      ['MESSAGE_API', 'post', '/groups', { name: 'Équipe', memberIds: [8] }],
+      ['MESSAGE_API', 'get', '/messaging/bootstrap', undefined],
+      ['CORE_API', 'get', '/me', undefined],
+      ['CORE_API', 'get', '/contacts', undefined],
+      ['CORE_API', 'post', '/conversations/conversation-4/read', { readUntilMessageId: 'message-42' }],
+      ['CORE_API', 'post', '/attachments', { files: [{ name: 'note.pdf' }] }],
+    ] as const)('without %s_URL, %s %s answers a declared 503 and calls no default host', async (service, method, url, body) => {
+      mockMessageApi({ chats: [chatView(4, 'Équipe communication')], members: { 4: [agent.id, sophie.id] } });
+
+      const response = await withoutUrl(service, () => {
+        const call = request(app)[method](url).set('Authorization', authorizationFor(agent.id));
+        return body === undefined ? call : call.send(body);
+      });
+
+      expectApiError(response, 503, 'SERVICE_UNAVAILABLE');
+      expectBffContract(method, url, response);
+      expect((service === 'MESSAGE_API' ? messageApi : coreApi).requests).toEqual([]);
+      // GET /messaging/bootstrap answers as soon as one branch fails: let its other (Core API) calls end
+      // before the next test resets the mocks.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    test('names the missing service in the 503', async () => {
+      const response = await withoutUrl('CORE_API', () => request(app).get('/me').set('Authorization', authorizationFor(agent.id)));
+
+      expect(response.body.error.message).toBe('The CORE_API service is not configured.');
+    });
+
+    test.each([
+      ['PROJECT_BFF', { projects: 'unavailable', calendar: 'available' }],
+      ['CALENDAR_BFF', { projects: 'available', calendar: 'unavailable' }],
+    ] as const)('GET /business-references marks the source unavailable without %s_URL', async (service, sources) => {
+      projectBff.on('get', PROJECT_BFF.page, { body: projectsPageResponse([]) });
+      calendarBff.on('get', CALENDAR_BFF.bootstrap, { body: calendarBootstrapResponse([]) });
+
+      const response = await withoutUrl(service, () => request(app).get('/business-references').set('Authorization', authorizationFor(agent.id)));
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/business-references', response);
+      expect(response.body.sources).toEqual(sources);
+      expect((service === 'PROJECT_BFF' ? projectBff : calendarBff).requests).toEqual([]);
+    });
+
+    test('reads the upstream URL on every call, not at import time', async () => {
+      mockMessageApi();
+      const other = new ContractMockServer('MESSAGE_API', loadOrvalContract('@mairie360/message-api-openapi'));
+      await other.start();
+      other.on('get', MESSAGE_API.chats, { body: chatsResult([]) });
+      const saved = process.env.MESSAGE_API_URL;
+      process.env.MESSAGE_API_URL = other.url;
+      try {
+        const response = await request(app).get('/conversations').set('Authorization', authorizationFor(agent.id));
+
+        expect(response.status).toBe(200);
+        expect(other.requests).toHaveLength(1);
+        expect(messageApi.requests).toEqual([]);
+        expect(other.violations).toEqual([]);
+      } finally {
+        process.env.MESSAGE_API_URL = saved;
+        await other.stop();
+      }
+    });
+
+    test('GET /check_apis reports an unconfigured upstream as unreachable', async () => {
+      coreApi.on('get', CORE_API.health, { raw: 'OK', contentType: 'text/plain' });
+      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+      const response = await withoutUrl('MESSAGE_API', () => request(app).get('/check_apis'));
+
+      expect(response.status).toBe(502);
+      expectBffContract('get', '/check_apis', response);
+      expect(response.body).toEqual({ status: 'Error', message_api: 'Unreachable', core_api: 'Connected' });
     });
   });
 
