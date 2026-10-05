@@ -37,6 +37,7 @@ const MESSAGE_API = {
   chat: '/api/v1/{chatId}/',
   messages: '/api/v1/{chatId}/messages/',
   users: '/api/v1/{chatId}/users/',
+  member: '/api/v1/{chatId}/users/{userId}/',
   health: '/health',
 } as const;
 const CORE_API = { directory: '/api/v1/user/', health: '/health' } as const;
@@ -101,7 +102,7 @@ function mockMessageApi({ chats = [], messages = {}, members = {}, createdChatId
     // 404 renvoyé par l'API réelle pour un salon inconnu ; les erreurs ne sont pas typées par orval.
     return found ? { body: chatResult(found) } : { status: 404, raw: 'Chat not found', contentType: 'text/plain', outOfContract: true };
   });
-  messageApi.on('delete', MESSAGE_API.chat, { status: 200 });
+  messageApi.on('delete', MESSAGE_API.member, { status: 200 });
   messageApi.on('post', MESSAGE_API.messages, { body: postMessageResult(postedMessageId) });
   messageApi.on('get', MESSAGE_API.users, ({ pathParams }) => ({ body: chatUsers(members[Number(pathParams.chatId)] ?? []) }));
 }
@@ -220,7 +221,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
-    test('DELETE /conversations/:id deletes the Message API chat by its numeric id', async () => {
+    test('DELETE /conversations/:id makes the caller leave the Message API chat (deleted with its last member)', async () => {
       mockMessageApi();
 
       const response = await request(app).delete('/conversations/conversation-4').set('Authorization', authorizationFor(agent.id));
@@ -228,7 +229,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(200);
       expectBffContract('delete', '/conversations/conversation-4', response);
       expect(response.body).toEqual({ deleted: true, conversationId: 'conversation-4' });
-      expect(upstreamSequence(messageApi)).toEqual([called('DELETE', messageApiUrls.getDeleteChatUrl(4))]);
+      expect(upstreamSequence(messageApi)).toEqual([called('DELETE', messageApiUrls.getRemoveUserFromChatUrl(4, agent.id))]);
     });
 
     test('DELETE /conversations/:id rejects an id without digits before calling Message API', async () => {
@@ -744,9 +745,9 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(JSON.stringify(response.body)).not.toContain('database');
     });
 
-    test('keeps a declared Message API 403 when a member who is not an administrator deletes a chat', async () => {
+    test('keeps a declared Message API 403 when the caller may not leave the chat', async () => {
       mockMessageApi();
-      messageApi.on('delete', MESSAGE_API.chat, { status: 403, raw: 'Forbidden', contentType: 'text/plain', outOfContract: true });
+      messageApi.on('delete', MESSAGE_API.member, { status: 403, raw: 'Forbidden', contentType: 'text/plain', outOfContract: true });
 
       const response = await request(app).delete('/conversations/conversation-4').set('Authorization', authorizationFor(agent.id));
 

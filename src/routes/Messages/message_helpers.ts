@@ -452,7 +452,16 @@ export async function deleteConversation(conversationId: string | number, contex
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  await callUpstream('MESSAGE_API', () => messageClient.deleteChat(chatId, messageApi(context)), { declared: context.declared });
+  const userId = callerId(context);
+  if (userId === undefined) {
+    throw new HttpError(401, 'Invalid session.');
+  }
+
+  // "Delete" removes the conversation from the caller's list: the caller leaves it, and Message API deletes the
+  // chat with its last member. Message API >= MAIR-394 keeps DELETE of a whole chat for administrators.
+  await callUpstream('MESSAGE_API', () => messageClient.removeUserFromChat(chatId, userId, messageApi(context)), {
+    declared: context.declared,
+  });
 }
 
 export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
