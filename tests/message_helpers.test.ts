@@ -32,8 +32,10 @@ const { agent, sophie, thomas } = users;
 const authorization = authorizationFor(agent.id);
 // Read on every call by the helpers (MAIR-431); the client itself is mocked.
 const MESSAGE_API_URL = 'http://message-api.test:3003';
-const callOptions = { baseURL: MESSAGE_API_URL, headers: { Authorization: authorization } };
+const callOptions = { baseURL: MESSAGE_API_URL, timeout: 5_000, headers: { Authorization: authorization } };
 process.env.MESSAGE_API_URL = MESSAGE_API_URL;
+// What a route hands to the helpers: the caller's request and the upstream 4xx it declares.
+const context = { req: { headers: { authorization } }, declared: [401] };
 
 describe('message helpers author direction', () => {
   beforeEach(() => {
@@ -44,8 +46,8 @@ describe('message helpers author direction', () => {
     jest.mocked(getContactUser).mockResolvedValue(directoryUser(agent));
     jest.mocked(messageClient.postMessage).mockResolvedValue(axiosResponse(postMessageResult(31)));
 
-    const user = await fetchCurrentUser(authorization);
-    const result = await sendMessageToConversation('conversation-4', 'Message envoyé', authorization);
+    const user = await fetchCurrentUser(context);
+    const result = await sendMessageToConversation('conversation-4', 'Message envoyé', context);
 
     expect(user.id).toBe(`user-${agent.id}`);
     expect(result.message.authorId).toBe(user.id);
@@ -61,7 +63,7 @@ describe('message helpers author direction', () => {
       messageView(42, sophie.id, { content: 'Réponse reçue', created_at: '2026-07-17T09:01:00.000Z' }),
     ])));
 
-    const result = await fetchConversationMessages('conversation-4', undefined, authorization);
+    const result = await fetchConversationMessages('conversation-4', undefined, context);
 
     expect(result.messages).toEqual([
       expect.objectContaining({ authorId: `user-${agent.id}`, direction: 'outgoing' }),
@@ -77,12 +79,12 @@ describe('message helpers author direction', () => {
     // Les participants sont demandés à l'annuaire en un seul appel.
     jest.mocked(listContactsByIds).mockImplementation(async (ids) => [sophie, thomas].filter((user) => ids.includes(user.id)));
 
-    const conversations = await fetchConversations(undefined, 20, authorization);
+    const conversations = await fetchConversations(undefined, 20, context);
 
     expect(conversations).toEqual([
       expect.objectContaining({ name: 'Équipe communication', department: 'Avec Sophie Leroy, Thomas Bernard' }),
     ]);
     expect(listContactsByIds).toHaveBeenCalledTimes(1);
-    expect(listContactsByIds).toHaveBeenCalledWith([sophie.id, thomas.id], authorization);
+    expect(listContactsByIds).toHaveBeenCalledWith([sophie.id, thomas.id], context);
   });
 });

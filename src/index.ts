@@ -1,61 +1,16 @@
 import 'dotenv/config';
-import { openApiDocument as openApiSpec } from './openapi';
-import { assertConfigured, errorHandler, notFoundHandler, parseTrustProxy } from '@mairie360/bffs-lib';
-import express from 'express';
-import helmet from 'helmet';
-import swaggerUi from 'swagger-ui-express';
-import healthRouter from './routes/health';
-import checkApis from './routes/check_apis';
-import messagesRouter from './routes/Messages';
-export const app = express();
-
-const PORT = process.env.PORT;
-
-// Client IP (req.ip) seen behind the ingress, used by the rate limiter: see parseTrustProxy.
-app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
-
-// Security headers (CSP, X-Content-Type-Options, Permissions-Policy, CORP...) and removal of
-// X-Powered-By. upgrade-insecure-requests is dropped because the BFF is served over HTTP behind
-// the reverse proxy.
-app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
-app.use(express.json());
-
-// Interactive documentation
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
-
-// JSON spec (read by the CICD composite action)
-app.get('/openapi.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(openApiSpec);
-});
-
-app.get('/swagger.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(openApiSpec);
-});
+import { assertConfigured } from '@mairie360/bffs-lib';
+import app from './app';
 
 /** Every upstream the BFF calls, configured by `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`). */
 export const UPSTREAMS = ['MESSAGE_API', 'CORE_API', 'PROJECT_BFF', 'CALENDAR_BFF'] as const;
 
+/** Documented port of BFF Message. */
+const DEFAULT_PORT = 4003;
+
 if (require.main === module) {
   // Fail fast: no localhost fallback, a missing or invalid upstream URL stops the server at start-up.
   assertConfigured(UPSTREAMS);
-  if (!PORT?.trim()) {
-    console.error('Error: PORT environment variable is not set.');
-    process.exit(1);
-  }
+  const port = Number(process.env.PORT?.trim() || DEFAULT_PORT);
+  app.listen(port, () => console.log(`Server listening on port ${port}`));
 }
-
-app.use('/health', healthRouter);
-app.use('/check_apis', checkApis);
-app.use('/', messagesRouter);
-
-// Unknown routes and every error end in the shared envelope `{ error: { code, message, details } }`:
-// the status of the error is kept (400 for an unparsable body, 401, 404, 502, 503...) and anything
-// unexpected becomes a 500 without leaking its message.
-app.use(notFoundHandler);
-app.use(errorHandler({ onError: (error) => console.error('[BFF] Unexpected error', error) }));
-
-if (require.main === module) app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});

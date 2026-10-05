@@ -1,12 +1,12 @@
-import { authorization } from '@mairie360/bffs-lib';
-import {Router, Request, Response} from 'express';
+import { parseRequest } from '@mairie360/bffs-lib';
+import { Router } from 'express';
 import {
     registry,
     ContactsQuery,
     ContactsResponse,
     errorResponses,
 } from '../../openapi-registry';
-import { fetchContacts, upstreamError, validationError } from './message_helpers';
+import { fetchContacts } from './message_helpers';
 
 const router = Router();
 
@@ -36,20 +36,10 @@ registry.registerPath({
     },
 });
 
-router.get('/', async (req: Request, res: Response) => {
-
-    const queryResult = ContactsQuery.safeParse(req.query);
-
-    if (!queryResult.success) {
-        throw validationError('query', queryResult.error.issues);
-    }
-
-    try {
-        const contacts = await fetchContacts(queryResult.data.search, queryResult.data.limit, authorization(req));
-        res.status(200).json({ contacts });
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
+router.get('/', async (req, res) => {
+    const query = parseRequest(ContactsQuery, req.query, 'query');
+    const contacts = await fetchContacts(query.search, query.limit, { req, declared: [401] });
+    res.status(200).json({ contacts });
 });
 
 export default router;

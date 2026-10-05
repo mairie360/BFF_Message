@@ -6,7 +6,7 @@
 
 Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre OpenAPI décrivent les objets échangés; les routeurs adaptent les services amont aux besoins des interfaces.
 
-`src/index.ts` monte le routeur Messages à la racine. Les helpers convertissent les identifiants et objets du client généré; `coreClient.ts` lit l’annuaire de Core API. `business_references.ts` appelle les BFF métier avec la session. Le bootstrap charge au maximum 20 conversations puis 30 messages de la première conversation.
+`src/app.ts` construit l’application Express (en-têtes de sécurité communs de `@mairie360/bffs-lib`, documentation, `/health`, `/check_apis`, routeur Messages à la racine, gestionnaires d’erreurs) ; `src/index.ts` charge `.env`, vérifie la configuration des services amont et écoute. Les helpers convertissent les identifiants et objets du client généré; `coreClient.ts` lit l’annuaire de Core API. `business_references.ts` appelle les BFF métier avec la session. Le bootstrap charge au maximum 20 conversations puis 30 messages de la première conversation.
 
 ## Données et persistance
 
@@ -42,7 +42,7 @@ CALENDAR_BFF_URL=http://localhost:4002
 npm run start
 ```
 
-`PORT` est obligatoire pour ce BFF; cet exemple utilise `4003`.
+`PORT` vaut `4003` par défaut.
 
 Vérifier le processus puis consulter la documentation interactive:
 
@@ -58,7 +58,7 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 
 | Variable ou priorité | Exemple / repli indiqué | Rôle |
 | --- | --- | --- |
-| `PORT` | 4003 | Port de cet exemple local. |
+| `PORT` | 4003 (défaut) | Port d’écoute. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | http://localhost:3003 / — | Racine de Message API (ses routes sont publiées sous `/api/v1`), aussi sondée par `/check_apis`. **Obligatoire**. Remplace `MESSAGE_API_BASE_PATH` (supprimée). |
 | `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Annuaire Core API (contacts, utilisateur courant), aussi sondé par `/check_apis`. **Obligatoire**. |
 | `PROJECT_BFF_URL` / `PROJECT_BFF_PORT` | http://localhost:4001 / — | Source des références projets et tâches. **Obligatoire**. |
@@ -98,8 +98,16 @@ schéma `ErrorResponse` du contrat) : `{ "error": { "code": "NOT_FOUND", "messag
 `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, ...). Un échec de validation est un 400 dont `details` liste les
 champs invalides (`{ "path": "body.content", "message": "..." }`). Un 4xx amont n’est conservé que si la
 route le déclare (401/404 de Message API, 403 sur `DELETE /conversations/{conversationId}`, 400 sur les
-créations de messages et de conversations), avec un message générique ; tout autre statut amont ou une
-panne réseau donne 502. Les messages et corps amont ne sont jamais relayés ; une erreur inattendue donne
+créations de messages et de conversations), avec un message générique ; tout autre statut amont, une
+panne réseau ou une réponse invalide donne un 502 qui nomme le service (`The MESSAGE_API service is unavailable.`),
+et un service amont non configuré un 503. Les lectures idempotentes de Message API et Core API sont
+retentées une fois sur une panne transitoire. Tous les appels amont et leur traduction passent par
+`callUpstream` / `asCaller` de `@mairie360/bffs-lib`.
+
+`/check_apis` sonde l’opération `/health` de Message API et Core API avec les mêmes variables que les
+vrais appels et répond `{ status, message_api, core_api }` (`Connected` / `Unreachable`), 200 si les deux
+répondent, 502 sinon. BFF Project et BFF Calendar ne sont pas sondés : `GET /business-references` les
+signale source par source. Les messages et corps amont ne sont jamais relayés ; une erreur inattendue donne
 un 500 générique.
 
 ## Synchronisation et vérifications
@@ -143,6 +151,7 @@ Si les conversations fonctionnent mais pas les contacts, vérifier Core API. Si 
 ## Repères dans le dépôt
 
 - [src/index.ts](../../src/index.ts)
+- [src/app.ts](../../src/app.ts)
 - [src/routes/Messages/index.ts](../../src/routes/Messages/index.ts)
 - [src/routes/Messages/message_helpers.ts](../../src/routes/Messages/message_helpers.ts)
 - [src/routes/Messages/business_references.ts](../../src/routes/Messages/business_references.ts)

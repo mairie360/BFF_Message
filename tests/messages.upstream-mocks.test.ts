@@ -56,7 +56,7 @@ beforeAll(async () => {
   process.env.CORE_API_PORT = coreApiUrl.port;
   process.env.PROJECT_BFF_URL = projectBff.url;
   process.env.CALENDAR_BFF_URL = calendarBff.url;
-  ({ app } = await import('../src/index'));
+  ({ app } = await import('../src/app'));
 });
 afterAll(async () => { await Promise.all(mocks.map((mock) => mock.stop())); });
 

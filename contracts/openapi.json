@@ -2463,20 +2463,29 @@
         ],
         "description": "Paramètres pour identifier une conversation"
       },
-      "CheckApiResponse": {
+      "CheckApisResponse": {
         "type": "object",
         "properties": {
           "status": {
             "type": "string",
-            "example": "OK"
+            "enum": [
+              "OK",
+              "Error"
+            ]
           },
           "message_api": {
             "type": "string",
-            "example": "Connected"
+            "enum": [
+              "Connected",
+              "Unreachable"
+            ]
           },
           "core_api": {
             "type": "string",
-            "example": "Connected"
+            "enum": [
+              "Connected",
+              "Unreachable"
+            ]
           }
         },
         "required": [
@@ -2571,20 +2580,28 @@
         "tags": [
           "Connectivity"
         ],
-        "summary": "Vérifie la connexion avec l'API Message et Core API (annuaire)",
+        "summary": "Checks that Message API and Core API (directory) are reachable",
+        "description": "BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source (`sources.projects` / `sources.calendar`) when they are unavailable.",
         "responses": {
           "200": {
-            "description": "Connexion réussie",
+            "description": "Every upstream answered its /health operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CheckApiResponse"
+                  "$ref": "#/components/schemas/CheckApisResponse"
                 }
               }
             }
           },
           "502": {
-            "description": "API Message injoignable"
+            "description": "At least one upstream is unreachable or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckApisResponse"
+                }
+              }
+            }
           }
         }
       }

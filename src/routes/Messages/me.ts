@@ -1,11 +1,10 @@
-import { authorization } from '@mairie360/bffs-lib';
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import {
     CurrentUserResponse,
     errorResponses,
     registry,
 } from '../../openapi-registry';
-import { getCurrentUser, upstreamError } from './message_helpers';
+import { getCurrentUser } from './message_helpers';
 
 const router = Router();
 
@@ -31,12 +30,8 @@ registry.registerPath({
     },
 });
 
-router.get('/', async (req: Request, res: Response) => {
-    try {
-        res.status(200).json(await getCurrentUser(authorization(req)));
-    } catch (error) {
-        throw upstreamError(error, [401]);
-    }
+router.get('/', async (req, res) => {
+    res.status(200).json(await getCurrentUser({ req, declared: [401] }));
 });
 
 // Profile edits are not served here: they go through BFF_Settings (PATCH /settings/profile) → Core_API (PATCH /api/v1/user/me).
