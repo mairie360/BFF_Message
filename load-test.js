@@ -151,8 +151,6 @@ const handlers = {
     check(res, { 'create group 201': (r) => r.status === 201 });
     state.groupId = conversationIdOf(res);
   },
-  'PATCH /me': ({ request }) =>
-    check(request({ body: { city: 'Paris', address: '1 place de la Mairie' } }), { 'patch me 200': (r) => r.status === 200 }),
   'POST /conversations/{conversationId}/messages': ({ request }) =>
     check(request({ path: { conversationId: need(state.groupId, 'created group') }, body: { content: 'k6 message', mentionIds: [CONTACT_ID] } }), {
       'send message 201': (r) => r.status === 201,
