@@ -1,7 +1,7 @@
 import { AxiosHeaders, type AxiosResponse } from 'axios';
 import { getMessageAPIMairie360 } from '@mairie360/message-api-openapi/endpoints/messageAPIMairie360';
 import type {
-  ChatView, CreateChatResultView, GetChatResultView, GetChatsResultView, GetUsersView, MessageView, PostMessageResultView,
+  AcknowledgeReadResultView, ChatView, CreateChatResultView, GetChatResultView, GetChatsResultView, GetUsersView, MessageView, PostMessageResultView,
 } from '@mairie360/message-api-openapi/model';
 import { getCoreAPIMairie360 } from '@mairie360/core-api-openapi/endpoints/coreAPIMairie360';
 import type { DirectoryUser, DirectoryUsersResultView } from '@mairie360/core-api-openapi/model';
@@ -78,6 +78,10 @@ export function createChatResult(id: number): CreateChatResultView {
 
 export function postMessageResult(id: number): PostMessageResultView {
   return { id };
+}
+
+export function acknowledgeReadResult(unread_count: number): AcknowledgeReadResultView {
+  return { unread_count };
 }
 
 // --- Core API (@mairie360/core-api-openapi), annuaire des agents ---

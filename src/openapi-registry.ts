@@ -349,9 +349,13 @@ export const CreateGroupBody = z.object({
 });
 
 export const MarkConversationAsReadBody = z.object({
-    readUntilMessageId: inputId('message', 1001).optional(),
+    readUntilMessageId: inputId('message', 1001).optional().openapi({
+        description: 'Last message the caller has displayed (`message-<id>` or integer): every message up to '
+          + 'and including it is acknowledged. Absent: up to the latest message of the conversation.',
+        example: 1001,
+    }),
 }).openapi({
-    description: 'Corps de la requête pour marquer une conversation comme lue',
+    description: 'Body of a read acknowledgement (optional)',
 });
 
 export const UploadAttachmentBody = z.object({

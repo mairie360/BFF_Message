@@ -540,15 +540,48 @@ export async function deleteConversation(conversationId: string | number, contex
   });
 }
 
-export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
-  if (parseNumericId(conversationId) === null) {
+/**
+ * Acknowledges the messages of the conversation as read up to `readUntilMessageId` (Message API
+ * `acknowledgeRead`). Without an id, everything is acknowledged up to the latest message (one call with
+ * `limit=1`); an empty conversation has nothing to acknowledge and nothing unread.
+ */
+export async function markConversationAsRead(
+  conversationId: string | number,
+  readUntilMessageId: string | number | undefined,
+  context: CallContext,
+): Promise<{ conversationId: string | number; unreadCount: number }> {
+  const chatId = parseNumericId(conversationId);
+  if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  // Not wired yet: Message API >= 1.0 acknowledges reads (`acknowledgeRead`) up to a message id the
-  // caller has displayed, which this route does not receive. A fabricated zero would
-  // incorrectly tell callers that the unread count was persisted.
-  throw new HttpError(503, 'Read acknowledgement unavailable');
+  const requestedId = readUntilMessageId === undefined ? undefined : parseNumericId(readUntilMessageId);
+  if (requestedId === null) {
+    throw new HttpError(400, 'Invalid message id');
+  }
+
+  let untilId: number | undefined = requestedId;
+  if (untilId === undefined) {
+    const latest = await callUpstream(
+      'MESSAGE_API',
+      () => messageClient.getChat(chatId, { limit: 1 }, messageApi(context)),
+      { declared: context.declared, retry: true },
+    );
+    const { messages } = latest.data;
+    untilId = messages[messages.length - 1]?.id;
+    if (untilId === undefined) {
+      return { conversationId, unreadCount: 0 };
+    }
+  }
+
+  const readUntil = untilId;
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.acknowledgeRead(chatId, { readUntilMessageId: readUntil }, messageApi(context)),
+    { declared: context.declared },
+  );
+
+  return { conversationId, unreadCount: response.data.unread_count };
 }
 
 export async function fetchContacts(

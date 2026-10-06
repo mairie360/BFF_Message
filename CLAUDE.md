@@ -94,8 +94,13 @@ generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('M
 `parseNumericId` extracts the trailing digits before calling upstream (which uses numeric ids).
 When adding fields, keep this mapping in the `map*ToDto` helpers.
 
-**Not available yet** (MAIR-400, no upstream support): `POST /conversations/:id/read` and `POST /attachments`
-check the session (401) then answer 503; never answer fabricated data. A non-empty `attachmentIds` is
+**Not available yet** (MAIR-400, no upstream support): `POST /attachments` checks the session (401) then
+answers 503; never answer fabricated data. `POST /conversations/:id/read` relays Message API's
+`acknowledgeRead` (the body and its `readUntilMessageId` are optional: without it, the latest message is
+resolved with one `getChat` `limit=1`; an empty chat is a no-op answering `unreadCount: 0`). Message API
+listings are paginated since 1.0: `listChats` / `listChatMemberIds` / `listChatMessages` read the pages
+(100 per page, at most `MAX_MESSAGE_API_PAGES`), and Core API directory lookups by id are split into
+`ids` lists of at most 255 characters (`idsQueries`). A non-empty `attachmentIds` is
 refused (400) on send. `POST /direct-messages` reuses the caller's existing direct chat with the recipient
 (`findDirectChat`) before creating one. `GET /business-references` bounds its fan-out (constants at the top
 of `business_references.ts`) and is rate limited per caller. Never invent profile/author data: missing

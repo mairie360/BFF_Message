@@ -875,7 +875,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Marquer une conversation comme lue (indisponible tant que la persistance amont manque) */
+        /**
+         * Acknowledges the messages of a conversation as read
+         * @description Acknowledges every message up to and including `readUntilMessageId` (Message API `POST /api/v1/{chat_id}/read/`), or up to the latest message when the body or the id is absent. Later messages stay unread. Acknowledging an empty conversation does nothing and answers `unreadCount: 0`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -886,11 +889,11 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody: {
+            requestBody?: {
                 content: {
                     "application/json": {
                         /**
-                         * @description Identifiant (message-<id> ou entier)
+                         * @description Last message the caller has displayed (`message-<id>` or integer): every message up to and including it is acknowledged. Absent: up to the latest message of the conversation.
                          * @example 1001
                          */
                         readUntilMessageId?: number | string;
@@ -898,7 +901,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Conversation mise à jour après persistance amont (fonctionnalité à venir) */
+                /** @description Acknowledgement recorded (or already recorded), with the number of messages still unread by the caller */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -936,7 +939,25 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Core API is unavailable or failed */
+                /** @description The caller may not acknowledge reads in this conversation */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, the caller is not one of its members, or the message is not one of this conversation */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
                         [name: string]: unknown;
@@ -945,7 +966,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Read acknowledgement unavailable: nothing was persisted (also when Core API is not configured) */
+                /** @description Message API is not configured on the BFF */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -3266,10 +3287,10 @@ export interface components {
             /** @description Liste des identifiants des membres à ajouter au groupe */
             memberIds: (number | string)[];
         };
-        /** @description Corps de la requête pour marquer une conversation comme lue */
+        /** @description Body of a read acknowledgement (optional) */
         MarkConversationAsReadBody: {
             /**
-             * @description Identifiant (message-<id> ou entier)
+             * @description Last message the caller has displayed (`message-<id>` or integer): every message up to and including it is acknowledged. Absent: up to the latest message of the conversation.
              * @example 1001
              */
             readUntilMessageId?: number | string;

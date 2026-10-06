@@ -17,7 +17,7 @@ import { OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract } from './support/orval-contract';
 import {
   authorizationFor, calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, chatUsers, chatView, chatsResult, coreApiUrls,
-  createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffError, projectBffUrls, projectDetailsResponse,
+  acknowledgeReadResult, createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffError, projectBffUrls, projectDetailsResponse,
   projectListItem, projectsPageResponse, taskItem, tokenFor, users,
 } from './support/upstream-fixtures';
 import { MAX_PROJECT_DETAILS, PROJECTS_PAGE_LIMIT } from '../src/routes/Messages/business_references';
@@ -38,6 +38,7 @@ const MESSAGE_API = {
   messages: '/api/v1/{chatId}/messages/',
   users: '/api/v1/{chatId}/users/',
   member: '/api/v1/{chatId}/users/{userId}/',
+  read: '/api/v1/{chatId}/read/',
   health: '/health',
 } as const;
 const CORE_API = { directory: '/api/v1/user/', health: '/health' } as const;
@@ -264,14 +265,75 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(messageApi.requests).toHaveLength(0);
     });
 
-    test('POST /conversations/:id/read refuses a non-persistent acknowledgement', async () => {
+    test('POST /conversations/:id/read acknowledges up to the given message through Message API', async () => {
       mockMessageApi();
+      messageApi.on('post', MESSAGE_API.read, { body: acknowledgeReadResult(2) });
 
       const response = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(agent.id)).send({ readUntilMessageId: 'message-42' });
 
-      expectApiError(response, 503, 'SERVICE_UNAVAILABLE');
+      expect(response.status).toBe(200);
       expectBffContract('post', '/conversations/conversation-4/read', response);
-      expect(messageApi.requests).toHaveLength(0);
+      expect(response.body).toEqual({ conversationId: 'conversation-4', unreadCount: 2 });
+      expect(upstreamSequence(messageApi)).toEqual([called('POST', messageApiUrls.getAcknowledgeReadUrl(4))]);
+      expect(messageApi.calls(MESSAGE_API.read, 'POST')[0].body).toEqual({ readUntilMessageId: 42 });
+      expect(messageApi.requests[0].headers.authorization).toBe(authorizationFor(agent.id));
+    });
+
+    test.each([
+      ['an empty body', {}],
+      ['no body', undefined],
+    ] as const)('POST /conversations/:id/read with %s acknowledges up to the latest message', async (_label, body) => {
+      mockMessageApi({ messages: { 4: [messageView(41, sophie.id), messageView(42, sophie.id)] } });
+      messageApi.on('post', MESSAGE_API.read, { body: acknowledgeReadResult(0) });
+
+      const call = request(app).post('/conversations/4/read').set('Authorization', authorizationFor(agent.id));
+      const response = await (body === undefined ? call : call.send(body));
+
+      expect(response.status).toBe(200);
+      expectBffContract('post', '/conversations/4/read', response);
+      expect(response.body).toEqual({ conversationId: '4', unreadCount: 0 });
+      expect(upstreamSequence(messageApi)).toEqual([
+        called('GET', messageApiUrls.getGetChatUrl(4, { limit: 1 })),
+        called('POST', messageApiUrls.getAcknowledgeReadUrl(4)),
+      ]);
+      expect(messageApi.calls(MESSAGE_API.read, 'POST')[0].body).toEqual({ readUntilMessageId: 42 });
+    });
+
+    test('POST /conversations/:id/read on an empty conversation acknowledges nothing', async () => {
+      mockMessageApi({ messages: { 4: [] } });
+
+      const response = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(agent.id)).send({});
+
+      expect(response.status).toBe(200);
+      expectBffContract('post', '/conversations/conversation-4/read', response);
+      expect(response.body).toEqual({ conversationId: 'conversation-4', unreadCount: 0 });
+      expect(upstreamSequence(messageApi)).toEqual([called('GET', messageApiUrls.getGetChatUrl(4, { limit: 1 }))]);
+    });
+
+    test.each([
+      [404, 'Unknown message.', 404, 'NOT_FOUND'],
+      [403, 'Forbidden', 403, 'FORBIDDEN'],
+      [401, 'Unauthorized', 401, 'UNAUTHORIZED'],
+      [500, 'Database error.', 502, 'BAD_GATEWAY'],
+    ] as const)('POST /conversations/:id/read maps a Message API %s', async (upstreamStatus, raw, status, code) => {
+      mockMessageApi();
+      messageApi.on('post', MESSAGE_API.read, { status: upstreamStatus, raw, contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(agent.id)).send({ readUntilMessageId: 42 });
+
+      expectApiError(response, status, code);
+      expectBffContract('post', '/conversations/conversation-4/read', response);
+      expect(response.body.error.message).not.toContain(raw);
+    });
+
+    test('POST /conversations/:id/read maps a 404 of the latest-message lookup', async () => {
+      mockMessageApi();
+
+      const response = await request(app).post('/conversations/conversation-99/read').set('Authorization', authorizationFor(agent.id)).send({});
+
+      expectApiError(response, 404, 'NOT_FOUND');
+      expectBffContract('post', '/conversations/conversation-99/read', response);
+      expect(messageApi.calls(MESSAGE_API.read, 'POST')).toEqual([]);
     });
 
     test('POST /conversations/:id/read rejects an id without digits before calling Message API', async () => {
@@ -597,16 +659,15 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.body).not.toHaveProperty('attachments');
     });
 
-    test('POST /conversations/:id/read answers 401 without a session, before the 503 of the missing operation (MAIR-400)', async () => {
+    test('POST /conversations/:id/read answers 401 without a session, before any upstream call (MAIR-400)', async () => {
       mockMessageApi();
 
       const anonymous = await request(app).post('/conversations/conversation-4/read').send({});
-      const unknownUser = await request(app).post('/conversations/conversation-4/read').set('Authorization', authorizationFor(404)).send({});
 
       expectApiError(anonymous, 401, 'UNAUTHORIZED');
       expectBffContract('post', '/conversations/conversation-4/read', anonymous);
-      expectApiError(unknownUser, 401, 'UNAUTHORIZED');
       expect(messageApi.requests).toEqual([]);
+      expect(coreApi.requests).toEqual([]);
     });
 
     test('a malformed accessToken cookie is ignored instead of failing every route (MAIR-400)', async () => {
@@ -939,7 +1000,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       ['MESSAGE_API', 'get', '/messaging/bootstrap', undefined],
       ['CORE_API', 'get', '/me', undefined],
       ['CORE_API', 'get', '/contacts', undefined],
-      ['CORE_API', 'post', '/conversations/conversation-4/read', { readUntilMessageId: 'message-42' }],
+      ['MESSAGE_API', 'post', '/conversations/conversation-4/read', { readUntilMessageId: 'message-42' }],
       ['CORE_API', 'post', '/attachments', { files: [{ name: 'note.pdf' }] }],
     ] as const)('without %s_URL, %s %s answers a declared 503 and calls no default host', async (service, method, url, body) => {
       mockMessageApi({ chats: [chatView(4, 'Équipe communication')], members: { 4: [agent.id, sophie.id] } });

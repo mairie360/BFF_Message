@@ -140,11 +140,10 @@ const handlers = {
   'POST /conversations/{conversationId}/read': ({ request }) =>
     check(request({
       path: { conversationId: FIXTURE_CONVERSATION },
+      // Seeded message of conversation 101, of which user 2 is a member (init-test.sql).
       body: { readUntilMessageId: FIXTURE_MESSAGE },
-      params: { responseCallback: UNAVAILABLE_IS_EXPECTED },
     }), {
-      // Message API has no read operation yet: nothing is persisted, the BFF answers 503.
-      'read 503': (r) => r.status === 503,
+      'read 200': (r) => r.status === 200,
     }),
   'POST /groups': ({ request }) => {
     const res = request({ body: groupBody(unique('k6 group')) });

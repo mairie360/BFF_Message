@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { JsonSchema, OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract, resolveOrvalPackage } from './support/orval-contract';
 import {
-  calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult,
+  calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult,
   directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffUrls, projectDetailsResponse, projectListItem, projectsPageResponse,
   taskItem, users,
 } from './support/upstream-fixtures';
@@ -35,6 +35,7 @@ const CONSUMED = [
   { contract: messageApi, operationId: 'removeUserFromChat', method: 'delete', url: messageApiUrls.getRemoveUserFromChatUrl(4, 7) },
   { contract: messageApi, operationId: 'postMessage', method: 'post', url: messageApiUrls.getPostMessageUrl(4) },
   { contract: messageApi, operationId: 'getChatUsers', method: 'get', url: messageApiUrls.getGetChatUsersUrl(4) },
+  { contract: messageApi, operationId: 'acknowledgeRead', method: 'post', url: messageApiUrls.getAcknowledgeReadUrl(4) },
   { contract: messageApi, operationId: 'health', method: 'get', url: messageApiUrls.getHealthUrl() },
   { contract: coreApi, operationId: 'listDirectoryUsers', method: 'get', url: coreApiUrls.getListDirectoryUsersUrl({ ids: '7,8' }) },
   { contract: coreApi, operationId: 'health', method: 'get', url: coreApiUrls.getHealthUrl() },
@@ -86,6 +87,7 @@ describe('upstream fixtures conform to the upstream contracts', () => {
     ['Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4), chatResult([messageView(41, 7), messageView(42, 8, { citation: 41 })])],
     ['Message API postMessage 200', messageApi, 'post', messageApiUrls.getPostMessageUrl(4), postMessageResult(31)],
     ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8])],
+    ['Message API acknowledgeRead 200', messageApi, 'post', messageApiUrls.getAcknowledgeReadUrl(4), acknowledgeReadResult(2)],
     ['Core API listDirectoryUsers 200', coreApi, 'get', coreApiUrls.getListDirectoryUsersUrl(), directoryUsers([users.agent, users.thomas])],
     ['BFF Project getProjectsPage 200', projectBff, 'get', projectBffUrls.getGetProjectsPageUrl(), projectsPageResponse([project])],
     ['BFF Project getProjectsProjectId 200', projectBff, 'get', projectBffUrls.getGetProjectsProjectIdUrl(project.id), projectDetailsResponse(project, [taskItem()])],
