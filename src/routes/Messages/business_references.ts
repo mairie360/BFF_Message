@@ -111,11 +111,10 @@ export function calendarDateRange(at: Date = new Date()) {
 
 async function loadCalendarReferences(req: Request): Promise<BusinessReference[]> {
   const { from, to } = calendarDateRange();
-  // from and to are read by BFF Calendar but not declared yet by its published contract.
-  const calendar = await calendarBff.getCalendarBootstrap({
-    ...asCaller('CALENDAR_BFF', req, BUSINESS_BFF_TIMEOUT_MS),
-    params: { from, to },
-  });
+  const calendar = await calendarBff.getCalendarBootstrap(
+    { from, to },
+    asCaller('CALENDAR_BFF', req, BUSINESS_BFF_TIMEOUT_MS),
+  );
 
   return (calendar.data.events ?? []).flatMap((event) => {
     if (event.id === undefined) return [];

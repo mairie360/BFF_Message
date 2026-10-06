@@ -70,7 +70,8 @@ describe('message helpers author direction', () => {
       expect.objectContaining({ authorId: `user-${sophie.id}`, direction: 'incoming' }),
     ]);
     expect(result.conversation.name).toBe('Équipe communication');
-    expect(messageClient.getChat).toHaveBeenCalledWith(4, callOptions);
+    // Without a limit, every page is read (here a single one).
+    expect(messageClient.getChat).toHaveBeenCalledWith(4, { limit: 100 }, callOptions);
   });
 
   it('adds the other participants next to the conversation name', async () => {
@@ -86,5 +87,82 @@ describe('message helpers author direction', () => {
     ]);
     expect(listContactsByIds).toHaveBeenCalledTimes(1);
     expect(listContactsByIds).toHaveBeenCalledWith([sophie.id, thomas.id], context);
+  });
+});
+
+describe('Message API pagination (message-api 1.0)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('reads every page of chats and members', async () => {
+    jest.mocked(messageClient.getChats)
+      .mockResolvedValueOnce(axiosResponse(chatsResult([chatView(4, 'Équipe communication')], true)))
+      .mockResolvedValueOnce(axiosResponse(chatsResult([chatView(5, 'Conseil municipal')])));
+    jest.mocked(messageClient.getChatUsers).mockImplementation(async (_chatId, params) => axiosResponse(
+      params?.offset === 0 ? chatUsers([agent.id], true) : chatUsers([sophie.id]),
+    ));
+    jest.mocked(listContactsByIds).mockImplementation(async (ids) => [sophie].filter((user) => ids.includes(user.id)));
+
+    const conversations = await fetchConversations(undefined, undefined, context);
+
+    expect(conversations.map((conversation) => conversation.id)).toEqual(['conversation-4', 'conversation-5']);
+    expect(conversations[0]).toEqual(expect.objectContaining({ department: 'Avec Sophie Leroy' }));
+    expect(messageClient.getChats).toHaveBeenNthCalledWith(1, { limit: 100, offset: 0 }, callOptions);
+    expect(messageClient.getChats).toHaveBeenNthCalledWith(2, { limit: 100, offset: 100 }, callOptions);
+    expect(messageClient.getChatUsers).toHaveBeenCalledWith(4, { limit: 100, offset: 100 }, callOptions);
+  });
+
+  it('reads older pages of messages with the before cursor when no limit is given', async () => {
+    jest.mocked(messageClient.getChats).mockResolvedValue(axiosResponse(chatsResult([chatView(4)])));
+    jest.mocked(messageClient.getChatUsers).mockResolvedValue(axiosResponse(chatUsers([])));
+    jest.mocked(messageClient.getChat)
+      .mockResolvedValueOnce(axiosResponse(chatResult([messageView(42, sophie.id), messageView(43, agent.id)], 42)))
+      .mockResolvedValueOnce(axiosResponse(chatResult([messageView(41, sophie.id)])));
+
+    const result = await fetchConversationMessages('conversation-4', undefined, context);
+
+    expect(result.messages.map((message) => message.id)).toEqual(['message-41', 'message-42', 'message-43']);
+    expect(messageClient.getChat).toHaveBeenNthCalledWith(1, 4, { limit: 100 }, callOptions);
+    expect(messageClient.getChat).toHaveBeenNthCalledWith(2, 4, { limit: 100, before: 42 }, callOptions);
+  });
+
+  it('asks Message API for the requested number of latest messages only', async () => {
+    jest.mocked(messageClient.getChats).mockResolvedValue(axiosResponse(chatsResult([chatView(4)])));
+    jest.mocked(messageClient.getChatUsers).mockResolvedValue(axiosResponse(chatUsers([])));
+    jest.mocked(messageClient.getChat).mockResolvedValue(axiosResponse(chatResult([messageView(43, agent.id)], 43)));
+
+    const result = await fetchConversationMessages('conversation-4', 1, context);
+
+    expect(result.messages.map((message) => message.id)).toEqual(['message-43']);
+    expect(messageClient.getChat).toHaveBeenCalledTimes(1);
+    expect(messageClient.getChat).toHaveBeenCalledWith(4, { limit: 1 }, callOptions);
+  });
+
+  it('leaves the author out of a message whose author account is deleted', async () => {
+    jest.mocked(messageClient.getChats).mockResolvedValue(axiosResponse(chatsResult([chatView(4)])));
+    jest.mocked(messageClient.getChatUsers).mockResolvedValue(axiosResponse(chatUsers([])));
+    jest.mocked(messageClient.getChat).mockResolvedValue(axiosResponse(chatResult([messageView(41, agent.id, { sender_id: null })])));
+
+    const [message] = (await fetchConversationMessages('conversation-4', undefined, context)).messages;
+
+    expect(message).not.toHaveProperty('authorId');
+    expect(message).not.toHaveProperty('authorName');
+    expect(message!.direction).toBe('incoming');
+  });
+});
+
+describe('Core API directory ids', () => {
+  const { idsQueries } = jest.requireActual<typeof import('../src/clients/coreClient')>('../src/clients/coreClient');
+
+  it('splits the ids into lists Core API accepts (at most 255 characters)', () => {
+    const ids = Array.from({ length: 100 }, (_, index) => 1_000_000 + index);
+    const queries = idsQueries(ids);
+
+    expect(queries.length).toBeGreaterThan(1);
+    expect(queries.every((query) => query.length <= 255)).toBe(true);
+    expect(queries.join(',').split(',').map(Number)).toEqual(ids);
+    expect(idsQueries([7, 8, 7])).toEqual(['7,8']);
+    expect(idsQueries([])).toEqual([]);
   });
 });

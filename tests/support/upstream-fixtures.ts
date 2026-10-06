@@ -56,20 +56,20 @@ export function chatView(id: number, name = `Conversation ${id}`, unread_count =
   return { id, name, unread_count };
 }
 
-export function chatsResult(chats: ChatView[]): GetChatsResultView {
-  return { chats };
+export function chatsResult(chats: ChatView[], has_more = false): GetChatsResultView {
+  return { chats, has_more };
 }
 
 export function messageView(id: number, sender_id: number, overrides: Partial<MessageView> = {}): MessageView {
-  return { id, sender_id, content: `Message ${id}`, created_at: '2026-09-15T09:00:00Z', sitation: null, ...overrides };
+  return { id, sender_id, content: `Message ${id}`, created_at: '2026-09-15T09:00:00Z', citation: null, ...overrides };
 }
 
-export function chatResult(messages: MessageView[]): GetChatResultView {
-  return { messages };
+export function chatResult(messages: MessageView[], next_before: number | null = null): GetChatResultView {
+  return { messages, has_more: next_before !== null, next_before };
 }
 
-export function chatUsers(ids: number[]): GetUsersView {
-  return { users: ids.map((id) => ({ id })) };
+export function chatUsers(ids: number[], has_more = false): GetUsersView {
+  return { users: ids.map((id) => ({ id })), has_more };
 }
 
 export function createChatResult(id: number): CreateChatResultView {

@@ -336,8 +336,8 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-            "example": "12345"
+            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+            "example": "user-12"
           },
           "authorName": {
             "type": "string",
@@ -452,8 +452,7 @@
           "id",
           "conversationId",
           "content",
-          "sentAt",
-          "authorId"
+          "sentAt"
         ],
         "description": "Représentation d’un message"
       },
@@ -788,8 +787,8 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                  "example": "12345"
+                  "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                  "example": "user-12"
                 },
                 "authorName": {
                   "type": "string",
@@ -904,8 +903,7 @@
                 "id",
                 "conversationId",
                 "content",
-                "sentAt",
-                "authorId"
+                "sentAt"
               ],
               "description": "Représentation d’un message"
             },
@@ -1044,8 +1042,8 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                "example": "12345"
+                "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                "example": "user-12"
               },
               "authorName": {
                 "type": "string",
@@ -1160,8 +1158,7 @@
               "id",
               "conversationId",
               "content",
-              "sentAt",
-              "authorId"
+              "sentAt"
             ],
             "description": "Message envoyé"
           },
@@ -1398,8 +1395,8 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                "example": "12345"
+                "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                "example": "user-12"
               },
               "authorName": {
                 "type": "string",
@@ -1514,8 +1511,7 @@
               "id",
               "conversationId",
               "content",
-              "sentAt",
-              "authorId"
+              "sentAt"
             ],
             "description": "Message direct envoyé"
           }
@@ -2010,8 +2006,8 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                  "example": "12345"
+                  "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                  "example": "user-12"
                 },
                 "authorName": {
                   "type": "string",
@@ -2126,8 +2122,7 @@
                 "id",
                 "conversationId",
                 "content",
-                "sentAt",
-                "authorId"
+                "sentAt"
               ],
               "description": "Représentation d’un message"
             }
@@ -2989,8 +2984,8 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                            "example": "12345"
+                            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                            "example": "user-12"
                           },
                           "authorName": {
                             "type": "string",
@@ -3105,8 +3100,7 @@
                           "id",
                           "conversationId",
                           "content",
-                          "sentAt",
-                          "authorId"
+                          "sentAt"
                         ],
                         "description": "Représentation d’un message"
                       }
@@ -4304,8 +4298,8 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                            "example": "12345"
+                            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                            "example": "user-12"
                           },
                           "authorName": {
                             "type": "string",
@@ -4420,8 +4414,7 @@
                           "id",
                           "conversationId",
                           "content",
-                          "sentAt",
-                          "authorId"
+                          "sentAt"
                         ],
                         "description": "Représentation d’un message"
                       },
@@ -4637,8 +4630,8 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                          "example": "12345"
+                          "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                          "example": "user-12"
                         },
                         "authorName": {
                           "type": "string",
@@ -4753,8 +4746,7 @@
                         "id",
                         "conversationId",
                         "content",
-                        "sentAt",
-                        "authorId"
+                        "sentAt"
                       ],
                       "description": "Message envoyé"
                     },
@@ -5097,8 +5089,8 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                          "example": "12345"
+                          "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                          "example": "user-12"
                         },
                         "authorName": {
                           "type": "string",
@@ -5213,8 +5205,7 @@
                         "id",
                         "conversationId",
                         "content",
-                        "sentAt",
-                        "authorId"
+                        "sentAt"
                       ],
                       "description": "Message direct envoyé"
                     }

@@ -94,17 +94,38 @@ type MessageApiScenario = {
   postedMessageId?: number;
 };
 
+/** `limit` / `offset` of a paginated Message API listing, with its defaults (50, 0). */
+function offsetPage(url: URL) {
+  const limit = Number(url.searchParams.get('limit') ?? 50);
+  const offset = Number(url.searchParams.get('offset') ?? 0);
+  return { start: offset, end: offset + limit };
+}
+
 function mockMessageApi({ chats = [], messages = {}, members = {}, createdChatId = 12, postedMessageId = 31 }: MessageApiScenario = {}) {
-  messageApi.on('get', MESSAGE_API.chats, { body: chatsResult(chats) });
+  // The listings are paginated like the real API: `limit` (default 50) and `offset`, `has_more`.
+  messageApi.on('get', MESSAGE_API.chats, ({ url }) => {
+    const { start, end } = offsetPage(url);
+    return { body: chatsResult(chats.slice(start, end), end < chats.length) };
+  });
   messageApi.on('post', MESSAGE_API.chats, { body: createChatResult(createdChatId) });
-  messageApi.on('get', MESSAGE_API.chat, ({ pathParams }) => {
+  messageApi.on('get', MESSAGE_API.chat, ({ pathParams, url }) => {
     const found = messages[Number(pathParams.chatId)];
-    // 404 renvoyé par l'API réelle pour un salon inconnu ; les erreurs ne sont pas typées par orval.
-    return found ? { body: chatResult(found) } : { status: 404, raw: 'Chat not found', contentType: 'text/plain', outOfContract: true };
+    // 404 answered by the real API for an unknown chat; errors are not typed by orval.
+    if (!found) return { status: 404, raw: 'Chat not found', contentType: 'text/plain', outOfContract: true };
+    // The `limit` latest messages older than `before`, oldest first, like the real API.
+    const limit = Number(url.searchParams.get('limit') ?? 50);
+    const before = url.searchParams.get('before');
+    const older = before === null ? found : found.filter((message) => message.id < Number(before));
+    const page = older.slice(-limit);
+    return { body: chatResult(page, older.length > page.length ? page[0]!.id : null) };
   });
   messageApi.on('delete', MESSAGE_API.member, { status: 200 });
   messageApi.on('post', MESSAGE_API.messages, { body: postMessageResult(postedMessageId) });
-  messageApi.on('get', MESSAGE_API.users, ({ pathParams }) => ({ body: chatUsers(members[Number(pathParams.chatId)] ?? []) }));
+  messageApi.on('get', MESSAGE_API.users, ({ pathParams, url }) => {
+    const ids = members[Number(pathParams.chatId)] ?? [];
+    const { start, end } = offsetPage(url);
+    return { body: chatUsers(ids.slice(start, end), end < ids.length) };
+  });
 }
 
 /** Réponse documentée par le contrat du BFF (statut + schéma). */
@@ -126,6 +147,8 @@ function expectApiError(response: request.Response, status: number, code: string
 /** Appels reçus par un service simulé, sous la forme `MÉTHODE chemin?query` (tels que les construisent les clients générés). */
 const upstreamSequence = (mock: ContractMockServer) => mock.requests.map((call) => `${call.method} ${call.url.pathname}${call.url.search}`);
 const called = (method: string, url: string) => `${method} ${url}`;
+/** First page of a paginated Message API listing, as the BFF asks for it (largest page). */
+const FIRST_PAGE = { limit: 100, offset: 0 };
 
 describe('Message BFF with contract-driven Message API, BFF Project and BFF Calendar mocks', () => {
   describe('conversations', () => {
@@ -144,9 +167,9 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         { id: 'conversation-5', name: 'Conseil municipal', kind: 'group', initials: 'CM', unreadCount: 0 },
       ] });
       expect(upstreamSequence(messageApi).sort()).toEqual([
-        called('GET', messageApiUrls.getGetChatsUrl()),
-        called('GET', messageApiUrls.getGetChatUsersUrl(4)),
-        called('GET', messageApiUrls.getGetChatUsersUrl(5)),
+        called('GET', messageApiUrls.getGetChatUsersUrl(4, FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatUsersUrl(5, FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatsUrl(FIRST_PAGE)),
       ]);
       expect(messageApi.requests.every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
       // Seuls les autres participants sont demandés à l'annuaire.
@@ -280,7 +303,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
         messages: { 4: [
           messageView(40, sophie.id, { content: 'Ancien', created_at: '2026-09-15T08:00:00Z' }),
           messageView(41, agent.id, { content: 'Mon message', created_at: '2026-09-15T09:00:00Z' }),
-          messageView(42, sophie.id, { content: 'Réponse reçue', created_at: '2026-09-15T09:01:00Z', sitation: 41 }),
+          messageView(42, sophie.id, { content: 'Réponse reçue', created_at: '2026-09-15T09:01:00Z', citation: 41 }),
         ] },
         members: { 4: [agent.id, sophie.id] },
       });
@@ -290,10 +313,11 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(200);
       expectBffContract('get', '/conversations/conversation-4/messages', response);
       expect(upstreamSequence(messageApi).sort()).toEqual([
-        called('GET', messageApiUrls.getGetChatsUrl()),
-        called('GET', messageApiUrls.getGetChatUrl(4)),
-        called('GET', messageApiUrls.getGetChatUsersUrl(4)),
+        called('GET', messageApiUrls.getGetChatUrl(4, { limit: 2 })),
+        called('GET', messageApiUrls.getGetChatUsersUrl(4, FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatsUrl(FIRST_PAGE)),
       ]);
+      expect(response.body.messages.map((message: { id: string }) => message.id)).toEqual(['message-41', 'message-42']);
       expect(response.body.conversation).toEqual({
         id: 'conversation-4', name: 'Équipe communication', department: 'Avec Sophie Leroy', kind: 'group', initials: 'ÉC',
         lastMessage: 'Réponse reçue', lastMessageAt: '2026-09-15T09:01:00Z', unreadCount: 1,
@@ -489,12 +513,12 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.status).toBe(200);
       expectBffContract('get', '/messaging/bootstrap', response);
       expect(upstreamSequence(messageApi).sort()).toEqual([
-        called('GET', messageApiUrls.getGetChatsUrl()),
-        called('GET', messageApiUrls.getGetChatsUrl()),
-        called('GET', messageApiUrls.getGetChatUrl(4)),
-        called('GET', messageApiUrls.getGetChatUsersUrl(4)),
-        called('GET', messageApiUrls.getGetChatUsersUrl(4)),
-        called('GET', messageApiUrls.getGetChatUsersUrl(5)),
+        called('GET', messageApiUrls.getGetChatUrl(4, { limit: 30 })),
+        called('GET', messageApiUrls.getGetChatUsersUrl(4, FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatUsersUrl(4, FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatUsersUrl(5, FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatsUrl(FIRST_PAGE)),
+        called('GET', messageApiUrls.getGetChatsUrl(FIRST_PAGE)),
       ]);
       expect(response.body).toMatchObject({
         currentUser: { id: 'user-7', name: 'Agent Test' },
@@ -514,7 +538,7 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expectBffContract('get', '/messaging/bootstrap', response);
       expect(response.body).not.toHaveProperty('activeConversationId');
       expect(response.body.messages).toEqual([]);
-      expect(upstreamSequence(messageApi)).toEqual([called('GET', messageApiUrls.getGetChatsUrl())]);
+      expect(upstreamSequence(messageApi)).toEqual([called('GET', messageApiUrls.getGetChatsUrl(FIRST_PAGE))]);
     });
   });
 
@@ -828,8 +852,8 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(days).toBeLessThanOrEqual(365);
       expect(Date.parse(from!)).toBeLessThan(Date.now());
       expect(Date.parse(to!)).toBeGreaterThan(Date.now());
-      // from/to sont lus par BFF Calendar mais absents de @mairie360/bff-calendar-openapi@0.3.0.
-      expect(bootstrap.undeclaredQuery).toEqual(['from', 'to']);
+      // from/to are declared by @mairie360/bff-calendar-openapi since 0.4.0.
+      expect(bootstrap.undeclaredQuery).toEqual([]);
       expect([...projectBff.requests, ...calendarBff.requests].every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
     });
 

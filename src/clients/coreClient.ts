@@ -34,10 +34,35 @@ export async function listContacts(
   return users.filter((user) => user.id !== excludedUserId);
 }
 
-/** Agents by id, in a single call (unknown ids are absent from the result). */
+/** Longest `ids` query Core API accepts (comma-separated list, 255 characters at most). */
+const MAX_IDS_QUERY_LENGTH = 255;
+
+/** Splits `ids` into comma-separated lists of at most `MAX_IDS_QUERY_LENGTH` characters. */
+export function idsQueries(ids: number[]): string[] {
+  const queries: string[] = [];
+  let current = '';
+
+  for (const id of [...new Set(ids)]) {
+    const next = current ? `${current},${id}` : String(id);
+    if (next.length > MAX_IDS_QUERY_LENGTH && current) {
+      queries.push(current);
+      current = String(id);
+    } else {
+      current = next;
+    }
+  }
+  if (current) queries.push(current);
+
+  return queries;
+}
+
+/**
+ * Agents by id (unknown ids are absent from the result): one call per `ids` list Core API accepts,
+ * usually a single one.
+ */
 export async function listContactsByIds(ids: number[], context: CallContext): Promise<ContactUser[]> {
-  if (ids.length === 0) return [];
-  return listDirectoryUsers({ ids: ids.join(',') }, context);
+  const pages = await Promise.all(idsQueries(ids).map((query) => listDirectoryUsers({ ids: query }, context)));
+  return pages.flat();
 }
 
 /** Agent `id`, or `undefined` when unknown or archived. */

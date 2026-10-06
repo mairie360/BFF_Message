@@ -83,7 +83,7 @@ describe('upstream fixtures conform to the upstream contracts', () => {
   test.each([
     ['Message API getChats 200', messageApi, 'get', messageApiUrls.getGetChatsUrl(), chatsResult([chatView(4, 'Équipe communication', 2)])],
     ['Message API createChat 200', messageApi, 'post', messageApiUrls.getCreateChatUrl(), createChatResult(12)],
-    ['Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4), chatResult([messageView(41, 7), messageView(42, 8, { sitation: 41 })])],
+    ['Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4), chatResult([messageView(41, 7), messageView(42, 8, { citation: 41 })])],
     ['Message API postMessage 200', messageApi, 'post', messageApiUrls.getPostMessageUrl(4), postMessageResult(31)],
     ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8])],
     ['Core API listDirectoryUsers 200', coreApi, 'get', coreApiUrls.getListDirectoryUsersUrl(), directoryUsers([users.agent, users.thomas])],

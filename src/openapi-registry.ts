@@ -185,7 +185,10 @@ export const MessageDtoSchema = z.object({
     description: 'Date et heure d’envoi du message (format ISO)',
     example: '2026-06-23T12:32:00Z',
   }),
-  authorId: IdSchema,
+  authorId: IdSchema.optional().openapi({
+    description: 'Id of the author (`user-<n>`), absent once the author\'s account is deleted',
+    example: 'user-12',
+  }),
   authorName: z.string().optional().openapi({
     description: 'Nom de l’auteur du message',
     example: 'Alice Dupont',

@@ -381,10 +381,10 @@ export interface paths {
                                  */
                                 sentAt: string;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                                 * @example 12345
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
                                  */
-                                authorId: string | number;
+                                authorId?: string | number;
                                 /**
                                  * @description Nom de l’auteur du message
                                  * @example Alice Dupont
@@ -1319,10 +1319,10 @@ export interface paths {
                                  */
                                 sentAt: string;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                                 * @example 12345
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
                                  */
-                                authorId: string | number;
+                                authorId?: string | number;
                                 /**
                                  * @description Nom de l’auteur du message
                                  * @example Alice Dupont
@@ -1507,10 +1507,10 @@ export interface paths {
                                  */
                                 sentAt: string;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                                 * @example 12345
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
                                  */
-                                authorId: string | number;
+                                authorId?: string | number;
                                 /**
                                  * @description Nom de l’auteur du message
                                  * @example Alice Dupont
@@ -1824,10 +1824,10 @@ export interface paths {
                                  */
                                 sentAt: string;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                                 * @example 12345
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
                                  */
-                                authorId: string | number;
+                                authorId?: string | number;
                                 /**
                                  * @description Nom de l’auteur du message
                                  * @example Alice Dupont
@@ -2115,10 +2115,10 @@ export interface components {
              */
             sentAt: string;
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
-             * @example 12345
+             * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+             * @example user-12
              */
-            authorId: string | number;
+            authorId?: string | number;
             /**
              * @description Nom de l’auteur du message
              * @example Alice Dupont
@@ -2398,10 +2398,10 @@ export interface components {
                  */
                 sentAt: string;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                 * @example 12345
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
                  */
-                authorId: string | number;
+                authorId?: string | number;
                 /**
                  * @description Nom de l’auteur du message
                  * @example Alice Dupont
@@ -2548,10 +2548,10 @@ export interface components {
                  */
                 sentAt: string;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                 * @example 12345
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
                  */
-                authorId: string | number;
+                authorId?: string | number;
                 /**
                  * @description Nom de l’auteur du message
                  * @example Alice Dupont
@@ -2771,10 +2771,10 @@ export interface components {
                  */
                 sentAt: string;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                 * @example 12345
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
                  */
-                authorId: string | number;
+                authorId?: string | number;
                 /**
                  * @description Nom de l’auteur du message
                  * @example Alice Dupont
@@ -3123,10 +3123,10 @@ export interface components {
                  */
                 sentAt: string;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
-                 * @example 12345
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
                  */
-                authorId: string | number;
+                authorId?: string | number;
                 /**
                  * @description Nom de l’auteur du message
                  * @example Alice Dupont
