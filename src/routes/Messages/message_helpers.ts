@@ -506,7 +506,14 @@ async function findDirectChat(
   const candidates = chats.filter((chat) => candidateNames.has(chat.name));
 
   for (const chat of candidates) {
-    const memberIds = await listChatMemberIds(chat.id, context, context.declared);
+    let memberIds: number[];
+    try {
+      memberIds = await listChatMemberIds(chat.id, context, [...context.declared, 404]);
+    } catch (error) {
+      // A 404 means the chat was deleted since it was listed: it is no longer a candidate.
+      if (error instanceof HttpError && error.status === 404) continue;
+      throw error;
+    }
     if (directContactId(chat.name, memberIds, currentUserId) === contactId) return chat.id;
   }
 

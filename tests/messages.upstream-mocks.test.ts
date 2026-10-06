@@ -495,6 +495,28 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.body.conversation).toEqual(expect.objectContaining({ id: 'conversation-6', kind: 'direct', contactId: 'user-8' }));
     });
 
+    test('POST /direct-messages skips a direct conversation deleted since it was listed and creates a new one', async () => {
+      // Chat 6 is listed, then deleted before its members are read: Message API answers 404.
+      const chats = [chatView(6, 'Direct 8')];
+      mockMessageApi({ chats, createdChatId: 22, postedMessageId: 52, members: { 22: [agent.id, sophie.id] } });
+      messageApi.on('get', MESSAGE_API.chats, () => ({ body: chatsResult(chats) }));
+      messageApi.on('get', MESSAGE_API.users, ({ pathParams }) => (Number(pathParams.chatId) === 6
+        ? { status: 404, raw: 'Unknown chat.', contentType: 'text/plain', outOfContract: true }
+        : { body: chatUsers([agent.id, sophie.id], false) }));
+      messageApi.on('post', MESSAGE_API.chats, () => {
+        chats.splice(0, chats.length, chatView(22, 'Direct 8'));
+        return { body: createChatResult(22) };
+      });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Bonjour Sophie' });
+
+      expect(response.status).toBe(201);
+      expectBffContract('post', '/direct-messages', response);
+      expect(messageApi.calls(MESSAGE_API.chats, 'POST').map((call) => call.body)).toEqual([{ name: 'Direct 8', members: [sophie.id] }]);
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => call.url.pathname)).toEqual([messageApiUrls.getPostMessageUrl(22)]);
+    });
+
     test('POST /direct-messages refuses a message to oneself and an anonymous caller before creating any chat', async () => {
       mockMessageApi();
 
