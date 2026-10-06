@@ -30,6 +30,8 @@ const MESSAGE_API_PAGE_SIZE = 100;
  * BFF request cannot fan out without bound: 20 pages of 100 items.
  */
 const MAX_MESSAGE_API_PAGES = 20;
+/** Conversations the bootstrap tries to open when the first ones are deleted while it runs. */
+const MAX_BOOTSTRAP_ATTEMPTS = 3;
 
 /**
  * Options of a Message API call made on behalf of the caller: MESSAGE_API_URL (+ MESSAGE_API_PORT) read
@@ -611,15 +613,26 @@ export async function fetchMessagingBootstrap(context: CallContext): Promise<{
   activeConversationId?: string | number;
   messages: BffMessage[];
 }> {
-  const [user, conversations, contacts] = await Promise.all([
+  const [user, listedConversations, contacts] = await Promise.all([
     fetchCurrentUser(context),
     fetchConversations(undefined, 20, context),
     fetchContacts(undefined, undefined, context),
   ]);
-  const activeConversationId = conversations[0]?.id;
-  const activeConversation = activeConversationId
-    ? await fetchConversationMessages(activeConversationId, 30, context)
-    : undefined;
+  // A conversation can be deleted between the list and the read of its messages: Message API then
+  // answers 404. Drop it and open the next one instead of failing the whole bootstrap.
+  const conversations = [...listedConversations];
+  const messagesContext: CallContext = { ...context, declared: [...context.declared, 404] };
+  let activeConversation: Awaited<ReturnType<typeof fetchConversationMessages>> | undefined;
+  for (let attempt = 0; attempt < MAX_BOOTSTRAP_ATTEMPTS && conversations.length > 0; attempt += 1) {
+    try {
+      activeConversation = await fetchConversationMessages(conversations[0].id, 30, messagesContext);
+      break;
+    } catch (error) {
+      if (!(error instanceof HttpError) || error.status !== 404) throw error;
+      conversations.shift();
+    }
+  }
+  const activeConversationId = activeConversation ? conversations[0]?.id : undefined;
 
   return {
     currentUser: user,

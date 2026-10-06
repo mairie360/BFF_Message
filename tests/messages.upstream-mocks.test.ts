@@ -591,6 +591,48 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       });
     });
 
+    test('GET /messaging/bootstrap opens the next conversation when the first one was deleted meanwhile', async () => {
+      // Chat 4 is listed but its messages answer 404, as when it is deleted between the two calls.
+      mockMessageApi({
+        chats: [chatView(4, 'Supprimée'), chatView(5, 'Conseil municipal')],
+        messages: { 5: [messageView(51, thomas.id, { content: 'Ordre du jour' })] },
+        members: { 5: [agent.id, thomas.id] },
+      });
+
+      const response = await request(app).get('/messaging/bootstrap').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/messaging/bootstrap', response);
+      expect(response.body).toMatchObject({
+        activeConversationId: 'conversation-5',
+        messages: [{ id: 'message-51', conversationId: 'conversation-5', content: 'Ordre du jour' }],
+      });
+      expect(response.body.conversations.map((conversation: { id: string }) => conversation.id)).toEqual(['conversation-5']);
+    });
+
+    test('GET /messaging/bootstrap answers without an active conversation when every listed one was deleted', async () => {
+      mockMessageApi({ chats: [chatView(4, 'Supprimée'), chatView(5, 'Supprimée aussi')] });
+
+      const response = await request(app).get('/messaging/bootstrap').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/messaging/bootstrap', response);
+      expect(response.body).not.toHaveProperty('activeConversationId');
+      expect(response.body.conversations).toEqual([]);
+      expect(response.body.messages).toEqual([]);
+    });
+
+    test('GET /messaging/bootstrap still answers 502 when Message API fails on the active conversation', async () => {
+      mockMessageApi({ chats: [chatView(4, 'Équipe communication')], members: { 4: [agent.id] } });
+      messageApi.on('get', MESSAGE_API.chat, { status: 500, raw: 'Database error', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).get('/messaging/bootstrap').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expectBffContract('get', '/messaging/bootstrap', response);
+      expect(JSON.stringify(response.body)).not.toContain('Database error');
+    });
+
     test('GET /messaging/bootstrap without conversation does not request any chat messages', async () => {
       mockMessageApi();
 
