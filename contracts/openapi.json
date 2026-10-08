@@ -336,8 +336,8 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-            "example": "12345"
+            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+            "example": "user-12"
           },
           "authorName": {
             "type": "string",
@@ -452,8 +452,7 @@
           "id",
           "conversationId",
           "content",
-          "sentAt",
-          "authorId"
+          "sentAt"
         ],
         "description": "Représentation d’un message"
       },
@@ -788,8 +787,8 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                  "example": "12345"
+                  "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                  "example": "user-12"
                 },
                 "authorName": {
                   "type": "string",
@@ -904,8 +903,7 @@
                 "id",
                 "conversationId",
                 "content",
-                "sentAt",
-                "authorId"
+                "sentAt"
               ],
               "description": "Représentation d’un message"
             },
@@ -1044,8 +1042,8 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                "example": "12345"
+                "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                "example": "user-12"
               },
               "authorName": {
                 "type": "string",
@@ -1160,8 +1158,7 @@
               "id",
               "conversationId",
               "content",
-              "sentAt",
-              "authorId"
+              "sentAt"
             ],
             "description": "Message envoyé"
           },
@@ -1398,8 +1395,8 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                "example": "12345"
+                "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                "example": "user-12"
               },
               "authorName": {
                 "type": "string",
@@ -1514,8 +1511,7 @@
               "id",
               "conversationId",
               "content",
-              "sentAt",
-              "authorId"
+              "sentAt"
             ],
             "description": "Message direct envoyé"
           }
@@ -2010,8 +2006,8 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                  "example": "12345"
+                  "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                  "example": "user-12"
                 },
                 "authorName": {
                   "type": "string",
@@ -2126,8 +2122,7 @@
                 "id",
                 "conversationId",
                 "content",
-                "sentAt",
-                "authorId"
+                "sentAt"
               ],
               "description": "Représentation d’un message"
             }
@@ -2352,11 +2347,11 @@
                 "pattern": "^(?:message-)?\\d+$"
               }
             ],
-            "description": "Identifiant (message-<id> ou entier)",
+            "description": "Last message the caller has displayed (`message-<id>` or integer): every message up to and including it is acknowledged. Absent: up to the latest message of the conversation.",
             "example": 1001
           }
         },
-        "description": "Corps de la requête pour marquer une conversation comme lue"
+        "description": "Body of a read acknowledgement (optional)"
       },
       "UploadAttachmentBody": {
         "type": "object",
@@ -2989,8 +2984,8 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                            "example": "12345"
+                            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                            "example": "user-12"
                           },
                           "authorName": {
                             "type": "string",
@@ -3105,8 +3100,7 @@
                           "id",
                           "conversationId",
                           "content",
-                          "sentAt",
-                          "authorId"
+                          "sentAt"
                         ],
                         "description": "Représentation d’un message"
                       }
@@ -3647,7 +3641,8 @@
         "tags": [
           "Conversations"
         ],
-        "summary": "Marquer une conversation comme lue (indisponible tant que la persistance amont manque)",
+        "summary": "Acknowledges the messages of a conversation as read",
+        "description": "Acknowledges every message up to and including `readUntilMessageId` (Message API `POST /api/v1/{chat_id}/read/`), or up to the latest message when the body or the id is absent. Later messages stay unread. Acknowledging an empty conversation does nothing and answers `unreadCount: 0`.",
         "parameters": [
           {
             "schema": {
@@ -3671,7 +3666,7 @@
           }
         ],
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {
@@ -3688,18 +3683,18 @@
                         "pattern": "^(?:message-)?\\d+$"
                       }
                     ],
-                    "description": "Identifiant (message-<id> ou entier)",
+                    "description": "Last message the caller has displayed (`message-<id>` or integer): every message up to and including it is acknowledged. Absent: up to the latest message of the conversation.",
                     "example": 1001
                   }
                 },
-                "description": "Corps de la requête pour marquer une conversation comme lue"
+                "description": "Body of a read acknowledgement (optional)"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Conversation mise à jour après persistance amont (fonctionnalité à venir)",
+            "description": "Acknowledgement recorded (or already recorded), with the number of messages still unread by the caller",
             "content": {
               "application/json": {
                 "schema": {
@@ -3752,8 +3747,28 @@
               }
             }
           },
+          "403": {
+            "description": "The caller may not acknowledge reads in this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation, the caller is not one of its members, or the message is not one of this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
-            "description": "Core API is unavailable or failed",
+            "description": "Message API is unavailable or failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -3763,7 +3778,7 @@
             }
           },
           "503": {
-            "description": "Read acknowledgement unavailable: nothing was persisted (also when Core API is not configured)",
+            "description": "Message API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -4304,8 +4319,8 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                            "example": "12345"
+                            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                            "example": "user-12"
                           },
                           "authorName": {
                             "type": "string",
@@ -4420,8 +4435,7 @@
                           "id",
                           "conversationId",
                           "content",
-                          "sentAt",
-                          "authorId"
+                          "sentAt"
                         ],
                         "description": "Représentation d’un message"
                       },
@@ -4637,8 +4651,8 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                          "example": "12345"
+                          "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                          "example": "user-12"
                         },
                         "authorName": {
                           "type": "string",
@@ -4753,8 +4767,7 @@
                         "id",
                         "conversationId",
                         "content",
-                        "sentAt",
-                        "authorId"
+                        "sentAt"
                       ],
                       "description": "Message envoyé"
                     },
@@ -5097,8 +5110,8 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
-                          "example": "12345"
+                          "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                          "example": "user-12"
                         },
                         "authorName": {
                           "type": "string",
@@ -5213,8 +5226,7 @@
                         "id",
                         "conversationId",
                         "content",
-                        "sentAt",
-                        "authorId"
+                        "sentAt"
                       ],
                       "description": "Message direct envoyé"
                     }

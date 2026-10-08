@@ -5,6 +5,7 @@ import messageClient from '../../clients/messageClient';
 import { getContactUser, listContacts, listContactsByIds } from '../../clients/coreClient';
 import type {
   ChatView,
+  GetChatParams,
   MessageView,
 } from '@mairie360/message-api-openapi/model';
 import {
@@ -21,6 +22,17 @@ export type BffMessage = z.infer<typeof MessageDtoSchema>;
 
 const MESSAGE_API_TIMEOUT_MS = 5_000;
 
+/** Largest page a Message API listing serves (`limit` 1 to 100, default 50). */
+const MESSAGE_API_PAGE_SIZE = 100;
+
+/**
+ * Most pages read from one paginated Message API listing (chats, members, messages), so that a single
+ * BFF request cannot fan out without bound: 20 pages of 100 items.
+ */
+const MAX_MESSAGE_API_PAGES = 20;
+/** Conversations the bootstrap tries to open when the first ones are deleted while it runs. */
+const MAX_BOOTSTRAP_ATTEMPTS = 3;
+
 /**
  * Options of a Message API call made on behalf of the caller: MESSAGE_API_URL (+ MESSAGE_API_PORT) read
  * now (503 when missing, no localhost default) and the caller's own `Bearer` header, never a default token.
@@ -32,6 +44,78 @@ function messageApi(context: CallContext) {
 /** Caller id: the JWT `sub` read without verifying the signature (see `fetchCurrentUser`). */
 function callerId(context: CallContext): number | undefined {
   return unverifiedSubject(authorization(context.req));
+}
+
+/** Every chat of the caller (newest first), read page by page from Message API. */
+async function listChats(context: CallContext, declared?: CallContext['declared']): Promise<ChatView[]> {
+  const chats: ChatView[] = [];
+
+  for (let page = 0; page < MAX_MESSAGE_API_PAGES; page += 1) {
+    const params = { limit: MESSAGE_API_PAGE_SIZE, offset: page * MESSAGE_API_PAGE_SIZE };
+    const response = await callUpstream(
+      'MESSAGE_API',
+      () => messageClient.getChats(params, messageApi(context)),
+      { declared, retry: true },
+    );
+    chats.push(...response.data.chats);
+    if (!response.data.has_more) break;
+  }
+
+  return chats;
+}
+
+/** Ids of every member of the chat, read page by page from Message API. */
+async function listChatMemberIds(
+  chatId: number,
+  context: CallContext,
+  declared?: CallContext['declared'],
+): Promise<number[]> {
+  const memberIds: number[] = [];
+
+  for (let page = 0; page < MAX_MESSAGE_API_PAGES; page += 1) {
+    const params = { limit: MESSAGE_API_PAGE_SIZE, offset: page * MESSAGE_API_PAGE_SIZE };
+    const response = await callUpstream(
+      'MESSAGE_API',
+      () => messageClient.getChatUsers(chatId, params, messageApi(context)),
+      { declared, retry: true },
+    );
+    memberIds.push(...response.data.users.map((user) => user.id));
+    if (!response.data.has_more) break;
+  }
+
+  return [...new Set(memberIds)];
+}
+
+/**
+ * Messages of the chat, oldest first: the `limit` latest ones in a single call, or every message
+ * (read backwards page by page with the `before` cursor) when no limit is given.
+ */
+async function listChatMessages(
+  chatId: number,
+  limit: number | undefined,
+  context: CallContext,
+): Promise<MessageView[]> {
+  const call = (params: GetChatParams) => callUpstream(
+    'MESSAGE_API',
+    () => messageClient.getChat(chatId, params, messageApi(context)),
+    { declared: context.declared, retry: true },
+  );
+
+  if (typeof limit === 'number') {
+    return (await call({ limit: Math.min(limit, MESSAGE_API_PAGE_SIZE) })).data.messages;
+  }
+
+  let messages: MessageView[] = [];
+  let before: number | undefined;
+  for (let page = 0; page < MAX_MESSAGE_API_PAGES; page += 1) {
+    const response = await call({ limit: MESSAGE_API_PAGE_SIZE, ...(before === undefined ? {} : { before }) });
+    // Each page is oldest first and older than the previous one.
+    messages = [...response.data.messages, ...messages];
+    if (!response.data.has_more || response.data.next_before == null) break;
+    before = response.data.next_before;
+  }
+
+  return messages;
 }
 
 function parseNumericId(value: string | number | undefined): number | null {
@@ -218,8 +302,7 @@ async function fetchConversationParticipants(
   includeCaller = false,
 ): Promise<ConversationParticipants> {
   try {
-    const response = await callUpstream('MESSAGE_API', () => messageClient.getChatUsers(chatId, messageApi(context)), { retry: true });
-    const memberIds = [...new Set(response.data.users.map((user) => user.id))];
+    const memberIds = await listChatMemberIds(chatId, context);
     const participants = await listContactsByIds(
       includeCaller ? memberIds : memberIds.filter((userId) => userId !== currentUserId),
       context,
@@ -245,8 +328,7 @@ async function fetchChatSummary(
   context: CallContext,
 ): Promise<ChatView | undefined> {
   try {
-    const response = await callUpstream('MESSAGE_API', () => messageClient.getChats(messageApi(context)), { retry: true });
-    return response.data.chats.find((chat) => chat.id === chatId);
+    return (await listChats(context)).find((chat) => chat.id === chatId);
   } catch {
     return undefined;
   }
@@ -255,6 +337,7 @@ async function fetchChatSummary(
 /**
  * `authorName` is the author's directory name when the author is a member found in Core API, and is
  * left out otherwise (former member, directory unavailable): no placeholder name is made up.
+ * `authorId` is left out too once the author's account is deleted (Message API `sender_id: null`).
  */
 function mapMessageToDto(
   conversationId: string | number,
@@ -262,20 +345,22 @@ function mapMessageToDto(
   currentUserId?: number,
   members: BffContact[] = [],
 ): BffMessage {
-  const authorId = publicUserId(message.sender_id);
+  const authorId = message.sender_id == null ? undefined : publicUserId(message.sender_id);
   const currentAuthorId = currentUserId === undefined
     ? undefined
     : publicUserId(currentUserId);
-  const authorName = members.find((member) => member.id === authorId)?.name;
+  const authorName = authorId === undefined
+    ? undefined
+    : members.find((member) => member.id === authorId)?.name;
 
   return {
     id: publicMessageId(message.id),
     conversationId,
     content: message.content,
     sentAt: message.created_at,
-    authorId,
+    ...(authorId ? { authorId } : {}),
     ...(authorName ? { authorName } : {}),
-    direction: currentAuthorId === authorId ? 'outgoing' : 'incoming',
+    direction: authorId !== undefined && currentAuthorId === authorId ? 'outgoing' : 'incoming',
     attachments: [],
     mentions: [],
   };
@@ -286,8 +371,7 @@ export async function fetchConversations(
   limit: number | undefined,
   context: CallContext,
 ): Promise<BffConversation[]> {
-  const response = await callUpstream('MESSAGE_API', () => messageClient.getChats(messageApi(context)), { declared: context.declared, retry: true });
-  const chats = response.data.chats as ChatView[];
+  const chats = await listChats(context, context.declared);
   const filteredChats = search
     ? chats.filter((chat) => chat.name.toLowerCase().includes(search.toLowerCase()))
     : chats;
@@ -318,12 +402,11 @@ export async function fetchConversationMessages(
   }
 
   const currentUserId = callerId(context);
-  const [response, participants, chat] = await Promise.all([
-    callUpstream('MESSAGE_API', () => messageClient.getChat(chatId, messageApi(context)), { declared: context.declared, retry: true }),
+  const [apiMessages, participants, chat] = await Promise.all([
+    listChatMessages(chatId, limit, context),
     fetchConversationParticipants(chatId, currentUserId, context, true),
     fetchChatSummary(chatId, context),
   ]);
-  const apiMessages = response.data.messages as MessageView[];
   const messages = apiMessages.map((message) => (
     mapMessageToDto(conversationId, message, currentUserId, participants.members)
   ));
@@ -335,7 +418,7 @@ export async function fetchConversationMessages(
       participants,
       currentUserId,
     ),
-    messages: typeof limit === 'number' ? messages.slice(-limit) : messages,
+    messages,
   };
 }
 
@@ -418,17 +501,19 @@ async function findDirectChat(
   currentUserId: number,
   context: CallContext,
 ): Promise<number | undefined> {
-  const response = await callUpstream('MESSAGE_API', () => messageClient.getChats(messageApi(context)), { declared: context.declared, retry: true });
+  const chats = await listChats(context, context.declared);
   const candidateNames = new Set([directMessageName(contactId), directMessageName(currentUserId)]);
-  const candidates = response.data.chats.filter((chat) => candidateNames.has(chat.name));
+  const candidates = chats.filter((chat) => candidateNames.has(chat.name));
 
   for (const chat of candidates) {
-    const members = await callUpstream(
-      'MESSAGE_API',
-      () => messageClient.getChatUsers(chat.id, messageApi(context)),
-      { declared: context.declared, retry: true },
-    );
-    const memberIds = members.data.users.map((user) => user.id);
+    let memberIds: number[];
+    try {
+      memberIds = await listChatMemberIds(chat.id, context, [...context.declared, 404]);
+    } catch (error) {
+      // A 404 means the chat was deleted since it was listed: it is no longer a candidate.
+      if (error instanceof HttpError && error.status === 404) continue;
+      throw error;
+    }
     if (directContactId(chat.name, memberIds, currentUserId) === contactId) return chat.id;
   }
 
@@ -464,14 +549,48 @@ export async function deleteConversation(conversationId: string | number, contex
   });
 }
 
-export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
-  if (parseNumericId(conversationId) === null) {
+/**
+ * Acknowledges the messages of the conversation as read up to `readUntilMessageId` (Message API
+ * `acknowledgeRead`). Without an id, everything is acknowledged up to the latest message (one call with
+ * `limit=1`); an empty conversation has nothing to acknowledge and nothing unread.
+ */
+export async function markConversationAsRead(
+  conversationId: string | number,
+  readUntilMessageId: string | number | undefined,
+  context: CallContext,
+): Promise<{ conversationId: string | number; unreadCount: number }> {
+  const chatId = parseNumericId(conversationId);
+  if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  // Message_API has no explicit read operation yet. A fabricated zero would
-  // incorrectly tell callers that the unread count was persisted.
-  throw new HttpError(503, 'Read acknowledgement unavailable');
+  const requestedId = readUntilMessageId === undefined ? undefined : parseNumericId(readUntilMessageId);
+  if (requestedId === null) {
+    throw new HttpError(400, 'Invalid message id');
+  }
+
+  let untilId: number | undefined = requestedId;
+  if (untilId === undefined) {
+    const latest = await callUpstream(
+      'MESSAGE_API',
+      () => messageClient.getChat(chatId, { limit: 1 }, messageApi(context)),
+      { declared: context.declared, retry: true },
+    );
+    const { messages } = latest.data;
+    untilId = messages[messages.length - 1]?.id;
+    if (untilId === undefined) {
+      return { conversationId, unreadCount: 0 };
+    }
+  }
+
+  const readUntil = untilId;
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.acknowledgeRead(chatId, { readUntilMessageId: readUntil }, messageApi(context)),
+    { declared: context.declared },
+  );
+
+  return { conversationId, unreadCount: response.data.unread_count };
 }
 
 export async function fetchContacts(
@@ -501,15 +620,26 @@ export async function fetchMessagingBootstrap(context: CallContext): Promise<{
   activeConversationId?: string | number;
   messages: BffMessage[];
 }> {
-  const [user, conversations, contacts] = await Promise.all([
+  const [user, listedConversations, contacts] = await Promise.all([
     fetchCurrentUser(context),
     fetchConversations(undefined, 20, context),
     fetchContacts(undefined, undefined, context),
   ]);
-  const activeConversationId = conversations[0]?.id;
-  const activeConversation = activeConversationId
-    ? await fetchConversationMessages(activeConversationId, 30, context)
-    : undefined;
+  // A conversation can be deleted between the list and the read of its messages: Message API then
+  // answers 404. Drop it and open the next one instead of failing the whole bootstrap.
+  const conversations = [...listedConversations];
+  const messagesContext: CallContext = { ...context, declared: [...context.declared, 404] };
+  let activeConversation: Awaited<ReturnType<typeof fetchConversationMessages>> | undefined;
+  for (let attempt = 0; attempt < MAX_BOOTSTRAP_ATTEMPTS && conversations.length > 0; attempt += 1) {
+    try {
+      activeConversation = await fetchConversationMessages(conversations[0].id, 30, messagesContext);
+      break;
+    } catch (error) {
+      if (!(error instanceof HttpError) || error.status !== 404) throw error;
+      conversations.shift();
+    }
+  }
+  const activeConversationId = activeConversation ? conversations[0]?.id : undefined;
 
   return {
     currentUser: user,

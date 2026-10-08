@@ -14,8 +14,8 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "9.1.0",
     "@mairie360/bffs-lib": "1.1.0",
-    "@mairie360/core-api-openapi": "1.2.0",
-    "@mairie360/message-api-openapi": "0.7.1",
+    "@mairie360/core-api-openapi": "2.0.0",
+    "@mairie360/message-api-openapi": "1.0.0",
     "axios": "1.20.0",
     "dotenv": "17.4.2",
     "express": "5.2.1",
@@ -27,8 +27,8 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@mairie360/bff-calendar-openapi": "0.3.0",
-    "@mairie360/bff-project-openapi": "0.3.0",
+    "@mairie360/bff-calendar-openapi": "0.4.0",
+    "@mairie360/bff-project-openapi": "0.4.0",
     "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
     "@types/supertest": "7.2.1",

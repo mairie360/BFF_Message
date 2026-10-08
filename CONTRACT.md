@@ -16,7 +16,7 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | GET | `/contacts` | 200 Liste des contacts |
 | GET | `/conversations` | 200 Liste des conversations de l’utilisateur actuel |
 | DELETE | `/conversations/{conversationId}` | 200 Conversation supprimée avec succès |
-| POST | `/conversations/{conversationId}/read` | 503 Read acknowledgement not available yet (401 without a session) |
+| POST | `/conversations/{conversationId}/read` | 200 `{ conversationId, unreadCount }`: acknowledges reads up to the optional `readUntilMessageId` (latest message when absent) through Message API; 401/403/404 relayed, 502 on upstream failure |
 | POST | `/groups` | 201 Groupe créé avec succès |
 | GET | `/me` | 200 Profil utilisateur actuel |
 | GET | `/conversations/{conversationId}/messages` | 200 Liste des messages de la conversation |

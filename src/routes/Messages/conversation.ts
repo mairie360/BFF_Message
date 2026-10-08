@@ -15,7 +15,6 @@ import {
 import {
     deleteConversation,
     fetchConversations,
-    fetchCurrentUser,
     markConversationAsRead,
 } from './message_helpers';
 
@@ -79,11 +78,14 @@ registry.registerPath({
   method: 'post',
   path: '/conversations/{conversationId}/read',
   tags: ['Conversations'],
-  summary: 'Marquer une conversation comme lue (indisponible tant que la persistance amont manque)',
+  summary: 'Acknowledges the messages of a conversation as read',
+  description: 'Acknowledges every message up to and including `readUntilMessageId` (Message API '
+    + '`POST /api/v1/{chat_id}/read/`), or up to the latest message when the body or the id is absent. '
+    + 'Later messages stay unread. Acknowledging an empty conversation does nothing and answers `unreadCount: 0`.',
   request: {
     params: ConversationIdParams,
     body: {
-      required: true,
+      required: false,
       content: {
         'application/json': {
           schema: MarkConversationAsReadBody,
@@ -93,7 +95,7 @@ registry.registerPath({
   },
   responses: {
     200: {
-      description: 'Conversation mise à jour après persistance amont (fonctionnalité à venir)',
+      description: 'Acknowledgement recorded (or already recorded), with the number of messages still unread by the caller',
       content: {
         'application/json': {
           schema: MarkConversationAsReadResponse,
@@ -103,8 +105,10 @@ registry.registerPath({
     ...errorResponses({
       400: 'Invalid conversation id or body (details lists the invalid fields)',
       401: 'Missing or invalid session',
-      502: 'Core API is unavailable or failed',
-      503: 'Read acknowledgement unavailable: nothing was persisted (also when Core API is not configured)',
+      403: 'The caller may not acknowledge reads in this conversation',
+      404: 'Unknown conversation, the caller is not one of its members, or the message is not one of this conversation',
+      502: 'Message API is unavailable or failed',
+      503: 'Message API is not configured on the BFF',
     }),
   },
 });
@@ -122,15 +126,12 @@ router.delete('/:conversationId', async (req, res) => {
 });
 
 router.post('/:conversationId/read', async (req, res) => {
-    // requireBearer (routes/Messages/index.ts) already answered 401 to an anonymous caller, before the
-    // 503 of the missing upstream operation. Invalid input is refused before the session is resolved
-    // against Core API (which verifies the token), so it costs no upstream call.
+    // requireBearer (routes/Messages/index.ts) already answered 401 to an anonymous caller. Invalid input
+    // is refused before any upstream call; the body is optional.
     const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
-    parseRequest(MarkConversationAsReadBody, req.body, 'body');
+    const { readUntilMessageId } = parseRequest(MarkConversationAsReadBody, req.body ?? {}, 'body');
 
-    await fetchCurrentUser({ req, declared: [401] });
-
-    res.status(200).json(await markConversationAsRead(conversationId));
+    res.status(200).json(await markConversationAsRead(conversationId, readUntilMessageId, { req, declared: [401, 403, 404] }));
 });
 
 export default router;

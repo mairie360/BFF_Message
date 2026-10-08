@@ -30,11 +30,11 @@ Ce dépôt contient le serveur BFF et son contrat. Les web services associés po
 
 ## Données et état actuel
 
-Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. Les pièces jointes et l’accusé de lecture ne sont pas encore disponibles (503). Le profil est ici en lecture seule (`GET /me`) ; sa modification passe par BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
+Conversations et messages passent par Message API. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. Les pièces jointes ne sont pas encore disponibles (503) ; l’accusé de lecture passe par Message API. Le profil est ici en lecture seule (`GET /me`) ; sa modification passe par BFF_Settings (`PATCH /settings/profile`) → Core_API (`PATCH /api/v1/user/me`).
 
 ## Périmètre et limites
 
-L’upload de pièces jointes n’est pas encore disponible : `POST /attachments` répond 503 au lieu d’identifiants inventés, et les messages avec pièces jointes sont refusés. Le marquage lu répond 503 (pas encore d’opération de lecture dans Message API). Les groupes de conversation passent par l’API.
+L’upload de pièces jointes n’est pas encore disponible : `POST /attachments` répond 503 au lieu d’identifiants inventés, et les messages avec pièces jointes sont refusés. Le marquage lu acquitte les messages via Message API (jusqu’au dernier quand aucun identifiant de message n’est donné). Les groupes de conversation passent par l’API.
 
 ## Pour développer ou exploiter ce module
 
