@@ -40,7 +40,7 @@ services:
 
   message-api:
     container_name: message-api-bff-message-developpement
-    image: ghcr.io/mairie360/message-api:1.0.0
+    image: ghcr.io/mairie360/message-api:dev-a271ebd
     ports:
       - "3003:3003"
     networks:
@@ -100,6 +100,9 @@ services:
       # Business references: BFF Project and BFF Calendar, run from their own repositories on the host.
       PROJECT_BFF_URL: ${PROJECT_BFF_URL:-http://host.docker.internal:4001}
       CALENDAR_BFF_URL: ${CALENDAR_BFF_URL:-http://host.docker.internal:4002}
+      # Same development secret as the APIs of the local stacks: the BFF verifies the session tokens with it
+      # (bffs-lib requireSession, MAIR-474) and refuses to start without it.
+      JWT_SECRET: b"secret"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

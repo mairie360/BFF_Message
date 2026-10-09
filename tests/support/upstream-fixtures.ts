@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { AxiosHeaders, type AxiosResponse } from 'axios';
 import { getMessageAPIMairie360 } from '@mairie360/message-api-openapi/endpoints/messageAPIMairie360';
 import type {
@@ -7,7 +8,7 @@ import { getCoreAPIMairie360 } from '@mairie360/core-api-openapi/endpoints/coreA
 import type { DirectoryUser, DirectoryUsersResultView } from '@mairie360/core-api-openapi/model';
 import { getBffProject } from '@mairie360/bff-project-openapi/endpoints/bffProject';
 import {
-  type ApiError as ProjectBffError,
+  type ErrorResponse as ProjectBffError,
   type Person,
   type ProjectDetailsResponse,
   type ProjectListItem,
@@ -52,8 +53,9 @@ export function axiosResponse<T>(data: T, status = 200): AxiosResponse<T> {
 
 // --- Message API (@mairie360/message-api-openapi) ---
 
+// Message API (MAIR-478) adds the kind of a chat and, for a direct chat, the other agent.
 export function chatView(id: number, name = `Conversation ${id}`, unread_count = 0): ChatView {
-  return { id, name, unread_count };
+  return { id, name, unread_count, kind: 'group', contact_id: null };
 }
 
 export function chatsResult(chats: ChatView[], has_more = false): GetChatsResultView {
@@ -184,8 +186,8 @@ export function projectDetailsResponse(project: ProjectListItem, taskItems: Proj
   return { project, taskItems };
 }
 
-/** Corps d'erreur de BFF Project (ApiError de son contrat). */
-export function projectBffError(code: string, message: string): ProjectBffError {
+/** Error body of BFF Project (`ErrorResponse` of its contract). */
+export function projectBffError(code: ProjectBffError['error']['code'], message: string): ProjectBffError {
   return { error: { code, message, details: [] } };
 }
 
@@ -222,11 +224,21 @@ export function calendarBootstrapResponse(events: CalendarEvent[]): CalendarBoot
 
 // --- Session ---
 
-/** JWT non signé : les services amont (simulés) vérifient la signature, le BFF ne lit que `sub`. */
+/** Secret of the tests (tests/support/env.ts): the BFF verifies the session tokens with it (bffs-lib requireSession). */
+export const JWT_SECRET = 'message-contract-test-secret';
+
+/** HS256 session token of `sub` signed with `secret` (fixed expiry, so a token is the same in every call). */
+export function sessionToken(sub: string | number, secret = JWT_SECRET, exp = 4_102_444_800): string {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const unsigned = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: String(sub), exp })}`;
+  return `${unsigned}.${createHmac('sha256', secret).update(unsigned).digest('base64url')}`;
+}
+
+/** `Authorization` header of the session of `userId`: verified by the BFF, forwarded unchanged upstream. */
 export function authorizationFor(userId: number): string {
   return `Bearer ${tokenFor(userId)}`;
 }
 
 export function tokenFor(userId: number): string {
-  return `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: String(userId) })).toString('base64url')}.signature`;
+  return sessionToken(userId);
 }

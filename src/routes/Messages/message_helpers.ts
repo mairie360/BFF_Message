@@ -1,4 +1,4 @@
-import { asCaller, authorization, callUpstream, HttpError, unverifiedSubject } from '@mairie360/bffs-lib';
+import { asCaller, callUpstream, HttpError, sessionUserId, upstreamStatus } from '@mairie360/bffs-lib';
 import type { z } from 'zod';
 import type { CallContext } from '../../clients/context';
 import messageClient from '../../clients/messageClient';
@@ -41,9 +41,9 @@ function messageApi(context: CallContext) {
   return asCaller('MESSAGE_API', context.req, MESSAGE_API_TIMEOUT_MS);
 }
 
-/** Caller id: the JWT `sub` read without verifying the signature (see `fetchCurrentUser`). */
-function callerId(context: CallContext): number | undefined {
-  return unverifiedSubject(authorization(context.req));
+/** Caller id: the `sub` of the token `requireSession` verified (MAIR-474); 401 when the route skipped it. */
+function callerId(context: CallContext): number {
+  return sessionUserId(context.req);
 }
 
 /** Every chat of the caller (newest first), read page by page from Message API. */
@@ -154,9 +154,8 @@ function publicUserId(userId: string | number): string {
 }
 
 /**
- * The caller's profile. Its id is the JWT `sub` read **without verifying the signature**
- * (`unverifiedSubject`): it only shapes requests sent upstream with the same token, which the upstream
- * verifies, and the message direction; it never grants access by itself.
+ * The caller's profile. Its id is the `sub` of the token the BFF verified (`requireSession`, MAIR-474); the
+ * upstream APIs verify the token again and check revocation.
  */
 export async function fetchCurrentUser(context: CallContext): Promise<BffCurrentUser> {
   const id = callerId(context);
@@ -544,9 +543,17 @@ export async function deleteConversation(conversationId: string | number, contex
 
   // "Delete" removes the conversation from the caller's list: the caller leaves it, and Message API deletes the
   // chat with its last member. Message API >= MAIR-394 keeps DELETE of a whole chat for administrators.
-  await callUpstream('MESSAGE_API', () => messageClient.removeUserFromChat(chatId, userId, messageApi(context)), {
-    declared: context.declared,
-  });
+  // Message API answers 400 when the caller is not a member: for the caller, the conversation does not exist.
+  try {
+    await callUpstream('MESSAGE_API', () => messageClient.removeUserFromChat(chatId, userId, messageApi(context)), {
+      declared: context.declared,
+    });
+  } catch (error) {
+    if (error instanceof HttpError && upstreamStatus(error.cause) === 400) {
+      throw new HttpError(404, 'Conversation not found');
+    }
+    throw error;
+  }
 }
 
 /**

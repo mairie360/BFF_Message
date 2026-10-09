@@ -293,8 +293,9 @@ export const MessagesQuery = z.object({
 });
 
 export const ContactsQuery = z.object({
-    search: z.string().max(MAX_NAME_LENGTH).optional().openapi({
-        description: 'Terme de recherche pour filtrer les contacts',
+    // Core API refuses control characters in `search` (400): refused here, so it is not a Core API failure (502).
+    search: z.string().max(MAX_NAME_LENGTH).regex(/^[^\p{Cc}]*$/u, 'must not contain control characters').optional().openapi({
+        description: 'Search term filtering the contacts (no control characters)',
         example: 'Alice'
     }),
     limit: limitQuery().optional().openapi({

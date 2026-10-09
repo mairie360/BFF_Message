@@ -24,7 +24,7 @@ app.get(['/openapi.json', '/swagger.json'], (_req, res) => res.json(openApiDocum
 
 app.use('/health', healthRouter);
 app.use('/check_apis', checkApis);
-// Session-bound routes: noStore + requireBearer are mounted in routes/Messages/index.ts.
+// Session-bound routes: noStore + requireSession (verified token, MAIR-474) are mounted in routes/Messages/index.ts.
 app.use('/', messagesRouter);
 
 // Unknown routes and every error end in the shared envelope `{ error: { code, message, details } }`:

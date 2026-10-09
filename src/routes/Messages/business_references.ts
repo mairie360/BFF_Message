@@ -1,4 +1,4 @@
-import { addDays, asCaller, createRateLimiter, parisDate, requireBearer, sessionKey } from '@mairie360/bffs-lib';
+import { addDays, asCaller, createRateLimiter, parisDate, requireSession, sessionKey } from '@mairie360/bffs-lib';
 import { Request, Router } from 'express';
 import { z } from 'zod';
 import { calendarBff, projectBff } from '../../clients/businessBffClients';
@@ -152,7 +152,7 @@ export function createBusinessReferencesRateLimiter() {
 
 // The session is checked before the rate limiter: an anonymous request costs no upstream call and
 // consumes no counter. The caller's session is forwarded as `Bearer <token>`.
-router.get('/', requireBearer, createBusinessReferencesRateLimiter(), async (request, response) => {
+router.get('/', requireSession, createBusinessReferencesRateLimiter(), async (request, response) => {
   const results = await Promise.allSettled([
     loadProjectReferences(request),
     loadCalendarReferences(request),

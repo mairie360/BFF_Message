@@ -577,6 +577,14 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(searched.body.contacts.map((contact: { id: string }) => contact.id)).toEqual(['user-8']);
     });
 
+    test('GET /contacts refuses a search with control characters before calling Core API', async () => {
+      const response = await request(app).get('/contacts?search=any%0D%0ASet-cookie').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expectBffContract('get', '/contacts', response);
+      expect(coreApi.requests).toEqual([]);
+    });
+
     test('GET /contacts requires a session', async () => {
       const response = await request(app).get('/contacts');
 
@@ -903,6 +911,17 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expectApiError(response, 403, 'FORBIDDEN');
       expectBffContract('delete', '/conversations/conversation-4', response);
       expect(JSON.stringify(response.body)).not.toContain('Forbidden');
+    });
+
+    test('answers 404 when Message API refuses the leave because the caller is not a member (400)', async () => {
+      mockMessageApi();
+      messageApi.on('delete', MESSAGE_API.member, { status: 400, raw: 'This user is not a member of the chat.', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).delete('/conversations/conversation-4').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 404, 'NOT_FOUND');
+      expectBffContract('delete', '/conversations/conversation-4', response);
+      expect(JSON.stringify(response.body)).not.toContain('member of the chat');
     });
 
     test('turns a Message API 4xx the route does not declare into a 502', async () => {

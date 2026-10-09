@@ -1,3 +1,5 @@
+import type { Request, Response } from 'express';
+import { requireSession } from '@mairie360/bffs-lib';
 import messageClient from '../src/clients/messageClient';
 import { getContactUser, listContactsByIds } from '../src/clients/coreClient';
 import {
@@ -35,7 +37,10 @@ const MESSAGE_API_URL = 'http://message-api.test:3003';
 const callOptions = { baseURL: MESSAGE_API_URL, timeout: 5_000, headers: { Authorization: authorization } };
 process.env.MESSAGE_API_URL = MESSAGE_API_URL;
 // What a route hands to the helpers: the caller's request and the upstream 4xx it declares.
-const context = { req: { headers: { authorization } }, declared: [401] };
+// The request goes through the real `requireSession` (MAIR-474), which records the verified caller id.
+const sessionRequest = { headers: { authorization } } as unknown as Request;
+requireSession(sessionRequest, {} as Response, () => undefined);
+const context = { req: sessionRequest, declared: [401] };
 
 describe('message helpers author direction', () => {
   beforeEach(() => {

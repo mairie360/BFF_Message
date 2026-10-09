@@ -72,7 +72,7 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
     expect(post.operation.parameters).toEqual([{ name: 'chatId', in: 'path', required: true, schema: { type: 'number' } }]);
     expect(messageApi.requestBodySchema(post)).toEqual({ required: true, schema: { $ref: '#/components/schemas/PostMessageView' } });
     expect(messageApi.schema('CreateChatView')).toMatchObject({ required: ['members', 'name'] });
-    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['id', 'name', 'unread_count'] });
+    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'name', 'unread_count'] });
     expect(messageApi.responseSchema(messageApi.match('DELETE', messageApiUrls.getRemoveUserFromChatUrl(4, 7))!, 200)).toEqual({ documented: true, schema: undefined });
     // Les erreurs ne sont pas typées par orval : aucun statut hors 2XX n'est documenté.
     expect(messageApi.responseSchema(messageApi.match('GET', messageApiUrls.getGetChatUrl(4))!, 404).documented).toBe(false);

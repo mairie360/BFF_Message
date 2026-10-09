@@ -1,6 +1,6 @@
 // Imported first: the registration order of the paths is the order of contracts/openapi.json.
 import businessReferencesRouter from './business_references';
-import { noStore, requireBearer } from '@mairie360/bffs-lib';
+import { noStore, requireSession } from '@mairie360/bffs-lib';
 import { Router } from 'express';
 import attachmentsRoutes from './attachments';
 import bootstrapRoutes from './bootstrap';
@@ -26,7 +26,7 @@ export const SESSION_BOUND_PATHS = [
 ];
 
 const router = Router();
-router.use(SESSION_BOUND_PATHS, noStore, requireBearer);
+router.use(SESSION_BOUND_PATHS, noStore, requireSession);
 
 router.use('/business-references', businessReferencesRouter);
 router.use('/attachments', attachmentsRoutes);
