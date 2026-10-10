@@ -5,8 +5,11 @@ import {
     registry,
     ConversationIdParams,
     DeletedConversationIdParams,
+    LoadConversationIdParams,
     ConversationsQuery,
     ConversationsResponse,
+    LoadConversationResponse,
+    MessagesQuery,
     DeleteConversationResponse,
     MarkConversationAsReadBody,
     MarkConversationAsReadResponse,
@@ -15,6 +18,7 @@ import {
 import {
     deleteConversation,
     fetchConversations,
+    loadConversation,
     markConversationAsRead,
 } from './message_helpers';
 
@@ -25,6 +29,13 @@ registry.registerPath({
     path: '/conversations',
     tags: ['Conversations'],
     summary: 'Récupère la liste des conversations de l’utilisateur actuel',
+    description: 'One page of the caller\'s conversations, newest first (`limit` 1 to 30, default 20; pass `nextCursor` as '
+        + '`cursor` for the next page), read with ONE Message API call. Each conversation carries what the list displays: '
+        + 'its name (the other participant\'s name for a direct conversation), kind, contact id, member count and unread '
+        + 'counter. The members and their names come with `GET /conversations/{conversationId}`. `search` keeps the '
+        + 'conversations whose name contains the text, or in which another member\'s name does ("autoroute" finds '
+        + '"Projet autoroute", "Xavier Bertrand" finds the direct conversation with him and the groups he belongs to); the '
+        + 'pagination applies to the filtered list.',
     request: {
         query: ConversationsQuery,
     },
@@ -40,8 +51,42 @@ registry.registerPath({
         ...errorResponses({
             400: 'Invalid query (details lists the invalid fields)',
             401: 'Missing or invalid session',
-            502: 'Message API or Core API is unavailable or failed',
-            503: 'Message API or Core API is not configured on the BFF',
+            502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
+        }),
+    },
+});
+
+registry.registerPath({
+    method: 'get',
+    path: '/conversations/{conversationId}',
+    tags: ['Conversations'],
+    summary: 'Opens a conversation: its members and one page of messages',
+    description: 'Everything needed to display one conversation, read with two Message API calls made in parallel '
+        + '(the members with their names, and a page of messages with the conversation itself): the conversation '
+        + '(name, kind, contact, member count, unread counter), its `participants`, and the latest `limit` messages '
+        + '(1 to 100, default 30) oldest first, each with its sender id and, when it answers another message, the '
+        + 'quoted message (author and excerpt) also when that message is older than the page. `nextCursor` goes in '
+        + '`before` of `GET /conversations/{conversationId}/messages` to load older messages without reloading the members.',
+    request: {
+        params: LoadConversationIdParams,
+        query: MessagesQuery,
+    },
+    responses: {
+        200: {
+            description: 'The conversation, its participants and one page of messages',
+            content: {
+                'application/json': {
+                    schema: LoadConversationResponse,
+                },
+            },
+        },
+        ...errorResponses({
+            400: 'Invalid conversation id or query (details lists the invalid fields)',
+            401: 'Missing or invalid session',
+            404: 'Unknown conversation, or the caller is not one of its members',
+            502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
         }),
     },
 });
@@ -115,8 +160,13 @@ registry.registerPath({
 
 router.get('/', async (req, res) => {
     const query = parseRequest(ConversationsQuery, req.query, 'query');
-    const conversations = await fetchConversations(query.search, query.limit, { req, declared: [401] });
-    res.status(200).json({ conversations });
+    res.status(200).json(await fetchConversations(query.search, query.limit, query.cursor, { req, declared: [401] }));
+});
+
+router.get('/:conversationId', async (req, res) => {
+    const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
+    const query = parseRequest(MessagesQuery, req.query, 'query');
+    res.status(200).json(await loadConversation(conversationId, query, { req, declared: [401, 404] }));
 });
 
 router.delete('/:conversationId', async (req, res) => {

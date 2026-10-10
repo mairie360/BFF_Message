@@ -25,6 +25,9 @@ registry.registerPath({
     path: '/conversations/{conversationId}/messages',
     tags: ['Messages'],
     summary: 'Récupère la liste des messages d’une conversation',
+    description: 'One page of messages, oldest first (`limit` 1 to 100, default 30), with the conversation: `nextCursor` goes in '
+        + '`before` for the older page. The whole history is never read. The author names come from the members of the '
+        + 'conversation (one Message API call, no Core API call); `GET /conversations/{conversationId}` returns them with the first page.',
     request: {
         params: ConversationIdParams,
         query: MessagesQuery,
@@ -42,8 +45,8 @@ registry.registerPath({
             400: 'Invalid conversation id or query (details lists the invalid fields)',
             401: 'Missing or invalid session',
             404: 'Unknown conversation, or the caller is not one of its members',
-            502: 'Message API or Core API is unavailable or failed',
-            503: 'Message API or Core API is not configured on the BFF',
+            502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
         }),
     },
 });
@@ -77,8 +80,8 @@ registry.registerPath({
             400: 'Invalid conversation id or body (details lists the invalid fields)',
             401: 'Missing or invalid session',
             404: 'Unknown conversation, or the caller is not one of its members',
-            502: 'Message API or Core API is unavailable or failed',
-            503: 'Message API or Core API is not configured on the BFF',
+            502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
         }),
     },
 });
@@ -110,8 +113,8 @@ registry.registerPath({
         ...errorResponses({
             400: 'Invalid body (details lists the invalid fields)',
             401: 'Missing or invalid session',
-            502: 'Message API or Core API is unavailable or failed',
-            503: 'Message API or Core API is not configured on the BFF',
+            502: 'Message API is unavailable or failed',
+            503: 'Message API is not configured on the BFF',
         }),
     },
 });
@@ -119,7 +122,7 @@ registry.registerPath({
 router.get('/conversations/:conversationId/messages', async (req, res) => {
     const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
     const query = parseRequest(MessagesQuery, req.query, 'query');
-    res.status(200).json(await fetchConversationMessages(conversationId, query.limit, { req, declared: [401, 404] }));
+    res.status(200).json(await fetchConversationMessages(conversationId, query, { req, declared: [401, 404] }));
 });
 
 router.post('/conversations/:conversationId/messages', async (req, res) => {

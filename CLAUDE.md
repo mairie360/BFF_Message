@@ -54,12 +54,11 @@ router at `/`, `notFoundHandler` and `errorHandler()`. `src/index.ts` loads `.en
 
 **Auth flow (MAIR-429).** The only credential is `Authorization: Bearer <token>` (the front's proxy turns
 the `accessToken` cookie into it; the BFF reads no cookie, no `x-session-token`). `src/routes/Messages/index.ts`
-mounts `noStore` + `requireBearer` (`@mairie360/bffs-lib`) on every session-bound prefix
-(`SESSION_BOUND_PATHS`), so an anonymous request gets 401 before any upstream call. Route handlers pass
-`authorization(req)` (normalised `Bearer <token>`) down to helpers, which forward it on every upstream
-call; there is no default/service token. The current user's numeric id is the JWT `sub` read with the
-lib's `unverifiedSubject` (**no signature verification**): only to shape requests sent upstream with
-the same token and the message direction, never for access decisions or rate-limit keys.
+mounts `noStore` + `requireSession` (`@mairie360/bffs-lib` >= 1.2.0, MAIR-474) on every session-bound prefix
+(`SESSION_BOUND_PATHS`), so a request without a token signed with `JWT_SECRET` (HS256, numeric `sub`, not
+expired) gets 401 before any upstream call. Route handlers hand their request to helpers (`CallContext`), which
+forward the caller's token on every upstream call (`asCaller`); there is no default/service token. The current
+user's numeric id is the verified `sub` (`sessionUserId`).
 
 **Routing.** `src/routes/Messages/index.ts` composes one router per resource
 (`conversation.ts`, `me.ts`, `contacts.ts`, `groups.ts`, `message.ts`, `bootstrap.ts`,
@@ -97,12 +96,20 @@ When adding fields, keep this mapping in the `map*ToDto` helpers.
 **Not available yet** (MAIR-400, no upstream support): `POST /attachments` checks the session (401) then
 answers 503; never answer fabricated data. `POST /conversations/:id/read` relays Message API's
 `acknowledgeRead` (the body and its `readUntilMessageId` are optional: without it, the latest message is
-resolved with one `getChat` `limit=1`; an empty chat is a no-op answering `unreadCount: 0`). Message API
-listings are paginated since 1.0: `listChats` / `listChatMemberIds` / `listChatMessages` read the pages
-(100 per page, at most `MAX_MESSAGE_API_PAGES`), and Core API directory lookups by id are split into
-`ids` lists of at most 255 characters (`idsQueries`). A non-empty `attachmentIds` is
-refused (400) on send. `POST /direct-messages` reuses the caller's existing direct chat with the recipient
-(`findDirectChat`) before creating one. `GET /business-references` bounds its fan-out (constants at the top
+resolved with one `getChat` `limit=1`; an empty chat is a no-op answering `unreadCount: 0`). A non-empty `attachmentIds` is
+refused (400) on send. `POST /direct-messages` calls Message API's find-or-create `POST /api/v1/direct/` (one direct
+chat per pair), then posts in it.
+
+**Conversations (MAIR-507).** The BFF never reads a whole list or a whole history. `GET /conversations` is ONE Message
+API call per page (`limit` 1-30, default 20; `cursor` = the offset handed back as `nextCursor`; `search` is applied
+by Message API on the name of the chat or of a member): the chat already carries its display name (the contact's name
+for a direct chat), `kind`, `contactId`, `memberCount` and `unreadCount`, and a group's `department` is "N membres".
+Opening a conversation is `loadConversation`: the members with their names (`getChatUsers`, paged by 100) and one page
+of messages with the chat itself (`getChat`, `limit` default 30, `before` = the numeric `nextCursor` of the previous
+page) in parallel, no Core API call; each message carries `citation` and `quoted` (author, excerpt). It serves
+`GET /conversations/{id}` (with `participants`) and `GET /conversations/{id}/messages` (same page, without them).
+Sending a message reads the chat through `getChat` with `limit=1`. The bootstrap is the first page of the list plus
+`loadConversation` of its first chat. `GET /business-references` bounds its fan-out (constants at the top
 of `business_references.ts`) and is rate limited per caller. Never invent profile/author data: missing
 directory values are left out.
 `GET /me` resolves the caller from its own token through Core API on every request; never keep
@@ -158,7 +165,7 @@ get → put → post → delete → patch: `DELETE /conversations/{id}` runs bef
 creates the group it deletes, and `cleanup()` deletes the group and direct conversation the
 iteration kept. `POST /attachments` is sent as a hand-built multipart string body.
 
-MAIR-474: both scripts source `stack_secrets.sh` (a random `JWT_SECRET` per run, `ADMIN_JWT` for the ZAP replacer), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with `JWT_SECRET`, required at startup). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. **Known failure:** `GET /conversations` reads the members and directory names of every chat, one call each (about 32 upstream calls for an agent of 16 chats); under the rush the event loop saturates and `GET /health` has a p95 of about 75 ms (budget 50 ms), every check passing. Fixing it needs an aggregated read (members of the caller's chats) on the Message API side.
+MAIR-474: both scripts source `stack_secrets.sh` (a random `JWT_SECRET` per run, `ADMIN_JWT` for the ZAP replacer), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with `JWT_SECRET`, required at startup). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. `GET /conversations` used to read the members and directory names of every chat (about 33 upstream calls for an agent of 16 chats), which saturated the event loop under the rush (`GET /health` p95 of about 75 ms for a 50 ms budget): since MAIR-507 it is one call, `GET /health` has a p95 of about 7 ms and the rush p95 is about 22 ms. The reads also search by member name and page through the list, and the load handler of `GET /conversations/{conversationId}` checks the 8 members and 25 messages with their names.
 
 ## Linting
 
