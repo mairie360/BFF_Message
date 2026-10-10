@@ -507,7 +507,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description Terme de recherche pour filtrer les contacts */
+                    /** @description Search term filtering the contacts (no control characters) */
                     search?: string;
                     /** @description Nombre maximum de contacts à retourner */
                     limit?: number;
@@ -3344,7 +3344,7 @@ export interface components {
         /** @description Paramètres de requête pour filtrer les contacts */
         ContactsQuery: {
             /**
-             * @description Terme de recherche pour filtrer les contacts
+             * @description Search term filtering the contacts (no control characters)
              * @example Alice
              */
             search?: string;

@@ -126,7 +126,7 @@ router.delete('/:conversationId', async (req, res) => {
 });
 
 router.post('/:conversationId/read', async (req, res) => {
-    // requireBearer (routes/Messages/index.ts) already answered 401 to an anonymous caller. Invalid input
+    // requireSession (routes/Messages/index.ts) already answered 401 to an anonymous caller. Invalid input
     // is refused before any upstream call; the body is optional.
     const { conversationId } = parseRequest(ConversationIdParams, req.params, 'params');
     const { readUntilMessageId } = parseRequest(MarkConversationAsReadBody, req.body ?? {}, 'body');

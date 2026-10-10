@@ -2422,7 +2422,8 @@
           "search": {
             "type": "string",
             "maxLength": 100,
-            "description": "Terme de recherche pour filtrer les contacts",
+            "pattern": "^[^\\p{Cc}]*$/u",
+            "description": "Search term filtering the contacts (no control characters)",
             "example": "Alice"
           },
           "limit": {
@@ -3161,11 +3162,12 @@
             "schema": {
               "type": "string",
               "maxLength": 100,
-              "description": "Terme de recherche pour filtrer les contacts",
+              "pattern": "^[^\\p{Cc}]*$/u",
+              "description": "Search term filtering the contacts (no control characters)",
               "example": "Alice"
             },
             "required": false,
-            "description": "Terme de recherche pour filtrer les contacts",
+            "description": "Search term filtering the contacts (no control characters)",
             "name": "search",
             "in": "query"
           },

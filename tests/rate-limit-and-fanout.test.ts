@@ -46,7 +46,7 @@ describe('business references rate limiter', () => {
   test('keys on the session, never on the unverified JWT sub (MAIR-429)', async () => {
     const app = limitedApp(1);
     // Same `sub` claim, different tokens: a forged `sub` cannot use or exhaust another session's counter.
-    const forged = `Bearer ${tokenFor(7).replace(/\.signature$/, '.forged')}`;
+    const forged = `Bearer ${tokenFor(7).replace(/\.[^.]+$/, '.forged')}`;
 
     await request(app).get('/limited').set('Authorization', authorizationFor(7)).expect(200);
     await request(app).get('/limited').set('Authorization', forged).expect(200);
