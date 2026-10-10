@@ -14,12 +14,13 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | POST | `/attachments` | 503 Attachment upload not available yet (401 without a session) |
 | GET | `/messaging/bootstrap` | 200 Informations de démarrage pour l’utilisateur actuel |
 | GET | `/contacts` | 200 Liste des contacts |
-| GET | `/conversations` | 200 Liste des conversations de l’utilisateur actuel |
+| GET | `/conversations` | 200 Une page de conversations (`limit` 1-30, `cursor`, `search`), `nextCursor` |
+| GET | `/conversations/{conversationId}` | 200 Conversation ouverte : conversation, participants (id, nom) et une page de messages (`limit`, `before`), `nextCursor` |
 | DELETE | `/conversations/{conversationId}` | 200 Conversation supprimée avec succès |
 | POST | `/conversations/{conversationId}/read` | 200 `{ conversationId, unreadCount }`: acknowledges reads up to the optional `readUntilMessageId` (latest message when absent) through Message API; 401/403/404 relayed, 502 on upstream failure |
 | POST | `/groups` | 201 Groupe créé avec succès |
 | GET | `/me` | 200 Profil utilisateur actuel |
-| GET | `/conversations/{conversationId}/messages` | 200 Liste des messages de la conversation |
+| GET | `/conversations/{conversationId}/messages` | 200 Une page de messages (`limit`, `before`) avec la conversation, `nextCursor` |
 | POST | `/conversations/{conversationId}/messages` | 201 Message créé avec succès |
 | POST | `/direct-messages` | 201 Message direct créé avec succès |
 

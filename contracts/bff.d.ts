@@ -353,6 +353,11 @@ export interface paths {
                                  * @example 5
                                  */
                                 unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
                             }[];
                             /**
                              * @description Identifiant unique, peut être une chaîne ou un nombre
@@ -455,6 +460,34 @@ export interface paths {
                                      */
                                     description?: string;
                                 }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     */
+                                    excerpt: string;
+                                };
                             }[];
                         };
                     };
@@ -622,15 +655,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Récupère la liste des conversations de l’utilisateur actuel */
+        /**
+         * Récupère la liste des conversations de l’utilisateur actuel
+         * @description One page of the caller's conversations, newest first (`limit` 1 to 30, default 20; pass `nextCursor` as `cursor` for the next page), read with ONE Message API call. Each conversation carries what the list displays: its name (the other participant's name for a direct conversation), kind, contact id, member count and unread counter. The members and their names come with `GET /conversations/{conversationId}`. `search` keeps the conversations whose name contains the text, or in which another member's name does ("autoroute" finds "Projet autoroute", "Xavier Bertrand" finds the direct conversation with him and the groups he belongs to); the pagination applies to the filtered list.
+         */
         get: {
             parameters: {
                 query?: {
-                    /** @description Terme de recherche pour filtrer les conversations */
+                    /** @description Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list. */
                     search?: string;
-                    /** @description Nombre maximum de conversations à retourner */
+                    /** @description Number of conversations per page, 1 to 30. Default 20. */
                     limit?: number;
-                    /** @description Curseur pour la pagination des résultats */
+                    /** @description The `nextCursor` of the previous page. Absent: the first page. */
                     cursor?: string;
                 };
                 header?: never;
@@ -706,10 +742,15 @@ export interface paths {
                                  * @example 5
                                  */
                                 unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
                             }[];
                             /**
-                             * @description Curseur pour la pagination des résultats
-                             * @example abc123
+                             * @description Pass it as `cursor` to get the next page; absent on the last page
+                             * @example 20
                              */
                             nextCursor?: string;
                         };
@@ -733,7 +774,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is unavailable or failed */
+                /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
                         [name: string]: unknown;
@@ -742,7 +783,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is not configured on the BFF */
+                /** @description Message API is not configured on the BFF */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -768,7 +809,327 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Opens a conversation: its members and one page of messages
+         * @description Everything needed to display one conversation, read with two Message API calls made in parallel (the members with their names, and a page of messages with the conversation itself): the conversation (name, kind, contact, member count, unread counter), its `participants`, and the latest `limit` messages (1 to 100, default 30) oldest first, each with its sender id and, when it answers another message, the quoted message (author and excerpt) also when that message is older than the page. `nextCursor` goes in `before` of `GET /conversations/{conversationId}/messages` to load older messages without reloading the members.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Number of messages per page, 1 to 100. Default 30. */
+                    limit?: number;
+                    /** @description The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages. */
+                    before?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Identifiant (conversation-<id> ou entier) */
+                    conversationId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The conversation, its participants and one page of messages */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The conversation: name to display, kind, contact, member count, unread counter */
+                            conversation: {
+                                /**
+                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Nom de la conversation
+                                 * @example Discussion de groupe
+                                 */
+                                name: string;
+                                /**
+                                 * @description Département associé à la conversation
+                                 * @example Marketing
+                                 */
+                                department?: string;
+                                /**
+                                 * @description Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise
+                                 * @example direct
+                                 * @enum {string}
+                                 */
+                                kind?: "direct" | "group";
+                                /**
+                                 * @description Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one
+                                 * @example user-8
+                                 */
+                                contactId?: string | number;
+                                /**
+                                 * Format: uri
+                                 * @description URL de l’avatar de la conversation
+                                 * @example https://example.com/avatar.png
+                                 */
+                                avatarUrl?: string;
+                                /**
+                                 * @description Initiales de la conversation
+                                 * @example DG
+                                 */
+                                initials?: string;
+                                /**
+                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @example online
+                                 * @enum {string}
+                                 */
+                                presence?: "online" | "offline" | "away";
+                                /**
+                                 * @description Dernier message de la conversation
+                                 * @example Bonjour à tous !
+                                 */
+                                lastMessage?: string;
+                                /**
+                                 * @description Date et heure du dernier message (format ISO)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                lastMessageAt?: string;
+                                /**
+                                 * @description Nombre de messages non lus dans la conversation
+                                 * @example 5
+                                 */
+                                unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
+                            };
+                            /** @description The members of the conversation, the caller included, with their names */
+                            participants: {
+                                /**
+                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Nom du contact
+                                 * @example Alice Dupont
+                                 */
+                                name: string;
+                                /**
+                                 * Format: email
+                                 * @description Adresse email du contact
+                                 * @example alice.dupont@mairie360.fr
+                                 */
+                                email?: string;
+                                /**
+                                 * @description Département associé au contact
+                                 * @example Marketing
+                                 */
+                                department?: string;
+                                /**
+                                 * Format: uri
+                                 * @description URL de l’avatar du contact
+                                 * @example https://example.com/avatar.png
+                                 */
+                                avatarUrl?: string;
+                                /**
+                                 * @description Initiales du contact
+                                 * @example AD
+                                 */
+                                initials?: string;
+                                /**
+                                 * @description Présence du contact, en ligne, hors ligne ou absent
+                                 * @example online
+                                 * @enum {string}
+                                 */
+                                presence?: "online" | "offline" | "away";
+                            }[];
+                            /** @description One page of messages, oldest first, with the sender id and the quoted message */
+                            messages: {
+                                /**
+                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @example 12345
+                                 */
+                                conversationId: string | number;
+                                /**
+                                 * @description Contenu du message
+                                 * @example Bonjour à tous !
+                                 */
+                                content: string;
+                                /**
+                                 * @description Date et heure d’envoi du message (format ISO)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                sentAt: string;
+                                /**
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
+                                 */
+                                authorId?: string | number;
+                                /**
+                                 * @description Nom de l’auteur du message
+                                 * @example Alice Dupont
+                                 */
+                                authorName?: string;
+                                /**
+                                 * @description Direction du message, entrant ou sortant
+                                 * @example incoming
+                                 * @enum {string}
+                                 */
+                                direction?: "incoming" | "outgoing";
+                                /**
+                                 * @description Liste des pièces jointes du message
+                                 * @example []
+                                 */
+                                attachments?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Nom de la pièce jointe
+                                     * @example document.pdf
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Taille de la pièce jointe en octets
+                                     * @example 102400
+                                     */
+                                    size?: number;
+                                    /**
+                                     * @description Type MIME de la pièce jointe
+                                     * @example application/pdf
+                                     */
+                                    type?: string;
+                                    /**
+                                     * Format: uri
+                                     * @description URL pour accéder à la pièce jointe
+                                     * @example https://example.com/document.pdf
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Liste des mentions dans le message
+                                 * @example []
+                                 */
+                                mentions?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Nom de la mention
+                                     * @example Alice Dupont
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Type de conversation associé à la mention
+                                     * @example direct
+                                     * @enum {string}
+                                     */
+                                    kind?: "direct" | "group";
+                                    /**
+                                     * @description Description de la mention
+                                     * @example Mention d’un utilisateur dans un message
+                                     */
+                                    description?: string;
+                                }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     */
+                                    excerpt: string;
+                                };
+                            }[];
+                            /**
+                             * @description Whether older messages remain
+                             * @example true
+                             */
+                            hasMore: boolean;
+                            /**
+                             * @description Pass it as `before` to `GET /conversations/{conversationId}/messages` to get the previous page; absent on the last page
+                             * @example 117
+                             */
+                            nextCursor?: string;
+                        };
+                    };
+                };
+                /** @description Invalid conversation id or query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         post?: never;
         /** Supprime une conversation */
@@ -1086,6 +1447,11 @@ export interface paths {
                                  * @example 5
                                  */
                                 unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
                             };
                         };
                     };
@@ -1229,16 +1595,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Récupère la liste des messages d’une conversation */
+        /**
+         * Récupère la liste des messages d’une conversation
+         * @description One page of messages, oldest first (`limit` 1 to 100, default 30), with the conversation: `nextCursor` goes in `before` for the older page. The whole history is never read. The author names come from the members of the conversation (one Message API call, no Core API call); `GET /conversations/{conversationId}` returns them with the first page.
+         */
         get: {
             parameters: {
                 query?: {
-                    /** @description Nombre maximum de messages à retourner */
+                    /** @description Number of messages per page, 1 to 100. Default 30. */
                     limit?: number;
-                    /** @description Curseur pour récupérer les messages avant un certain point */
-                    before?: string;
-                    /** @description Curseur pour récupérer les messages après un certain point */
-                    after?: string;
+                    /** @description The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages. */
+                    before?: number;
                 };
                 header?: never;
                 path: {
@@ -1316,6 +1683,11 @@ export interface paths {
                                  * @example 5
                                  */
                                 unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
                             };
                             /** @description Liste des messages */
                             messages: {
@@ -1414,10 +1786,43 @@ export interface paths {
                                      */
                                     description?: string;
                                 }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     */
+                                    excerpt: string;
+                                };
                             }[];
                             /**
-                             * @description Curseur pour la pagination des résultats
-                             * @example def456
+                             * @description Whether older messages remain
+                             * @example true
+                             */
+                            hasMore?: boolean;
+                            /**
+                             * @description Pass it as `before` to get the previous (older) page; absent on the last page
+                             * @example 117
                              */
                             nextCursor?: string;
                         };
@@ -1450,7 +1855,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is unavailable or failed */
+                /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
                         [name: string]: unknown;
@@ -1459,7 +1864,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is not configured on the BFF */
+                /** @description Message API is not configured on the BFF */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -1602,6 +2007,34 @@ export interface paths {
                                      */
                                     description?: string;
                                 }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     */
+                                    excerpt: string;
+                                };
                             };
                             /** @description Détails de la conversation associée au message envoyé */
                             conversation?: {
@@ -1663,6 +2096,11 @@ export interface paths {
                                  * @example 5
                                  */
                                 unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
                             };
                         };
                     };
@@ -1694,7 +2132,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is unavailable or failed */
+                /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
                         [name: string]: unknown;
@@ -1703,7 +2141,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is not configured on the BFF */
+                /** @description Message API is not configured on the BFF */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -1821,6 +2259,11 @@ export interface paths {
                                  * @example 5
                                  */
                                 unreadCount?: number;
+                                /**
+                                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                                 * @example 8
+                                 */
+                                memberCount?: number;
                             };
                             /** @description Message direct envoyé */
                             message: {
@@ -1919,6 +2362,34 @@ export interface paths {
                                      */
                                     description?: string;
                                 }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     */
+                                    excerpt: string;
+                                };
                             };
                         };
                     };
@@ -1941,7 +2412,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is unavailable or failed */
+                /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
                         [name: string]: unknown;
@@ -1950,7 +2421,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Message API or Core API is not configured on the BFF */
+                /** @description Message API is not configured on the BFF */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -2112,6 +2583,11 @@ export interface components {
              * @example 5
              */
             unreadCount?: number;
+            /**
+             * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+             * @example 8
+             */
+            memberCount?: number;
         };
         /** @description Représentation d’un message */
         MessageDtoSchema: {
@@ -2210,6 +2686,34 @@ export interface components {
                  */
                 description?: string;
             }[];
+            /**
+             * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+             * @example message-117
+             */
+            citation?: string | number;
+            /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+            quoted?: {
+                /**
+                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @example 12345
+                 */
+                id: string | number;
+                /**
+                 * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                 * @example user-12
+                 */
+                authorId?: string | number;
+                /**
+                 * @description Name of the author of the quoted message when they are a current member of the conversation
+                 * @example Alice Dupont
+                 */
+                authorName?: string;
+                /**
+                 * @description First 100 characters of the quoted message
+                 * @example Quelqu’un a des nouvelles du permis de construire ?
+                 */
+                excerpt: string;
+            };
         };
         /** @description Représentation d’une pièce jointe */
         AttachmentDtoSchema: {
@@ -2326,10 +2830,15 @@ export interface components {
                  * @example 5
                  */
                 unreadCount?: number;
+                /**
+                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                 * @example 8
+                 */
+                memberCount?: number;
             }[];
             /**
-             * @description Curseur pour la pagination des résultats
-             * @example abc123
+             * @description Pass it as `cursor` to get the next page; absent on the last page
+             * @example 20
              */
             nextCursor?: string;
         };
@@ -2395,6 +2904,11 @@ export interface components {
                  * @example 5
                  */
                 unreadCount?: number;
+                /**
+                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                 * @example 8
+                 */
+                memberCount?: number;
             };
             /** @description Liste des messages */
             messages: {
@@ -2493,10 +3007,43 @@ export interface components {
                      */
                     description?: string;
                 }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     */
+                    excerpt: string;
+                };
             }[];
             /**
-             * @description Curseur pour la pagination des résultats
-             * @example def456
+             * @description Whether older messages remain
+             * @example true
+             */
+            hasMore?: boolean;
+            /**
+             * @description Pass it as `before` to get the previous (older) page; absent on the last page
+             * @example 117
              */
             nextCursor?: string;
         };
@@ -2643,6 +3190,34 @@ export interface components {
                      */
                     description?: string;
                 }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     */
+                    excerpt: string;
+                };
             };
             /** @description Détails de la conversation associée au message envoyé */
             conversation?: {
@@ -2704,6 +3279,11 @@ export interface components {
                  * @example 5
                  */
                 unreadCount?: number;
+                /**
+                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                 * @example 8
+                 */
+                memberCount?: number;
             };
         };
         /** @description Réponse contenant les détails de la conversation directe créée et le message envoyé */
@@ -2768,6 +3348,11 @@ export interface components {
                  * @example 5
                  */
                 unreadCount?: number;
+                /**
+                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                 * @example 8
+                 */
+                memberCount?: number;
             };
             /** @description Message direct envoyé */
             message: {
@@ -2866,6 +3451,34 @@ export interface components {
                      */
                     description?: string;
                 }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     */
+                    excerpt: string;
+                };
             };
         };
         /** @description Réponse contenant les détails du groupe créé */
@@ -2930,6 +3543,11 @@ export interface components {
                  * @example 5
                  */
                 unreadCount?: number;
+                /**
+                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                 * @example 8
+                 */
+                memberCount?: number;
             };
         };
         /** @description Réponse indiquant si la conversation a été supprimée avec succès */
@@ -3116,6 +3734,11 @@ export interface components {
                  * @example 5
                  */
                 unreadCount?: number;
+                /**
+                 * @description Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.
+                 * @example 8
+                 */
+                memberCount?: number;
             }[];
             /**
              * @description Identifiant unique, peut être une chaîne ou un nombre
@@ -3218,6 +3841,34 @@ export interface components {
                      */
                     description?: string;
                 }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     */
+                    excerpt: string;
+                };
             }[];
         };
         /** @description Réponse contenant l’utilisateur actuel */
@@ -3306,40 +3957,33 @@ export interface components {
         /** @description Paramètres de requête pour filtrer et paginer les conversations */
         ConversationsQuery: {
             /**
-             * @description Terme de recherche pour filtrer les conversations
-             * @example Marketing
+             * @description Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list.
+             * @example Xavier Bertrand
              */
             search?: string;
             /**
-             * @description Nombre maximum de conversations à retourner
-             * @example 10
-             */
-            limit?: number;
-            /**
-             * @description Curseur pour la pagination des résultats
-             * @example abc123
-             */
-            cursor?: string;
-        };
-        /** @description Paramètres de requête pour filtrer et paginer les messages */
-        MessagesQuery: {
-            /**
-             * @description Nombre maximum de messages à retourner
+             * @description Number of conversations per page, 1 to 30. Default 20.
              * @example 20
              */
             limit?: number;
             /**
-             * Format: date-time
-             * @description Curseur pour récupérer les messages avant un certain point
-             * @example 2026-06-23T12:32:00Z
+             * @description The `nextCursor` of the previous page. Absent: the first page.
+             * @example 20
              */
-            before?: string;
+            cursor?: string;
+        };
+        /** @description Paramètres de requête pour paginer les messages */
+        MessagesQuery: {
             /**
-             * Format: date-time
-             * @description Curseur pour récupérer les messages après un certain point
-             * @example 2026-06-23T12:32:00Z
+             * @description Number of messages per page, 1 to 100. Default 30.
+             * @example 30
              */
-            after?: string;
+            limit?: number;
+            /**
+             * @description The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.
+             * @example 117
+             */
+            before?: number;
         };
         /** @description Paramètres de requête pour filtrer les contacts */
         ContactsQuery: {

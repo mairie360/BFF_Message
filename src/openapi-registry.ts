@@ -35,6 +35,10 @@ function inputId(kind: string, example: number) {
   ]).openapi({ description: `Identifiant (${kind}-<id> ou entier)`, example });
 }
 
+// No control character (Core API and Message API answer 400 to them). A refinement, not a `.regex()`: the contract then
+// does not publish a unicode pattern that other tools would read as a plain ECMA 262 pattern.
+const noControlCharacter = (schema: z.ZodString) => schema.refine((value) => !/\p{Cc}/u.test(value), 'must not contain control characters');
+
 // Stored texts are rendered by the fronts: `<` and `>` are refused.
 const noMarkup = (schema: z.ZodString) => schema.regex(/^[^<>]*$/, 'Must not contain < or >');
 
@@ -44,6 +48,8 @@ export const MAX_NAME_LENGTH = 100;
 export const MAX_DESCRIPTION_LENGTH = 500;
 /** Largest page a listing (`limit`) may ask for, and the most members a group may be created with. */
 export const MAX_LIMIT = 100;
+/** Largest page of `GET /conversations`: keeps one page of the list cheap whatever the size of the messaging. */
+export const MAX_CONVERSATIONS_LIMIT = 30;
 export const MAX_GROUP_MEMBERS = 100;
 
 // `limit` of the listings: 0 used to return everything and a negative value inverted the slicing.
@@ -126,6 +132,10 @@ export const ConversationDtoSchema = z.object({
     description: 'Nombre de messages non lus dans la conversation',
     example: 5,
   }),
+  memberCount: z.number().int().optional().openapi({
+    description: 'Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.',
+    example: 8,
+  }),
 }).openapi({
   description: 'Représentation d’une conversation',
 });
@@ -174,6 +184,24 @@ export const MentionDtoSchema = z.object({
   description: 'Représentation d’une mention',
 });
 
+export const QuotedMessageDtoSchema = z.object({
+  id: IdSchema,
+  authorId: IdSchema.optional().openapi({
+    description: 'Id of the author of the quoted message (`user-<n>`), absent once the account is deleted',
+    example: 'user-12',
+  }),
+  authorName: z.string().optional().openapi({
+    description: 'Name of the author of the quoted message when they are a current member of the conversation',
+    example: 'Alice Dupont',
+  }),
+  excerpt: z.string().openapi({
+    description: 'First 100 characters of the quoted message',
+    example: 'Quelqu’un a des nouvelles du permis de construire ?',
+  }),
+}).openapi({
+  description: 'The message another message answers, with what is needed to display the quote',
+});
+
 export const MessageDtoSchema = z.object({
   id: IdSchema,
   conversationId: IdSchema,
@@ -204,6 +232,13 @@ export const MessageDtoSchema = z.object({
   mentions: z.array(MentionDtoSchema).optional().openapi({
     description: 'Liste des mentions dans le message',
     example: [],
+  }),
+  citation: IdSchema.optional().openapi({
+    description: 'Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted',
+    example: 'message-117',
+  }),
+  quoted: QuotedMessageDtoSchema.optional().openapi({
+    description: 'The message `citation` points to (author and excerpt), also when it is older than the loaded page',
   }),
 }).openapi({
   description: 'Représentation d’un message',
@@ -240,6 +275,15 @@ export const ContactDtoSchema = z.object({
   description: 'Représentation d’un contact',
 });
 
+// `GET /conversations/{conversationId}` also takes the numeric `before` cursor. ZAP ("Path Traversal") tries the last
+// segment of the URL as the value of a query parameter and flags a parameter that accepts it: the public id as example
+// keeps `101` out of reach of `before`, which only accepts a number.
+export const LoadConversationIdParams = z.object({
+  conversationId: inputId('conversation', 101).openapi({ example: 'conversation-101' }),
+}).openapi({
+  description: 'Paramètres pour identifier une conversation',
+});
+
 export const ConversationIdParams = z.object({
   conversationId: inputId('conversation', 101),
 }).openapi({
@@ -258,43 +302,40 @@ export const WrittenConversationIdParams = z.object({
 
 
 export const ConversationsQuery = z.object({
-  search: z.string().max(MAX_NAME_LENGTH).optional().openapi({
-    description: 'Terme de recherche pour filtrer les conversations',
-    example: 'Marketing',
+  search: noControlCharacter(z.string().max(MAX_NAME_LENGTH)).optional().openapi({
+    description: 'Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list.',
+    example: 'Xavier Bertrand',
   }),
-  limit: limitQuery().optional().openapi({
-    description: 'Nombre maximum de conversations à retourner',
-    example: 10,
+  limit: z.coerce.number().int().min(1).max(MAX_CONVERSATIONS_LIMIT).optional().openapi({
+    description: 'Number of conversations per page, 1 to 30. Default 20.',
+    example: 20,
   }),
-  cursor: z.string().optional().openapi({
-    description: 'Curseur pour la pagination des résultats',
-    example: 'abc123',
+  cursor: z.string().regex(/^\d{1,9}$/, 'must be the nextCursor of a previous page').optional().openapi({
+    description: 'The `nextCursor` of the previous page. Absent: the first page.',
+    example: '20',
   }),
 }).openapi({
   description: 'Paramètres de requête pour filtrer et paginer les conversations',
-}); 
+});
 
 
 export const MessagesQuery = z.object({
   limit: limitQuery().optional().openapi({
-    description: 'Nombre maximum de messages à retourner',
-    example: 20,
+    description: 'Number of messages per page, 1 to 100. Default 30.',
+    example: 30,
   }),
-  before: z.iso.datetime().optional().openapi({
-    description: 'Curseur pour récupérer les messages avant un certain point',
-    example: '2026-06-23T12:32:00Z',
-  }),
-  after: z.iso.datetime().optional().openapi({
-    description: 'Curseur pour récupérer les messages après un certain point',
-    example: '2026-06-23T12:32:00Z',
+  // An integer, not a string: a numeric string would be fuzzed as a file name (ZAP "Path Traversal") for no reason.
+  before: z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER).optional().openapi({
+    description: 'The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.',
+    example: 117,
   }),
 }).openapi({
-  description: 'Paramètres de requête pour filtrer et paginer les messages',
+  description: 'Paramètres de requête pour paginer les messages',
 });
 
 export const ContactsQuery = z.object({
     // Core API refuses control characters in `search` (400): refused here, so it is not a Core API failure (502).
-    search: z.string().max(MAX_NAME_LENGTH).regex(/^[^\p{Cc}]*$/u, 'must not contain control characters').optional().openapi({
+    search: noControlCharacter(z.string().max(MAX_NAME_LENGTH)).optional().openapi({
         description: 'Search term filtering the contacts (no control characters)',
         example: 'Alice'
     }),
@@ -382,8 +423,8 @@ export const ConversationsResponse = z.object({
     description: 'Liste des conversations',
   }),
   nextCursor: z.string().optional().openapi({
-    description: 'Curseur pour la pagination des résultats',
-    example: 'abc123',
+    description: 'Pass it as `cursor` to get the next page; absent on the last page',
+    example: '20',
   }),
 }).openapi({
   description: 'Réponse contenant la liste des conversations et un curseur pour la pagination',
@@ -396,12 +437,38 @@ export const MessagesResponse = z.object({
   messages: z.array(MessageDtoSchema).openapi({
     description: 'Liste des messages',
   }),
+  hasMore: z.boolean().optional().openapi({
+    description: 'Whether older messages remain',
+    example: true,
+  }),
   nextCursor: z.string().optional().openapi({
-    description: 'Curseur pour la pagination des résultats',
-    example: 'def456',
+    description: 'Pass it as `before` to get the previous (older) page; absent on the last page',
+    example: '117',
   }),
 }).openapi({
   description: 'Réponse contenant la liste des messages et un curseur pour la pagination',
+});
+
+export const LoadConversationResponse = z.object({
+  conversation: ConversationDtoSchema.openapi({
+    description: 'The conversation: name to display, kind, contact, member count, unread counter',
+  }),
+  participants: z.array(ContactDtoSchema).openapi({
+    description: 'The members of the conversation, the caller included, with their names',
+  }),
+  messages: z.array(MessageDtoSchema).openapi({
+    description: 'One page of messages, oldest first, with the sender id and the quoted message',
+  }),
+  hasMore: z.boolean().openapi({
+    description: 'Whether older messages remain',
+    example: true,
+  }),
+  nextCursor: z.string().optional().openapi({
+    description: 'Pass it as `before` to `GET /conversations/{conversationId}/messages` to get the previous page; absent on the last page',
+    example: '117',
+  }),
+}).openapi({
+  description: 'A conversation opened: the conversation, its members and one page of messages',
 });
 
 export const ContactsResponse = z.object({
