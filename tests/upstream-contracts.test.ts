@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { JsonSchema, OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract, resolveOrvalPackage } from './support/orval-contract';
 import {
-  calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult,
+  calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult, directChatView,
   directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffUrls, projectDetailsResponse, projectListItem, projectsPageResponse,
   taskItem, users,
 } from './support/upstream-fixtures';
@@ -31,6 +31,7 @@ const pathname = (url: string) => new URL(url, 'http://upstream').pathname;
 const CONSUMED = [
   { contract: messageApi, operationId: 'getChats', method: 'get', url: messageApiUrls.getGetChatsUrl() },
   { contract: messageApi, operationId: 'createChat', method: 'post', url: messageApiUrls.getCreateChatUrl() },
+  { contract: messageApi, operationId: 'openDirectChat', method: 'post', url: messageApiUrls.getOpenDirectChatUrl() },
   { contract: messageApi, operationId: 'getChat', method: 'get', url: messageApiUrls.getGetChatUrl(4) },
   { contract: messageApi, operationId: 'removeUserFromChat', method: 'delete', url: messageApiUrls.getRemoveUserFromChatUrl(4, 7) },
   { contract: messageApi, operationId: 'postMessage', method: 'post', url: messageApiUrls.getPostMessageUrl(4) },
@@ -72,7 +73,11 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
     expect(post.operation.parameters).toEqual([{ name: 'chatId', in: 'path', required: true, schema: { type: 'number' } }]);
     expect(messageApi.requestBodySchema(post)).toEqual({ required: true, schema: { $ref: '#/components/schemas/PostMessageView' } });
     expect(messageApi.schema('CreateChatView')).toMatchObject({ required: ['members', 'name'] });
-    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'name', 'unread_count'] });
+    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'member_count', 'name', 'unread_count'] });
+    // MAIR-507: the chat page carries the chat itself, the members carry their names.
+    expect(messageApi.schema('GetChatResultView')).toMatchObject({ required: expect.arrayContaining(['chat', 'messages']) });
+    expect(messageApi.schema('User')).toMatchObject({ required: ['first_name', 'id', 'last_name'] });
+    expect(messageApi.schema('GetChatsParams')).toMatchObject({ properties: { limit: expect.anything(), offset: expect.anything(), search: expect.anything() } });
     expect(messageApi.responseSchema(messageApi.match('DELETE', messageApiUrls.getRemoveUserFromChatUrl(4, 7))!, 200)).toEqual({ documented: true, schema: undefined });
     // Les erreurs ne sont pas typées par orval : aucun statut hors 2XX n'est documenté.
     expect(messageApi.responseSchema(messageApi.match('GET', messageApiUrls.getGetChatUrl(4))!, 404).documented).toBe(false);
@@ -82,11 +87,15 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
 describe('upstream fixtures conform to the upstream contracts', () => {
   const project = projectListItem();
   test.each([
-    ['Message API getChats 200', messageApi, 'get', messageApiUrls.getGetChatsUrl(), chatsResult([chatView(4, 'Équipe communication', 2)])],
+    ['Message API getChats 200', messageApi, 'get', messageApiUrls.getGetChatsUrl(), chatsResult([chatView(4, 'Équipe communication', 2), directChatView(5, 8, 'Sophie Leroy')])],
     ['Message API createChat 200', messageApi, 'post', messageApiUrls.getCreateChatUrl(), createChatResult(12)],
-    ['Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4), chatResult([messageView(41, 7), messageView(42, 8, { citation: 41 })])],
+    ['Message API openDirectChat 200', messageApi, 'post', messageApiUrls.getOpenDirectChatUrl(), { id: 21, created: true }],
+    [
+      'Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4),
+      chatResult(chatView(4, 'Équipe communication'), [messageView(41, 7), messageView(42, 8, { citation: 41, quoted: { id: 41, sender_id: 7, excerpt: 'Message 41' } })]),
+    ],
     ['Message API postMessage 200', messageApi, 'post', messageApiUrls.getPostMessageUrl(4), postMessageResult(31)],
-    ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8])],
+    ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8], false, { 7: ['Agent', 'Test'], 8: ['Sophie', 'Leroy'] })],
     ['Message API acknowledgeRead 200', messageApi, 'post', messageApiUrls.getAcknowledgeReadUrl(4), acknowledgeReadResult(2)],
     ['Core API listDirectoryUsers 200', coreApi, 'get', coreApiUrls.getListDirectoryUsersUrl(), directoryUsers([users.agent, users.thomas])],
     ['BFF Project getProjectsPage 200', projectBff, 'get', projectBffUrls.getGetProjectsPageUrl(), projectsPageResponse([project])],

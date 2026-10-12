@@ -53,9 +53,15 @@ export function axiosResponse<T>(data: T, status = 200): AxiosResponse<T> {
 
 // --- Message API (@mairie360/message-api-openapi) ---
 
-// Message API (MAIR-478) adds the kind of a chat and, for a direct chat, the other agent.
-export function chatView(id: number, name = `Conversation ${id}`, unread_count = 0): ChatView {
-  return { id, name, unread_count, kind: 'group', contact_id: null };
+// Message API (MAIR-478) adds the kind of a chat and, for a direct chat, the other agent; MAIR-507 its member count
+// and a ready-to-display name (the other participant's full name for a direct chat).
+export function chatView(id: number, name = `Conversation ${id}`, unread_count = 0, member_count = 3): ChatView {
+  return { id, name, unread_count, kind: 'group', contact_id: null, member_count };
+}
+
+/** A direct chat as the list shows it: named after the contact, always two participants. */
+export function directChatView(id: number, contact_id: number, name: string, unread_count = 0): ChatView {
+  return { id, name, unread_count, kind: 'direct', contact_id, member_count: 2 };
 }
 
 export function chatsResult(chats: ChatView[], has_more = false): GetChatsResultView {
@@ -63,15 +69,19 @@ export function chatsResult(chats: ChatView[], has_more = false): GetChatsResult
 }
 
 export function messageView(id: number, sender_id: number, overrides: Partial<MessageView> = {}): MessageView {
-  return { id, sender_id, content: `Message ${id}`, created_at: '2026-09-15T09:00:00Z', citation: null, ...overrides };
+  return { id, sender_id, content: `Message ${id}`, created_at: '2026-09-15T09:00:00Z', citation: null, quoted: null, ...overrides };
 }
 
-export function chatResult(messages: MessageView[], next_before: number | null = null): GetChatResultView {
-  return { messages, has_more: next_before !== null, next_before };
+export function chatResult(chat: ChatView, messages: MessageView[], next_before: number | null = null): GetChatResultView {
+  return { chat, messages, has_more: next_before !== null, next_before };
 }
 
-export function chatUsers(ids: number[], has_more = false): GetUsersView {
-  return { users: ids.map((id) => ({ id })), has_more };
+/** Members of a chat with their names (MAIR-507): `names` maps an id to `[first_name, last_name]`. */
+export function chatUsers(ids: number[], has_more = false, names: Record<number, [string, string]> = {}): GetUsersView {
+  return {
+    users: ids.map((id) => ({ id, first_name: names[id]?.[0] ?? 'Agent', last_name: names[id]?.[1] ?? `Numéro ${id}` })),
+    has_more,
+  };
 }
 
 export function createChatResult(id: number): CreateChatResultView {

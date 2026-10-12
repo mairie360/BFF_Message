@@ -75,7 +75,7 @@ function randomAgent() {
   const rank = Math.floor(Math.random() * AGENTS.count);
   const id = AGENTS.first + rank;
   if (!agentTokens[id]) agentTokens[id] = { Authorization: `Bearer ${mintJwt(String(id))}` };
-  return { id, headers: agentTokens[id], chat: `conversation-${100000 + rank}` };
+  return { id, rank, headers: agentTokens[id], chat: `conversation-${100000 + rank}` };
 }
 
 function body(response) {
@@ -154,9 +154,43 @@ const handlers = {
       'contacts 200': (r) => r.status === 200,
     });
   },
+  // A page of 20 (the 16 chats of the agent), a page of 5 that must hand over a cursor, or a search by the full name
+  // of a member the agent shares chat `100000 + rank` with (MAIR-507): all served by ONE Message API call.
   'GET /conversations': ({ request }) => {
     const agent = randomAgent();
-    checkConversations(request({ query: { limit: 20 }, headers: agent.headers }), 'conversations');
+    const kind = Math.floor(Math.random() * 3);
+    if (kind === 0) {
+      const coMember = AGENTS.first + ((agent.rank + 250) % AGENTS.count);
+      check(request({ query: { search: `Agent Perf ${coMember}` }, headers: agent.headers }), {
+        'search conversations 200': (r) => r.status === 200,
+        'search conversations finds the chat shared with the member': (r) =>
+          r.status === 200 && (body(r).conversations || []).some((conversation) => conversation.id === agent.chat),
+      });
+    } else if (kind === 1) {
+      check(request({ query: { limit: 5 }, headers: agent.headers }), {
+        'conversations page 200': (r) => r.status === 200,
+        'conversations page hands over the next cursor': (r) =>
+          r.status === 200 && (body(r).conversations || []).length === 5 && body(r).nextCursor === '5',
+      });
+    } else {
+      checkConversations(request({ query: { limit: 20 }, headers: agent.headers }), 'conversations');
+    }
+  },
+  // Opens one of the agent's group chats: its 8 members with their names and the 25 seeded messages (MAIR-507).
+  'GET /conversations/{conversationId}': ({ request }) => {
+    const agent = randomAgent();
+    check(request({ path: { conversationId: agent.chat }, headers: agent.headers }), {
+      'load conversation 200': (r) => r.status === 200,
+      'load conversation carries the members and the messages': (r) => {
+        if (r.status !== 200) return false;
+        const loaded = body(r);
+        return loaded.conversation.id === agent.chat
+          && loaded.participants.length === 8
+          && loaded.participants.every((participant) => participant.name.startsWith('Agent Perf '))
+          && loaded.messages.length >= 25
+          && loaded.messages.every((message) => message.authorName && message.authorId);
+      },
+    });
   },
   'GET /me': ({ request }) => {
     const agent = randomAgent();
