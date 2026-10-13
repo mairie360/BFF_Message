@@ -1100,10 +1100,10 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         .toEqual(['task:task-1']);
     });
 
-    test('MAIR-525: a token with roles never calls Core for them', async () => {
+    test('MAIR-525: a token with a role never calls Core for it', async () => {
       mockBusinessApis({ projects: [projectListItem(1)], tasks: { 1: [taskView(1)] } });
 
-      await request(app).get('/business-references').set('Authorization', withRoles(['Maire']));
+      await request(app).get('/business-references').set('Authorization', withClaims({ role: 'Maire' }));
 
       expect(coreApi.calls(CORE_API.me)).toHaveLength(0);
     });
