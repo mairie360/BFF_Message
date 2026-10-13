@@ -47,7 +47,7 @@ export interface paths {
         };
         /**
          * Checks that Message API and Core API (directory) are reachable
-         * @description BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source (`sources.projects` / `sources.calendar`) when they are unavailable.
+         * @description Project API and Calendar API are not probed: `GET /business-references` degrades per source (`sources.projects` / `sources.calendar`) when they are unavailable.
          */
         get: {
             parameters: {
@@ -102,7 +102,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Références des BFF Projets et Calendrier */
+                /** @description References read from Project API and Calendar API (never another BFF) */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2438,6 +2438,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Real-time stream of the caller's conversations
+         * @description An **SSE** channel (`text/event-stream`) relaying Message API's: each `data:` line holds a `MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the conversations the caller is a member of are signalled. A `: ping` comment comes every 15 seconds. The stream ends when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Stream established; the body documented is the payload of **one** event */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["MessageStreamEvent"];
+                    };
+                };
+                /** @description Missing or invalid session, or session refused by Message API */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4028,6 +4094,18 @@ export interface components {
                 /** @enum {string} */
                 calendar: "available" | "unavailable";
             };
+        };
+        MessageStreamEvent: {
+            /**
+             * @description What happened, as Message API names it (`NEW_MSG`...)
+             * @example NEW_MSG
+             */
+            type: string;
+            /**
+             * @description Conversation to reload
+             * @example conversation-5
+             */
+            conversationId: string;
         };
     };
     responses: never;

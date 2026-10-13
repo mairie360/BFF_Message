@@ -8,7 +8,8 @@ describe('upstream configuration', () => {
   afterEach(() => { process.env = { ...saved }; });
 
   test('lists every upstream the BFF calls', () => {
-    expect([...UPSTREAMS].sort()).toEqual(['CALENDAR_BFF', 'CORE_API', 'MESSAGE_API', 'PROJECT_BFF']);
+    // MAIR-525: the APIs, never another BFF.
+    expect([...UPSTREAMS].sort()).toEqual(['CALENDAR_API', 'CORE_API', 'MESSAGE_API', 'PROJECT_API']);
   });
 
   test('fails fast naming every missing upstream URL', () => {
@@ -16,7 +17,7 @@ describe('upstream configuration', () => {
     process.env.CORE_API_URL = 'core-api';
 
     expect(() => assertConfigured(UPSTREAMS)).toThrow(
-      'Missing or invalid upstream configuration: MESSAGE_API_URL, PROJECT_BFF_URL, CALENDAR_BFF_URL',
+      'Missing or invalid upstream configuration: MESSAGE_API_URL, PROJECT_API_URL, CALENDAR_API_URL',
     );
   });
 

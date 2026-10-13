@@ -10,11 +10,13 @@ Express 5.2.1 server written in TypeScript. Zod schemas and their OpenAPI regist
 
 ## Data and persistence
 
-Conversations and messages use Message API. `GET /conversations` is one page of conversations (`limit` 1 to 30, default 20; `nextCursor` goes back as `cursor`; `search` matches the name of the conversation or of one of its members) read with ONE Message API call: each conversation carries its display name (the other participant's name for a direct one), `kind`, `contactId` for a direct conversation, `memberCount`, `unreadCount`, and a group shows `department: "N membres"`. `GET /conversations/{id}` opens a conversation with two parallel Message API calls: the conversation, its `participants` (id and name) and the latest `limit` messages (1 to 100, default 30) with their sender id and, for an answer, the quoted message (author and excerpt); `nextCursor` goes in `before` of `GET /conversations/{id}/messages` for older messages, so the history is never read whole. `POST /direct-messages` asks Message API to find or create the one direct conversation of the pair, then posts in it. Message `authorName` is the author's name when they are a current member of the conversation, left out otherwise; `GET /me` only returns what the directory knows (name, email, roles), no placeholder role, service, position or last connection. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are aggregated from BFF Project and BFF Calendar. Local profile edits and attachment metadata do not provide complete persistence.
+Conversations and messages use Message API. `GET /conversations` is one page of conversations (`limit` 1 to 30, default 20; `nextCursor` goes back as `cursor`; `search` matches the name of the conversation or of one of its members) read with ONE Message API call: each conversation carries its display name (the other participant's name for a direct one), `kind`, `contactId` for a direct conversation, `memberCount`, `unreadCount`, and a group shows `department: "N membres"`. `GET /conversations/{id}` opens a conversation with two parallel Message API calls: the conversation, its `participants` (id and name) and the latest `limit` messages (1 to 100, default 30) with their sender id and, for an answer, the quoted message (author and excerpt); `nextCursor` goes in `before` of `GET /conversations/{id}/messages` for older messages, so the history is never read whole. `POST /direct-messages` asks Message API to find or create the one direct conversation of the pair, then posts in it. Message `authorName` is the author's name when they are a current member of the conversation, left out otherwise; `GET /me` only returns what the directory knows (name, email, roles), no placeholder role, service, position or last connection. Contacts are read directly from the SQL `users` table, including the current user (token `sub` claim). Business references are read from Project API and Calendar API (MAIR-525). Local profile edits and attachment metadata do not provide complete persistence.
 
 Attachments are not supported yet: `POST /attachments` answers 503 to an authenticated caller (401 otherwise) instead of made-up ids, and a non-empty `attachmentIds` is refused with 400 on `POST /conversations/{id}/messages`. `POST /conversations/{id}/read` relays the read acknowledgement to Message API ≥ 1.0 (`POST /api/v1/{chat_id}/read/`): every message up to and including the optional `readUntilMessageId` is acknowledged, or up to the latest message (one `limit=1` read) when the body or the id is absent; an empty conversation answers `unreadCount: 0` without acknowledging anything. The answer carries the `unreadCount` Message API returns; its 401/403/404 are relayed, any other failure is a 502. Listing `limit`s are between 1 and 100 (30 for conversations); the BFF reads one page of Message API per request (members by pages of 100). A message whose author account is deleted has no `authorId`; message bodies are limited to 5000 characters, group names to 100 and descriptions to 500.
 
-`GET /business-references` bounds its upstream fan-out: one BFF Project listing of 50 projects, task details only for listed projects that report tasks (at most 20, 4 at a time), and a BFF Calendar window of 182 days on each side of today (under one year). It is rate limited per caller (see `BUSINESS_REFERENCES_RATE_LIMIT_*`). Conversation groups use the API, while some profile data remains local to the process.
+`GET /business-references` reads the APIs, never another BFF (MAIR-525): one Project API listing of 50 projects, the task list of the listed projects that have active tasks only (at most 20, 4 at a time, until Project API lists the caller's tasks in one call), filtered like BFF Project (Admin, Maire and Responsable see every task, other roles their own; roles from the token, or Core API for an older token, the narrowest view when they cannot be read), and one Calendar API list over 182 days on each side of today (the events the caller is a member of; no detail per event).
+
+`GET /stream` (MAIR-525) relays Message API's SSE channel (`text/event-stream`): each `data:` line is a `MessageStreamEvent` `{ type, conversationId }` naming a conversation to reload, so the front no longer polls. `: ping` comments are kept; an `id:` is relayed and `Last-Event-ID` is forwarded to Message API (resuming needs its cursor, MAIR-524). The stream ends with the session and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default); the client reconnects (`retry: 3000`). A refused session answers 401, an unavailable Message API 502. It is rate limited per caller (see `BUSINESS_REFERENCES_RATE_LIMIT_*`). Conversation groups use the API, while some profile data remains local to the process.
 
 ## Installation and local startup
 
@@ -32,8 +34,8 @@ Copy `.env.example` to `.env` in the repository root and adapt it to the running
 PORT=4003
 MESSAGE_API_URL=http://localhost:3003
 CORE_API_URL=http://localhost:3000
-PROJECT_BFF_URL=http://localhost:4001
-CALENDAR_BFF_URL=http://localhost:4002
+PROJECT_API_URL=http://localhost:3001
+CALENDAR_API_URL=http://localhost:3002
 ```
 
 `.env` is loaded by `import 'dotenv/config'`, the first line of `src/index.ts`. Every upstream is configured by `<SERVICE>_URL` (scheme optional, `http` by default) and an optional `<SERVICE>_PORT` used when the URL has no port, read on every call (MAIR-431). There is no `localhost` default: the server refuses to start when one of the four URLs is missing or invalid, and a route that would call an unconfigured upstream answers 503. The HTTP example prepares no data.
@@ -61,8 +63,9 @@ Values below are local examples or explicitly described behavior, not production
 | `PORT` | 4003 (default) | Listening port. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | http://localhost:3003 / — | Message API root (its routes are published under `/api/v1`), also probed by `/check_apis`. **Required**. Replaces `MESSAGE_API_BASE_PATH` (removed). |
 | `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Core API directory (contacts, current user), also probed by `/check_apis`. **Required**. |
-| `PROJECT_BFF_URL` / `PROJECT_BFF_PORT` | http://localhost:4001 / — | Source of project and task references. **Required**. |
-| `CALENDAR_BFF_URL` / `CALENDAR_BFF_PORT` | http://localhost:4002 / — | Source of event references. **Required**. |
+| `PROJECT_API_URL` / `PROJECT_API_PORT` | http://localhost:3001 / — | Source of project and task references. **Required**. |
+| `CALENDAR_API_URL` / `CALENDAR_API_PORT` | http://localhost:3002 / — | Source of event references. **Required**. |
+| `MESSAGE_STREAM_MAX_MS` | 300000 | Longest life of one `GET /stream`, after which the client reconnects. |
 | `RATE_LIMIT_ENABLED` | true | `false` disables the per-caller limit of `GET /business-references` (load tests). |
 | `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requests per session (hash of the Bearer token, never the unverified JWT `sub`) and window on `GET /business-references`, answered 429 beyond. |
 | `TRUST_PROXY` | unset (no proxy trusted) | Express `trust proxy` (`true`, a hop count or trusted addresses), so that `req.ip` is the real client behind the ingress. |
@@ -76,6 +79,7 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401, 429 |
+| GET | `/stream` | `Last-Event-ID` (optional) | 200 (`text/event-stream`), 401, 502, 503 |
 | POST | `/attachments` | multipart/form-data | 401, 502, 503 |
 | GET | `/messaging/bootstrap` | — | 200, 401, 502, 503 |
 | GET | `/contacts` | — | 200, 400, 401, 502, 503 |
@@ -91,7 +95,7 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 
 ## Session, permissions and errors
 
-The only credential the BFF accepts is `Authorization: Bearer <token>` (MAIR-429): the web service's proxy turns the `accessToken` cookie into that header. Cookies, `x-session-token` and other schemes are ignored. Every route except `/health`, `/check_apis` and the documentation is session-bound: without a Bearer token it answers 401 before any upstream call, and its answers carry `Cache-Control: no-store`. The caller's token, normalised to `Bearer <token>`, is forwarded on each upstream call (Message API, Core API, BFF Project, BFF Calendar); there is no default token. The JWT `sub` is read without verifying the signature, only to shape the requests sent upstream with that same token and the message direction, never to grant access or as a rate-limit key. Local profiles and read responses must not be interpreted as remote API validation of storage or permissions.
+The only credential the BFF accepts is `Authorization: Bearer <token>` (MAIR-429): the web service's proxy turns the `accessToken` cookie into that header. Cookies, `x-session-token` and other schemes are ignored. Every route except `/health`, `/check_apis` and the documentation is session-bound: without a Bearer token it answers 401 before any upstream call, and its answers carry `Cache-Control: no-store`. The caller's token, normalised to `Bearer <token>`, is forwarded on each upstream call (Message API, Core API, Project API, Calendar API); there is no default token. The JWT `sub` is read without verifying the signature, only to shape the requests sent upstream with that same token and the message direction, never to grant access or as a rate-limit key. Local profiles and read responses must not be interpreted as remote API validation of storage or permissions.
 
 Every error is answered in the envelope shared by all the BFFs (`@mairie360/bffs-lib`, schema
 `ErrorResponse` of the contract): `{ "error": { "code": "NOT_FOUND", "message": "Resource not found", "details": [] } }`.
@@ -106,7 +110,7 @@ failure. Every upstream call and the mapping go through `callUpstream` / `asCall
 
 `/check_apis` probes the `/health` operation of Message API and Core API with the same variables as the
 real calls and answers `{ status, message_api, core_api }` (`Connected` / `Unreachable`), 200 when both
-answer, 502 otherwise. BFF Project and BFF Calendar are not probed: `GET /business-references` reports them
+answer, 502 otherwise. Project API and Calendar API are not probed: `GET /business-references` reports them
 per source. Upstream messages and bodies are never relayed; an unexpected error is a generic 500.
 
 ## Synchronization and verification
@@ -119,7 +123,7 @@ npm run lint
 npm run build
 ```
 
-The tests in `tests/messages.upstream-mocks.test.ts` run the real Message API client and the real `fetch` against local HTTP mocks driven by the Message API, BFF Project and BFF Calendar contracts, rebuilt from the installed `@mairie360/*-openapi` packages (orval types, versions pinned in `package.json`): every request (path, parameters, JSON body) and every mocked success response is validated against those contracts, and BFF responses against `contracts/openapi.json`. Bumping a package version is enough to test the new contract; error statuses are not typed by orval and are mocked explicitly. The `users` table (contacts) stays mocked with `jest.mock`.
+The tests in `tests/messages.upstream-mocks.test.ts` run the real Message API client and the real `fetch` against local HTTP mocks driven by the Message API, Core API, Project API and Calendar API contracts (`tests/stream.upstream-mocks.test.ts` covers `GET /stream`), rebuilt from the installed `@mairie360/*-openapi` packages (orval types, versions pinned in `package.json`): every request (path, parameters, JSON body) and every mocked success response is validated against those contracts, and BFF responses against `contracts/openapi.json`. Bumping a package version is enough to test the new contract; error statuses are not typed by orval and are mocked explicitly. The `users` table (contacts) stays mocked with `jest.mock`.
 
 `contracts:generate` exports the runtime registry to `contracts/openapi.json` and regenerates `contracts/bff.d.ts`. `contracts:check` fails when the contract or types are stale. Then run `npm run contracts:sync` in each associated web service and deliver contract changes together.
 

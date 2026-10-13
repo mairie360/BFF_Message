@@ -9,6 +9,7 @@ import conversationRoutes from './conversation';
 import groupsRoutes from './groups';
 import meRoutes from './me';
 import messageRoutes from './message';
+import streamRoutes from './stream';
 
 /**
  * Every route below is session-bound: answers are never cached, and a request without an
@@ -23,6 +24,7 @@ export const SESSION_BOUND_PATHS = [
     '/groups',
     '/me',
     '/messaging',
+    '/stream',
 ];
 
 const router = Router();
@@ -35,6 +37,7 @@ router.use('/contacts', contactsRoutes);
 router.use('/conversations', conversationRoutes);
 router.use('/groups', groupsRoutes);
 router.use('/me', meRoutes);
+router.use('/stream', streamRoutes);
 router.use('/', messageRoutes);
 
 export default router;

@@ -75,3 +75,17 @@ export async function getContactUser(id: number, context: CallContext): Promise<
 export function checkCoreApi(): Promise<unknown> {
   return coreApi.health(withoutSession('CORE_API', CORE_API_TIMEOUT_MS));
 }
+
+/**
+ * Names of the caller's roles, from Core API `GET /api/v1/user/me/` (idempotent: retried once). Only read for a
+ * token issued before the `roles` claim (MAIR-529); a newer one carries them (`sessionRoles`).
+ */
+export async function readCallerRoles(context: CallContext): Promise<string[]> {
+  const { data } = await callUpstream(
+    'CORE_API',
+    () => coreApi.getMe(asCaller('CORE_API', context.req, CORE_API_TIMEOUT_MS)),
+    { declared: context.declared, retry: true },
+  );
+  const roles: unknown = data?.roles ?? (data?.role ? [data.role] : []);
+  return Array.isArray(roles) ? roles.filter((role): role is string => typeof role === 'string') : [];
+}

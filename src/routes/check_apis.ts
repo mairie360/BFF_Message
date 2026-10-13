@@ -17,7 +17,7 @@ registry.registerPath({
   security: [],
   tags: ['Connectivity'],
   summary: 'Checks that Message API and Core API (directory) are reachable',
-  description: 'BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source '
+  description: 'Project API and Calendar API are not probed: `GET /business-references` degrades per source '
     + '(`sources.projects` / `sources.calendar`) when they are unavailable.',
   responses: {
     200: {

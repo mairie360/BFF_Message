@@ -65,6 +65,9 @@ async function listChatUsers(
 
   for (let page = 0; page < MAX_MESSAGE_API_PAGES; page += 1) {
     const params = { limit: MESSAGE_API_PAGE_SIZE, offset: page * MESSAGE_API_PAGE_SIZE };
+    // Sequential on purpose: Message API gives no total, only `has_more`, so the next page is only known after
+    // this one (a chat has a few members: one page in practice).
+    // eslint-disable-next-line no-await-in-loop
     const response = await callUpstream(
       'MESSAGE_API',
       () => messageClient.getChatUsers(chatId, params, messageApi(context)),
@@ -548,6 +551,8 @@ export async function fetchMessagingBootstrap(context: CallContext): Promise<{
   let activeConversation: Awaited<ReturnType<typeof loadConversation>> | undefined;
   for (let attempt = 0; attempt < MAX_BOOTSTRAP_ATTEMPTS && conversations.length > 0; attempt += 1) {
     try {
+      // Sequential on purpose: the next conversation is only read when this one was deleted meanwhile (404).
+      // eslint-disable-next-line no-await-in-loop
       activeConversation = await loadConversation(conversations[0].id, { limit: DEFAULT_MESSAGES_LIMIT }, messagesContext);
       break;
     } catch (error) {

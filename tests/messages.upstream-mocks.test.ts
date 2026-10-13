@@ -3,10 +3,11 @@ import type { Express } from 'express';
 import request from 'supertest';
 import type { ChatView, MessageView } from '@mairie360/message-api-openapi/model';
 import type { ListDirectoryUsersParams } from '@mairie360/core-api-openapi/model';
-import type { ProjectListItem, ProjectTask } from '@mairie360/bff-project-openapi/model';
-import type { CalendarEvent } from '@mairie360/bff-calendar-openapi/model';
+import type { ProjectListItemView, TaskView } from '@mairie360/project-api-openapi/model';
+import type { EventView } from '@mairie360/calendar-api-openapi/model';
 
-// Tous les services amont (Message API, Core API pour l'annuaire, BFF Projets et BFF Calendrier) sont servis
+// Tous les services amont (Message API, Core API pour l'annuaire, Project API et Calendar API, jamais un autre BFF :
+// MAIR-525) sont servis
 // par de vrais serveurs locaux pilotés par les contrats reconstruits depuis leurs paquets @mairie360/*-openapi
 // installés (tests/support/orval-contract.ts) : chaque requête du BFF (chemin, paramètres, corps JSON) et
 // chaque réponse de succès simulée est validée contre ces contrats. Les corps simulés sont typés par les
@@ -16,9 +17,9 @@ import { ContractMockServer } from './support/contract-mock-server';
 import { OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract } from './support/orval-contract';
 import {
-  authorizationFor, calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, chatUsers, chatView, chatsResult, coreApiUrls,
-  directChatView, acknowledgeReadResult, createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffError, projectBffUrls, projectDetailsResponse,
-  projectListItem, projectsPageResponse, taskItem, tokenFor, users,
+  authorizationFor, calendarApiUrls, calendarResult, eventView, chatResult, chatUsers, chatView, chatsResult, coreApiUrls,
+  directChatView, acknowledgeReadResult, createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectApiUrls,
+  projectListItem, projectsResult, sessionToken, taskView, tasksResult, tokenFor, users,
 } from './support/upstream-fixtures';
 import { MAX_PROJECT_DETAILS, PROJECTS_PAGE_LIMIT } from '../src/routes/Messages/business_references';
 
@@ -26,9 +27,9 @@ const { agent, sophie, thomas } = users;
 
 const messageApi = new ContractMockServer('MESSAGE_API', loadOrvalContract('@mairie360/message-api-openapi'));
 const coreApi = new ContractMockServer('CORE_API', loadOrvalContract('@mairie360/core-api-openapi'));
-const projectBff = new ContractMockServer('PROJECT_BFF', loadOrvalContract('@mairie360/bff-project-openapi'));
-const calendarBff = new ContractMockServer('CALENDAR_BFF', loadOrvalContract('@mairie360/bff-calendar-openapi'));
-const mocks = [messageApi, coreApi, projectBff, calendarBff];
+const projectApi = new ContractMockServer('PROJECT_API', loadOrvalContract('@mairie360/project-api-openapi'));
+const calendarApi = new ContractMockServer('CALENDAR_API', loadOrvalContract('@mairie360/calendar-api-openapi'));
+const mocks = [messageApi, coreApi, projectApi, calendarApi];
 const bffContract = OpenApiContract.load(path.join(__dirname, '..', 'contracts', 'openapi.json'));
 
 // Gabarits du contrat Message API (clés des mocks) ; les chemins concrets attendus viennent de messageApiUrls.
@@ -42,9 +43,9 @@ const MESSAGE_API = {
   read: '/api/v1/{chatId}/read/',
   health: '/health',
 } as const;
-const CORE_API = { directory: '/api/v1/user/', health: '/health' } as const;
-const PROJECT_BFF = { page: '/projects-page', project: '/projects/{projectId}' } as const;
-const CALENDAR_BFF = { bootstrap: '/calendar/bootstrap' } as const;
+const CORE_API = { directory: '/api/v1/user/', me: '/api/v1/user/me/', health: '/health' } as const;
+const PROJECT_API = { projects: '/api/v1/projects/', tasks: '/api/v1/projects/{projectId}/tasks/' } as const;
+const CALENDAR_API = { calendar: '/api/v1/calendar' } as const;
 
 let app: Express;
 
@@ -57,8 +58,8 @@ beforeAll(async () => {
   const coreApiUrl = new URL(coreApi.url);
   process.env.CORE_API_URL = coreApiUrl.hostname;
   process.env.CORE_API_PORT = coreApiUrl.port;
-  process.env.PROJECT_BFF_URL = projectBff.url;
-  process.env.CALENDAR_BFF_URL = calendarBff.url;
+  process.env.PROJECT_API_URL = projectApi.url;
+  process.env.CALENDAR_API_URL = calendarApi.url;
   ({ app } = await import('../src/app'));
 });
 afterAll(async () => { await Promise.all(mocks.map((mock) => mock.stop())); });
@@ -175,7 +176,7 @@ const called = (method: string, url: string) => `${method} ${url}`;
 /** First page of a paginated Message API listing, as the BFF asks for it (largest page). */
 const FIRST_PAGE = { limit: 100, offset: 0 };
 
-describe('Message BFF with contract-driven Message API, BFF Project and BFF Calendar mocks', () => {
+describe('Message BFF with contract-driven Message API, Core API, Project API and Calendar API mocks', () => {
   describe('conversations', () => {
     test('GET /conversations lists one page with ONE Message API call and forwards the session (MAIR-507)', async () => {
       mockMessageApi({ chats: [chatView(4, 'Équipe communication', 3, 8), chatView(5, 'Conseil municipal', 0, 1)] });
@@ -1011,25 +1012,31 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
   });
 
   describe('GET /business-references', () => {
-    type Scenario = { projects?: ProjectListItem[]; tasks?: Record<string, ProjectTask[]>; events?: CalendarEvent[] };
-    function mockBusinessBffs({ projects = [], tasks = {}, events = [] }: Scenario = {}) {
-      projectBff.on('get', PROJECT_BFF.page, { body: projectsPageResponse(projects) });
-      projectBff.on('get', PROJECT_BFF.project, ({ pathParams }) => {
-        const project = projects.find((candidate) => candidate.id === pathParams.projectId);
-        return project
-          ? { body: projectDetailsResponse(project, tasks[project.id] ?? []) }
-          : { status: 404, body: projectBffError('NOT_FOUND', 'Projet introuvable'), outOfContract: true };
+    type Scenario = { projects?: ProjectListItemView[]; tasks?: Record<number, TaskView[]>; events?: EventView[]; coreRoles?: string[] };
+    function mockBusinessApis({ projects = [], tasks = {}, events = [], coreRoles = ['User'] }: Scenario = {}) {
+      projectApi.on('get', PROJECT_API.projects, { body: projectsResult(projects) });
+      projectApi.on('get', PROJECT_API.tasks, ({ pathParams }) => {
+        const id = Number(pathParams.projectId);
+        return projects.some((project) => project.id === id)
+          ? { body: tasksResult(tasks[id] ?? []) }
+          : { status: 404, raw: 'Unknown project.', contentType: 'text/plain', outOfContract: true };
       });
-      calendarBff.on('get', CALENDAR_BFF.bootstrap, { body: calendarBootstrapResponse(events) });
+      calendarApi.on('get', CALENDAR_API.calendar, { body: calendarResult(events) });
+      coreApi.on('get', CORE_API.me, { body: {
+        first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [],
+        role: coreRoles[0] ?? '', roles: coreRoles,
+      } });
     }
+    const withRoles = (roles: string[]) => `Bearer ${sessionToken(agent.id, undefined, undefined, { roles })}`;
 
-    test('aggregates project, task and event references with the caller session', async () => {
-      const budget = projectListItem({ id: 'project-42', title: 'Budget participatif' });
-      const school = projectListItem({ id: 'project/43', title: 'École' });
-      mockBusinessBffs({
+    test('MAIR-525: aggregates project, task and event references from the APIs, never another BFF', async () => {
+      const budget = projectListItem(42, { name: 'Budget participatif' });
+      const school = projectListItem(43, { name: 'École', tasks_total: 0 });
+      mockBusinessApis({
         projects: [budget, school],
-        tasks: { [budget.id]: [taskItem({ id: 'task-7', title: 'Validation' })] },
-        events: [calendarEvent({ id: 9, title: 'Conseil', date: '2026-09-08' }), calendarEvent({ id: 'evt-10', title: 'Permanence', date: '2026-09-12' })],
+        tasks: { 42: [taskView(7, { title: 'Validation', assigned_to: agent.id })] },
+        // 08:00Z and 22:30Z are the 8th at 10:00 and the 13th at 00:30 in Paris.
+        events: [eventView(9, { name: 'Conseil', start: '2026-09-08T08:00:00Z' }), eventView(10, { name: 'Permanence', start: '2026-09-12T22:30:00Z' })],
       });
 
       const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
@@ -1040,36 +1047,76 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(response.body).toEqual({
         references: [
           { id: 'project:project-42', title: 'Budget participatif', kind: 'project', description: 'Projet' },
-          { id: 'project:project/43', title: 'École', kind: 'project', description: 'Projet' },
+          { id: 'project:project-43', title: 'École', kind: 'project', description: 'Projet' },
           { id: 'task:task-7', title: 'Validation', kind: 'task', description: 'Tâche · Budget participatif' },
           { id: 'event:9', title: 'Conseil', kind: 'event', description: 'Calendrier · 2026-09-08' },
-          { id: 'event:evt-10', title: 'Permanence', kind: 'event', description: 'Calendrier · 2026-09-12' },
+          { id: 'event:10', title: 'Permanence', kind: 'event', description: 'Calendrier · 2026-09-13' },
         ],
         sources: { projects: 'available', calendar: 'available' },
       });
 
-      expect(upstreamSequence(projectBff)).toContain(called('GET', projectBffUrls.getGetProjectsPageUrl({ limit: PROJECTS_PAGE_LIMIT })));
-      // Le BFF encode l'identifiant avant de le passer au client généré, qui l'insère tel quel.
-      expect(projectBff.calls(PROJECT_BFF.project).map((call) => call.url.pathname).sort())
-        .toEqual([projectBffUrls.getGetProjectsProjectIdUrl('project-42'), projectBffUrls.getGetProjectsProjectIdUrl(encodeURIComponent('project/43'))].sort());
-      const [bootstrap] = calendarBff.calls(CALENDAR_BFF.bootstrap);
-      expect(bootstrap.url.pathname).toBe(calendarBffUrls.getGetCalendarBootstrapUrl());
-      // About six months around today, never more than one year (MAIR-400).
-      const { from, to } = Object.fromEntries(bootstrap.url.searchParams);
-      const days = (Date.parse(to!) - Date.parse(from!)) / 86_400_000;
+      expect(upstreamSequence(projectApi)).toContain(called('GET', projectApiUrls.getGetProjectsUrl({ limit: PROJECTS_PAGE_LIMIT })));
+      // Only the project with active tasks gets its list read.
+      expect(projectApi.calls(PROJECT_API.tasks).map((call) => call.pathParams.projectId)).toEqual(['42']);
+      const [calendar] = calendarApi.calls(CALENDAR_API.calendar);
+      expect(calendar.url.pathname).toBe(calendarApiUrls.getGetCalendarUrl({ start: '', end: '' }).split('?')[0]);
+      // About six months around today, never more than one year (MAIR-400), in one Calendar API call.
+      const { start, end } = Object.fromEntries(calendar.url.searchParams);
+      const days = (Date.parse(end!) - Date.parse(start!)) / 86_400_000;
       expect(days).toBeGreaterThan(300);
-      expect(days).toBeLessThanOrEqual(365);
-      expect(Date.parse(from!)).toBeLessThan(Date.now());
-      expect(Date.parse(to!)).toBeGreaterThan(Date.now());
-      // from/to are declared by @mairie360/bff-calendar-openapi since 0.4.0.
-      expect(bootstrap.undeclaredQuery).toEqual([]);
-      expect([...projectBff.requests, ...calendarBff.requests].every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
+      expect(days).toBeLessThan(366);
+      expect(calendar.undeclaredQuery).toEqual([]);
+      expect([...projectApi.requests, ...calendarApi.requests].every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
     });
 
-    test('keeps a project whose details fail without inventing its tasks', async () => {
-      const budget = projectListItem({ id: 'project-42', title: 'Budget participatif' });
-      mockBusinessBffs({ projects: [budget], tasks: { [budget.id]: [taskItem()] } });
-      projectBff.on('get', PROJECT_BFF.project, { status: 404, body: projectBffError('NOT_FOUND', 'Projet introuvable'), outOfContract: true });
+    test.each([
+      ['an agent (roles from Core)', () => authorizationFor(agent.id), ['User'], ['task:task-1']],
+      ['a Responsable (roles from Core)', () => authorizationFor(agent.id), ['Responsable'], ['task:task-1', 'task:task-2']],
+      ['an admin (roles in the token)', () => withRoles(['admin']), ['User'], ['task:task-1', 'task:task-2']],
+      ['an agent (roles in the token) whom Core calls admin', () => withRoles(['User']), ['admin'], ['task:task-1']],
+    ])('MAIR-525: offers %s the tasks BFF Project would show them', async (_label, authorization, coreRoles, expected) => {
+      mockBusinessApis({
+        projects: [projectListItem(1, { tasks_total: 2 })], coreRoles,
+        tasks: { 1: [taskView(1, { assigned_to: agent.id }), taskView(2, { assigned_to: 999 })] },
+      });
+
+      const response = await request(app).get('/business-references').set('Authorization', authorization());
+
+      expect(response.status).toBe(200);
+      expect(response.body.references.filter((reference: { kind: string }) => reference.kind === 'task').map((reference: { id: string }) => reference.id))
+        .toEqual(expected);
+    });
+
+    test('MAIR-525: roles Core cannot give fall back to the caller\'s own tasks, the projects stay available', async () => {
+      mockBusinessApis({ projects: [projectListItem(1, { tasks_total: 2 })], tasks: { 1: [taskView(1, { assigned_to: agent.id }), taskView(2)] } });
+      coreApi.on('get', CORE_API.me, { status: 500, raw: 'boom', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.body.sources.projects).toBe('available');
+      expect(response.body.references.filter((reference: { kind: string }) => reference.kind === 'task').map((reference: { id: string }) => reference.id))
+        .toEqual(['task:task-1']);
+    });
+
+    test('MAIR-525: a token with roles never calls Core for them', async () => {
+      mockBusinessApis({ projects: [projectListItem(1)], tasks: { 1: [taskView(1)] } });
+
+      await request(app).get('/business-references').set('Authorization', withRoles(['Maire']));
+
+      expect(coreApi.calls(CORE_API.me)).toHaveLength(0);
+    });
+
+    test('lists only the events the caller is a member of, like BFF Calendar', async () => {
+      mockBusinessApis({ events: [eventView(1), eventView(2, { is_member: false })] });
+
+      const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.body.references.map((reference: { id: string }) => reference.id)).toEqual(['event:1']);
+    });
+
+    test('keeps a project whose task list fails without inventing its tasks', async () => {
+      mockBusinessApis({ projects: [projectListItem(42, { name: 'Budget participatif' })] });
+      projectApi.on('get', PROJECT_API.tasks, { status: 500, raw: 'boom', contentType: 'text/plain', outOfContract: true });
 
       const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
 
@@ -1080,23 +1127,32 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       });
     });
 
-    test('details only projects whose listing reports tasks, at most MAX_PROJECT_DETAILS of them (MAIR-400)', async () => {
-      const empty = projectListItem({ id: 'project-empty', title: 'Sans tâche', tasks: { total: 0, completed: 0 } });
-      const busy = Array.from({ length: MAX_PROJECT_DETAILS + 5 }, (_, index) => projectListItem({ id: `project-${index}`, title: `Projet ${index}` }));
-      mockBusinessBffs({ projects: [empty, ...busy] });
+    test('reads the task lists of projects with active tasks only, at most MAX_PROJECT_DETAILS of them (MAIR-400)', async () => {
+      const done = projectListItem(1, { name: 'Terminé', tasks_total: 3, tasks_completed: 3 });
+      const busy = Array.from({ length: MAX_PROJECT_DETAILS + 5 }, (_, index) => projectListItem(100 + index));
+      mockBusinessApis({ projects: [done, ...busy] });
 
       const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
 
       expect(response.status).toBe(200);
       expect(response.body.references.filter((reference: { kind: string }) => reference.kind === 'project')).toHaveLength(busy.length + 1);
-      const detailed = projectBff.calls(PROJECT_BFF.project).map((call) => call.pathParams.projectId);
-      expect(detailed).toHaveLength(MAX_PROJECT_DETAILS);
-      expect(detailed).not.toContain('project-empty');
+      const read = projectApi.calls(PROJECT_API.tasks).map((call) => call.pathParams.projectId);
+      expect(read).toHaveLength(MAX_PROJECT_DETAILS);
+      expect(read).not.toContain('1');
+    });
+
+    test('MAIR-525: the calendar is one call whatever the number of events (no detail per event)', async () => {
+      mockBusinessApis({ events: Array.from({ length: 100 }, (_, index) => eventView(index + 1)) });
+
+      const response = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
+
+      expect(response.body.references).toHaveLength(100);
+      expect(calendarApi.requests).toHaveLength(1);
     });
 
     test('marks each failing source unavailable independently', async () => {
-      mockBusinessBffs({ events: [calendarEvent({ id: 9, title: 'Conseil' })] });
-      projectBff.on('get', PROJECT_BFF.page, { status: 502, body: projectBffError('BAD_GATEWAY', 'Project API indisponible'), outOfContract: true });
+      mockBusinessApis({ events: [eventView(9, { name: 'Conseil' })] });
+      projectApi.on('get', PROJECT_API.projects, { status: 502, raw: 'Project API indisponible', contentType: 'text/plain', outOfContract: true });
 
       const projectsDown = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
 
@@ -1104,10 +1160,10 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expectBffContract('get', '/business-references', projectsDown);
       expect(projectsDown.body.sources).toEqual({ projects: 'unavailable', calendar: 'available' });
       expect(projectsDown.body.references.map((reference: { id: string }) => reference.id)).toEqual(['event:9']);
-      expect(projectBff.calls(PROJECT_BFF.project)).toHaveLength(0);
+      expect(projectApi.calls(PROJECT_API.tasks)).toHaveLength(0);
 
-      mockBusinessBffs({ projects: [projectListItem()] });
-      calendarBff.on('get', CALENDAR_BFF.bootstrap, { dropConnection: true });
+      mockBusinessApis({ projects: [projectListItem(1)] });
+      calendarApi.on('get', CALENDAR_API.calendar, { dropConnection: true });
 
       const calendarDown = await request(app).get('/business-references').set('Authorization', authorizationFor(agent.id));
 
@@ -1115,14 +1171,14 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
       expect(calendarDown.body.sources).toEqual({ projects: 'available', calendar: 'unavailable' });
     });
 
-    test('requires a session and calls no BFF without it', async () => {
-      mockBusinessBffs();
+    test('requires a session and calls no API without it', async () => {
+      mockBusinessApis();
 
       const response = await request(app).get('/business-references');
 
       expect(response.status).toBe(401);
       expectBffContract('get', '/business-references', response);
-      expect([...projectBff.requests, ...calendarBff.requests]).toHaveLength(0);
+      expect([...projectApi.requests, ...calendarApi.requests]).toHaveLength(0);
     });
   });
 
@@ -1173,18 +1229,19 @@ describe('Message BFF with contract-driven Message API, BFF Project and BFF Cale
     });
 
     test.each([
-      ['PROJECT_BFF', { projects: 'unavailable', calendar: 'available' }],
-      ['CALENDAR_BFF', { projects: 'available', calendar: 'unavailable' }],
+      ['PROJECT_API', { projects: 'unavailable', calendar: 'available' }],
+      ['CALENDAR_API', { projects: 'available', calendar: 'unavailable' }],
     ] as const)('GET /business-references marks the source unavailable without %s_URL', async (service, sources) => {
-      projectBff.on('get', PROJECT_BFF.page, { body: projectsPageResponse([]) });
-      calendarBff.on('get', CALENDAR_BFF.bootstrap, { body: calendarBootstrapResponse([]) });
+      projectApi.on('get', PROJECT_API.projects, { body: projectsResult([]) });
+      calendarApi.on('get', CALENDAR_API.calendar, { body: calendarResult([]) });
+      coreApi.on('get', CORE_API.me, { body: { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: '', roles: [] } });
 
       const response = await withoutUrl(service, () => request(app).get('/business-references').set('Authorization', authorizationFor(agent.id)));
 
       expect(response.status).toBe(200);
       expectBffContract('get', '/business-references', response);
       expect(response.body.sources).toEqual(sources);
-      expect((service === 'PROJECT_BFF' ? projectBff : calendarBff).requests).toEqual([]);
+      expect((service === 'PROJECT_API' ? projectApi : calendarApi).requests).toEqual([]);
     });
 
     test('reads the upstream URL on every call, not at import time', async () => {
