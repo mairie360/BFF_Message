@@ -81,7 +81,8 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
     expect(post.operation.parameters).toEqual([{ name: 'chatId', in: 'path', required: true, schema: { type: 'number' } }]);
     expect(messageApi.requestBodySchema(post)).toEqual({ required: true, schema: { $ref: '#/components/schemas/PostMessageView' } });
     expect(messageApi.schema('CreateChatView')).toMatchObject({ required: ['members', 'name'] });
-    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'member_count', 'name', 'unread_count'] });
+    // MAIR-524: `last_activity_at`, the cursor of the incremental reads, which the BFF does not use.
+    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'last_activity_at', 'member_count', 'name', 'unread_count'] });
     // MAIR-507: the chat page carries the chat itself, the members carry their names.
     expect(messageApi.schema('GetChatResultView')).toMatchObject({ required: expect.arrayContaining(['chat', 'messages']) });
     expect(messageApi.schema('User')).toMatchObject({ required: ['first_name', 'id', 'last_name'] });

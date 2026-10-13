@@ -201,7 +201,10 @@ function memberCountLabel(memberCount: number): string {
  * A conversation as Message API lists it: `name` is ready to display (the title of a group, the other
  * participant's name for a direct conversation), so nothing else is read to build it.
  */
-function mapChatToConversation(chat: ChatView, lastMessage?: Pick<MessageView, 'content' | 'created_at'>): BffConversation {
+/** The fields of a chat a conversation is built from: a chat just created has no `last_activity_at` to read. */
+type ChatSummary = Pick<ChatView, 'id' | 'name' | 'kind' | 'contact_id' | 'member_count' | 'unread_count'>;
+
+function mapChatToConversation(chat: ChatSummary, lastMessage?: Pick<MessageView, 'content' | 'created_at'>): BffConversation {
   const summary = {
     id: publicChatId(chat.id),
     lastMessage: lastMessage?.content,
