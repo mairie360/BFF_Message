@@ -78,7 +78,7 @@ export function checkCoreApi(): Promise<unknown> {
 
 /**
  * Names of the caller's roles, from Core API `GET /api/v1/user/me/` (idempotent: retried once). Only read for a
- * token issued before the `roles` claim (MAIR-529); a newer one carries them (`sessionRoles`).
+ * token without the `role` claim, or with an empty one (MAIR-529); otherwise the token carries it (`sessionRole`).
  */
 export async function readCallerRoles(context: CallContext): Promise<string[]> {
   const { data } = await callUpstream(

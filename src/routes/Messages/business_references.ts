@@ -1,6 +1,6 @@
 import {
   PROJECT_TASK_MANAGER_ROLES, addDays, asCaller, callUpstream, createRateLimiter, hasRole, mapWithConcurrency, parisDate,
-  requireSession, sessionKey, sessionRoles, sessionUserId, utcToWallClock, wallClockToUtc,
+  requireSession, sessionKey, sessionRole, sessionUserId, utcToWallClock, wallClockToUtc,
 } from '@mairie360/bffs-lib';
 import { Request, Router } from 'express';
 import { z } from 'zod';
@@ -49,7 +49,8 @@ const READ = { declared: [401], retry: true } as const;
  * cannot be read fall back to the narrowest view (the caller's own tasks) rather than failing the projects.
  */
 async function seesEveryTask(req: Request): Promise<boolean> {
-  const roles = sessionRoles(req) ?? await readCallerRoles({ req, declared: [401] }).catch(() => []);
+  const role = sessionRole(req);
+  const roles = role !== undefined ? [role] : await readCallerRoles({ req, declared: [401] }).catch(() => []);
   return hasRole(roles, ...PROJECT_TASK_MANAGER_ROLES);
 }
 

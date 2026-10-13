@@ -87,7 +87,7 @@ generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('M
 `GET /api/v1/user/` — the BFF has no database access.
 `business_references.ts` calls Project API and Calendar API through their published clients
 (`src/clients/businessApiClients.ts`: `@mairie360/project-api-openapi`, `@mairie360/calendar-api-openapi`), keeps
-BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, roles from `sessionRoles` or Core
+BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, role from `sessionRole` or roles from Core
 `getMe`) and degrades per-source (`sources: available | unavailable`). `stream.ts` (MAIR-525) relays Message API's
 SSE `GET /api/v1/stream` as `GET /stream`: signals translated to `{ type, conversationId }`, pings kept, `id:` /
 `Last-Event-ID` relayed, ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full

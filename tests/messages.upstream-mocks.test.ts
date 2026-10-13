@@ -1027,7 +1027,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         role: coreRoles[0] ?? '', roles: coreRoles,
       } });
     }
-    const withRoles = (roles: string[]) => `Bearer ${sessionToken(agent.id, undefined, undefined, { roles })}`;
+    const withClaims = (claims: object) => `Bearer ${sessionToken(agent.id, undefined, undefined, claims)}`;
 
     test('MAIR-525: aggregates project, task and event references from the APIs, never another BFF', async () => {
       const budget = projectListItem(42, { name: 'Budget participatif' });
@@ -1072,8 +1072,10 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
     test.each([
       ['an agent (roles from Core)', () => authorizationFor(agent.id), ['User'], ['task:task-1']],
       ['a Responsable (roles from Core)', () => authorizationFor(agent.id), ['Responsable'], ['task:task-1', 'task:task-2']],
-      ['an admin (roles in the token)', () => withRoles(['admin']), ['User'], ['task:task-1', 'task:task-2']],
-      ['an agent (roles in the token) whom Core calls admin', () => withRoles(['User']), ['admin'], ['task:task-1']],
+      ['an admin (role in the token, MAIR-529)', () => withClaims({ role: 'admin' }), ['User'], ['task:task-1', 'task:task-2']],
+      ['an agent (role in the token) whom Core calls admin', () => withClaims({ role: 'User' }), ['admin'], ['task:task-1']],
+      ['an agent (empty role in the token, roles from Core)', () => withClaims({ role: '' }), ['User'], ['task:task-1']],
+      ['an agent whose token only has a `roles` claim (ignored)', () => withClaims({ roles: ['admin'] }), ['User'], ['task:task-1']],
     ])('MAIR-525: offers %s the tasks BFF Project would show them', async (_label, authorization, coreRoles, expected) => {
       mockBusinessApis({
         projects: [projectListItem(1, { tasks_total: 2 })], coreRoles,
@@ -1098,10 +1100,10 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         .toEqual(['task:task-1']);
     });
 
-    test('MAIR-525: a token with roles never calls Core for them', async () => {
+    test('MAIR-525: a token with a role never calls Core for it', async () => {
       mockBusinessApis({ projects: [projectListItem(1)], tasks: { 1: [taskView(1)] } });
 
-      await request(app).get('/business-references').set('Authorization', withRoles(['Maire']));
+      await request(app).get('/business-references').set('Authorization', withClaims({ role: 'Maire' }));
 
       expect(coreApi.calls(CORE_API.me)).toHaveLength(0);
     });
