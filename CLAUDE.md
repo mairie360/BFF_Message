@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `bff-message` is the Backend-for-Frontend for Mairie360 internal messaging. It adapts the upstream
 **Message API** (chats/messages), the **Core API** directory (contacts and current user),
-and **BFF Project** / **BFF Calendar** (business references) into the shapes the
+and **Project API** / **Calendar API** (business references; never another BFF, MAIR-525) into the shapes the
 [`Messages_Web_Service`](https://github.com/mairie360/Messages_Web_Service) frontend needs. The BFF
 owns the data contract; the web service owns the screens. Docs live in `docs/{en,fr}/` and `CONTRACT.md`.
 
@@ -37,8 +37,8 @@ the environment; set it to a token with read access to those packages before `np
 
 Env vars for local runs (`.env.example`, loaded by `import 'dotenv/config'` on the first line of
 `src/index.ts` and `src/app.ts`): `PORT` (default 4003), and one `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`) per upstream, read on
-every call by the lib's `baseUrl` (MAIR-431): `MESSAGE_API_URL`, `CORE_API_URL`, `PROJECT_BFF_URL`,
-`CALENDAR_BFF_URL`. There is no localhost default: `assertConfigured(UPSTREAMS)` stops the server at
+every call by the lib's `baseUrl` (MAIR-431): `MESSAGE_API_URL`, `CORE_API_URL`, `PROJECT_API_URL`,
+`CALENDAR_API_URL`. There is no localhost default: `assertConfigured(UPSTREAMS)` stops the server at
 start-up when one is missing (under `require.main === module`, so tests are not affected), and a route
 calling an unconfigured upstream answers 503 (declared in the contract). `TRUST_PROXY` sets Express' `trust proxy` (lib `parseTrustProxy`). `RATE_LIMIT_ENABLED=false` disables the per-session limit of `GET /business-references`
 (`BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS`, defaults 30 / 60000, lib `createRateLimiter` keyed on
@@ -82,12 +82,16 @@ envelope with `ErrorResponseSchema.clone()` (zod 4 only adds `.openapi()` to sch
 generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('MESSAGE_API', req, 5_000)`
 (base URL read now + the caller's token) on every call. `/check_apis` uses the lib's `checkApis` with
 `withoutSession(...)` probes of Message API and Core API (`message_api`, `core_api`, schema
-`CheckApisResponse`); BFF Project / BFF Calendar are not probed, business references degrade per source.
+`CheckApisResponse`); Project API / Calendar API are not probed, business references degrade per source.
 `src/clients/coreClient.ts` reads the directory (contacts and current user) through Core API's
 `GET /api/v1/user/` — the BFF has no database access.
-`business_references.ts` calls BFF Project and BFF Calendar through their published clients
-(`@mairie360/bff-project-openapi`, `@mairie360/bff-calendar-openapi`) and degrades per-source
-(`sources: available | unavailable`).
+`business_references.ts` calls Project API and Calendar API through their published clients
+(`src/clients/businessApiClients.ts`: `@mairie360/project-api-openapi`, `@mairie360/calendar-api-openapi`), keeps
+BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, roles from `sessionRoles` or Core
+`getMe`) and degrades per-source (`sources: available | unavailable`). `stream.ts` (MAIR-525) relays Message API's
+SSE `GET /api/v1/stream` as `GET /stream`: signals translated to `{ type, conversationId }`, pings kept, `id:` /
+`Last-Event-ID` relayed, ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full
+answer; k6 covers it in `crud` only).
 
 **ID convention.** Outward IDs are prefixed strings: `conversation-<n>`, `message-<n>`, `user-<n>`.
 `parseNumericId` extracts the trailing digits before calling upstream (which uses numeric ids).
@@ -133,11 +137,11 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
 
 - `tests/message_helpers.test.ts` `jest.mock`s `messageClient` (fast helper unit tests).
 - `tests/messages.upstream-mocks.test.ts` keeps the **real** axios client and `fetch`, and serves
-  Message API, BFF Project and BFF Calendar from local HTTP servers
+  Message API, Core API, Project API and Calendar API from local HTTP servers
   (`tests/support/contract-mock-server.ts`) that validate every request path, query, JSON body and
   every mocked success response against contracts rebuilt at test time from the **installed**
-  `@mairie360/message-api-openapi` and `core-api-openapi` (dependencies), `bff-project-openapi` and
-  `bff-calendar-openapi` (devDependencies) packages (`tests/support/orval-contract.ts` parses their
+  `@mairie360/message-api-openapi`, `core-api-openapi`, `project-api-openapi` and `calendar-api-openapi`
+  packages (`tests/support/orval-contract.ts` parses their
   orval `endpoints/*.ts` + `model/*.ts` with the TypeScript compiler API). Bump a package to test
   against a new upstream contract; `tests/upstream-contracts.test.ts` checks versions, consumed
   operations and fixtures. Orval loses error statuses (success is exposed as `2XX`): every mocked
@@ -165,12 +169,13 @@ get → put → post → delete → patch: `DELETE /conversations/{id}` runs bef
 creates the group it deletes, and `cleanup()` deletes the group and direct conversation the
 iteration kept. `POST /attachments` is sent as a hand-built multipart string body.
 
-MAIR-474: both scripts source `stack_secrets.sh` (a random `JWT_SECRET` per run, `ADMIN_JWT` for the ZAP replacer), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with `JWT_SECRET`, required at startup). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. `GET /conversations` used to read the members and directory names of every chat (about 33 upstream calls for an agent of 16 chats), which saturated the event loop under the rush (`GET /health` p95 of about 75 ms for a 50 ms budget): since MAIR-507 it is one call, `GET /health` has a p95 of about 7 ms and the rush p95 is about 22 ms. The reads also search by member name and page through the list, and the load handler of `GET /conversations/{conversationId}` checks the 8 members and 25 messages with their names.
+MAIR-474: both scripts source `stack_secrets.sh` (a random `JWT_SECRET` per run, `ADMIN_JWT` for the ZAP replacer), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with `JWT_SECRET`, required at startup). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400), and rule `100001` (unexpected content type) is scoped out of `/stream` only, whose documented answer is `text/event-stream` (MAIR-525). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. `GET /conversations` used to read the members and directory names of every chat (about 33 upstream calls for an agent of 16 chats), which saturated the event loop under the rush (`GET /health` p95 of about 75 ms for a 50 ms budget): since MAIR-507 it is one call, `GET /health` has a p95 of about 7 ms and the rush p95 is about 22 ms. The reads also search by member name and page through the list, and the load handler of `GET /conversations/{conversationId}` checks the 8 members and 25 messages with their names.
 
 ## Linting
 
 `eslint.config.cjs` (flat config) is the active one; `.eslintrc.js` is legacy and unused. Only
-`src/**/*.ts` is linted. `@typescript-eslint/no-explicit-any` is an **error** — use `unknown` +
+`src/**/*.ts` is linted. `no-await-in-loop` is an error (MAIR-525; the `has_more` member pages and the bootstrap's
+404 fallback stay sequential and say why). `@typescript-eslint/no-explicit-any` is an **error** — use `unknown` +
 narrowing. Unused args must be `_`-prefixed.
 
 ## Pull request reviewers

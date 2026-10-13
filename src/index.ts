@@ -3,7 +3,7 @@ import { assertConfigured } from '@mairie360/bffs-lib';
 import app from './app';
 
 /** Every upstream the BFF calls, configured by `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`). */
-export const UPSTREAMS = ['MESSAGE_API', 'CORE_API', 'PROJECT_BFF', 'CALENDAR_BFF'] as const;
+export const UPSTREAMS = ['MESSAGE_API', 'CORE_API', 'PROJECT_API', 'CALENDAR_API'] as const;
 
 /** Documented port of BFF Message. */
 const DEFAULT_PORT = 4003;

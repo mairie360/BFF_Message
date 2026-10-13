@@ -8,3 +8,4 @@
 90005	IGNORE	Sec-Fetch-* Headers Not Present (API, non applicable)
 100001	OUTOFSCOPE	.*/docs/?.*
 100000	OUTOFSCOPE	http://bff-message:4003/attachments.*
+100001	OUTOFSCOPE	http://bff-message:4003/stream.*

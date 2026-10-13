@@ -192,6 +192,15 @@ const handlers = {
       },
     });
   },
+  // MAIR-525: the SSE relay. The stack ends each stream after MESSAGE_STREAM_MAX_MS (1 s), like a client reconnecting.
+  'GET /stream': ({ request }) => {
+    const agent = randomAgent();
+    check(request({ headers: agent.headers, params: { timeout: '10s' } }), {
+      'stream 200': (r) => r.status === 200,
+      'stream is an event stream': (r) => r.status === 200 && String(r.headers['Content-Type']).startsWith('text/event-stream')
+        && String(r.body).startsWith('retry: '),
+    });
+  },
   'GET /me': ({ request }) => {
     const agent = randomAgent();
     check(request({ headers: agent.headers }), {
@@ -258,7 +267,8 @@ const handlers = {
 };
 
 const coverage = createCoverage(handlers);
-const readOperations = coverage.operations.filter((o) => o.method === 'GET');
+// The stream lasts MESSAGE_STREAM_MAX_MS by design: `crud` covers it, the read load does not replay it.
+const readOperations = coverage.operations.filter((o) => o.method === 'GET' && o.op !== 'GET /stream');
 
 // Deletes the conversations kept by the handlers, so that the listings do not grow during the test.
 function cleanup(data) {
@@ -275,6 +285,7 @@ function cleanup(data) {
 function budgetOf({ op, method }) {
   if (op === 'GET /health') return 50; // process probe
   if (op === 'GET /check_apis') return 150; // -> Message API / Core API /health
+  if (op === 'GET /stream') return 2000; // open for MESSAGE_STREAM_MAX_MS (1 s in the stack), then closed
   if (method === 'GET') return 400; // BFF aggregation + upstream reads
   return 800; // writes
 }

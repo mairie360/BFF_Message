@@ -10,11 +10,13 @@ Serveur Express 5.2.1 écrit en TypeScript. Les schémas Zod et leur registre Op
 
 ## Données et persistance
 
-Conversations et messages passent par Message API. `GET /conversations` renvoie une page de conversations (`limit` de 1 à 30, 20 par défaut ; `nextCursor` se rejoue en `cursor` ; `search` porte sur le nom de la conversation ou celui d’un de ses membres) lue en UN appel à Message API : chaque conversation porte son nom d’affichage (celui de l’autre participant pour une conversation directe), `kind`, `contactId` pour une directe, `memberCount`, `unreadCount`, et un groupe affiche `department: "N membres"`. `GET /conversations/{id}` ouvre une conversation en deux appels parallèles à Message API : la conversation, ses `participants` (id et nom) et les `limit` derniers messages (1 à 100, 30 par défaut) avec leur expéditeur et, pour une réponse, le message cité (auteur et extrait) ; `nextCursor` se passe en `before` à `GET /conversations/{id}/messages` pour les messages plus anciens, l’historique n’est donc jamais lu en entier. `POST /direct-messages` demande à Message API de trouver ou créer la conversation directe unique de la paire, puis y publie. Le `authorName` d’un message est le nom de l’auteur quand il est membre actuel de la conversation, omis sinon ; `GET /me` ne renvoie que ce que l’annuaire connaît (nom, e-mail, rôles), sans rôle, service, poste ou dernière connexion fictifs. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont agrégées depuis BFF Project et BFF Calendar. La modification locale du profil et les métadonnées de pièces jointes ne constituent pas une persistance complète.
+Conversations et messages passent par Message API. `GET /conversations` renvoie une page de conversations (`limit` de 1 à 30, 20 par défaut ; `nextCursor` se rejoue en `cursor` ; `search` porte sur le nom de la conversation ou celui d’un de ses membres) lue en UN appel à Message API : chaque conversation porte son nom d’affichage (celui de l’autre participant pour une conversation directe), `kind`, `contactId` pour une directe, `memberCount`, `unreadCount`, et un groupe affiche `department: "N membres"`. `GET /conversations/{id}` ouvre une conversation en deux appels parallèles à Message API : la conversation, ses `participants` (id et nom) et les `limit` derniers messages (1 à 100, 30 par défaut) avec leur expéditeur et, pour une réponse, le message cité (auteur et extrait) ; `nextCursor` se passe en `before` à `GET /conversations/{id}/messages` pour les messages plus anciens, l’historique n’est donc jamais lu en entier. `POST /direct-messages` demande à Message API de trouver ou créer la conversation directe unique de la paire, puis y publie. Le `authorName` d’un message est le nom de l’auteur quand il est membre actuel de la conversation, omis sinon ; `GET /me` ne renvoie que ce que l’annuaire connaît (nom, e-mail, rôles), sans rôle, service, poste ou dernière connexion fictifs. Les contacts proviennent directement de la table SQL `users`, y compris l’utilisateur courant (identifiant `sub` du jeton). Les références métier sont lues auprès de Project API et Calendar API (MAIR-525). La modification locale du profil et les métadonnées de pièces jointes ne constituent pas une persistance complète.
 
 Les pièces jointes ne sont pas encore prises en charge : `POST /attachments` répond 503 à un appelant authentifié (401 sinon) au lieu d’identifiants inventés, et un `attachmentIds` non vide est refusé en 400 sur `POST /conversations/{id}/messages`. `POST /conversations/{id}/read` relaie l’accusé de lecture à Message API ≥ 1.0 (`POST /api/v1/{chat_id}/read/`) : tous les messages jusqu’au `readUntilMessageId` facultatif inclus sont acquittés, ou jusqu’au dernier message (une lecture `limit=1`) quand le corps ou l’identifiant est absent ; une conversation vide répond `unreadCount: 0` sans rien acquitter. La réponse porte le `unreadCount` renvoyé par Message API ; ses 401/403/404 sont relayés, tout autre échec donne un 502. Les `limit` des listes sont compris entre 1 et 100 ; le BFF lit une page de Message API par requête (les membres par pages de 100). Un message dont le compte auteur est supprimé n’a pas d’`authorId` ; les messages sont limités à 5000 caractères, les noms de groupe à 100 et les descriptions à 500.
 
-`GET /business-references` borne ses appels amont : une liste BFF Project de 50 projets, le détail des tâches uniquement pour les projets listés qui en ont (au plus 20, 4 à la fois), et une fenêtre BFF Calendar de 182 jours de part et d’autre d’aujourd’hui (moins d’un an). La route est limitée en débit par appelant (voir `BUSINESS_REFERENCES_RATE_LIMIT_*`). Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
+`GET /business-references` lit les API, jamais un autre BFF (MAIR-525) : une liste Project API de 50 projets, la liste des tâches des seuls projets listés qui ont des tâches actives (au plus 20, 4 à la fois, tant que Project API ne liste pas les tâches de l’appelant en un appel), filtrées comme dans BFF Project (Admin, Maire et Responsable voient toutes les tâches, les autres rôles les leurs ; rôles lus dans le jeton, ou auprès de Core API pour un jeton plus ancien, la vue la plus restreinte s’ils ne peuvent pas être lus), et une seule liste Calendar API sur 182 jours de part et d’autre d’aujourd’hui (les événements dont l’appelant est membre ; aucun détail par événement).
+
+`GET /stream` (MAIR-525) relaie le canal SSE de Message API (`text/event-stream`) : chaque ligne `data:` est un `MessageStreamEvent` `{ type, conversationId }` désignant une conversation à recharger, le front n’interroge plus en boucle. Les commentaires `: ping` sont conservés ; un `id:` est relayé et `Last-Event-ID` est transmis à Message API (la reprise demande son curseur, MAIR-524). Le flux se termine avec la session et après `MESSAGE_STREAM_MAX_MS` (5 minutes par défaut) ; le client se reconnecte (`retry: 3000`). Une session refusée répond 401, une Message API indisponible 502. La route est limitée en débit par appelant (voir `BUSINESS_REFERENCES_RATE_LIMIT_*`). Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
 
 ## Installation et lancement local
 
@@ -32,8 +34,8 @@ Copier `.env.example` en `.env` à la racine et l’adapter aux services démarr
 PORT=4003
 MESSAGE_API_URL=http://localhost:3003
 CORE_API_URL=http://localhost:3000
-PROJECT_BFF_URL=http://localhost:4001
-CALENDAR_BFF_URL=http://localhost:4002
+PROJECT_API_URL=http://localhost:3001
+CALENDAR_API_URL=http://localhost:3002
 ```
 
 `.env` est chargé par `import 'dotenv/config'`, première ligne de `src/index.ts`. Chaque service amont est configuré par `<SERVICE>_URL` (schéma facultatif, `http` par défaut) et un `<SERVICE>_PORT` facultatif utilisé quand l’URL n’a pas de port, relus à chaque appel (MAIR-431). Il n’y a aucune valeur par défaut `localhost` : le serveur refuse de démarrer si l’une des quatre URL manque ou est invalide, et une route qui appellerait un service amont non configuré répond 503. L’exemple HTTP ne prépare pas de données.
@@ -61,8 +63,9 @@ Les valeurs ci-dessous sont des exemples locaux ou des comportements expliciteme
 | `PORT` | 4003 (défaut) | Port d’écoute. |
 | `MESSAGE_API_URL` / `MESSAGE_API_PORT` | http://localhost:3003 / — | Racine de Message API (ses routes sont publiées sous `/api/v1`), aussi sondée par `/check_apis`. **Obligatoire**. Remplace `MESSAGE_API_BASE_PATH` (supprimée). |
 | `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Annuaire Core API (contacts, utilisateur courant), aussi sondé par `/check_apis`. **Obligatoire**. |
-| `PROJECT_BFF_URL` / `PROJECT_BFF_PORT` | http://localhost:4001 / — | Source des références projets et tâches. **Obligatoire**. |
-| `CALENDAR_BFF_URL` / `CALENDAR_BFF_PORT` | http://localhost:4002 / — | Source des références événements. **Obligatoire**. |
+| `PROJECT_API_URL` / `PROJECT_API_PORT` | http://localhost:3001 / — | Source des références projets et tâches. **Obligatoire**. |
+| `CALENDAR_API_URL` / `CALENDAR_API_PORT` | http://localhost:3002 / — | Source des références événements. **Obligatoire**. |
+| `MESSAGE_STREAM_MAX_MS` | 300000 | Durée de vie maximale d’un `GET /stream`, après laquelle le client se reconnecte. |
 | `RATE_LIMIT_ENABLED` | true | `false` désactive la limite par appelant de `GET /business-references` (tests de charge). |
 | `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requêtes par session (empreinte du jeton Bearer, jamais le `sub` du JWT non vérifié) et par fenêtre sur `GET /business-references`, 429 au-delà. |
 | `TRUST_PROXY` | non définie (aucun proxy de confiance) | `trust proxy` d’Express (`true`, un nombre de sauts ou des adresses de confiance), pour que `req.ip` soit le vrai client derrière l’ingress. |
@@ -76,6 +79,7 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401, 429 |
+| GET | `/stream` | `Last-Event-ID` (optionnel) | 200 (`text/event-stream`), 401, 502, 503 |
 | POST | `/attachments` | multipart/form-data | 401, 502, 503 |
 | GET | `/messaging/bootstrap` | — | 200, 401, 502, 503 |
 | GET | `/contacts` | — | 200, 400, 401, 502, 503 |
@@ -91,7 +95,7 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 
 ## Session, permissions et erreurs
 
-Le seul identifiant accepté par le BFF est `Authorization: Bearer <token>` (MAIR-429) : le proxy du web service transforme le cookie `accessToken` en cet en-tête. Les cookies, `x-session-token` et les autres schémas sont ignorés. Toutes les routes sauf `/health`, `/check_apis` et la documentation sont liées à la session : sans jeton Bearer, elles répondent 401 avant tout appel amont, et leurs réponses portent `Cache-Control: no-store`. Le jeton de l’appelant, normalisé en `Bearer <token>`, est transmis à chaque appel amont (Message API, Core API, BFF Project, BFF Calendar) ; il n’y a aucun jeton par défaut. Le `sub` du JWT est lu sans vérifier la signature, uniquement pour construire les requêtes envoyées en amont avec ce même jeton et le sens des messages, jamais pour accorder un accès ni comme clé de limitation de débit. Les profils locaux et réponses de lecture ne doivent pas être interprétés comme une validation de stockage ou de droits par l’API distante.
+Le seul identifiant accepté par le BFF est `Authorization: Bearer <token>` (MAIR-429) : le proxy du web service transforme le cookie `accessToken` en cet en-tête. Les cookies, `x-session-token` et les autres schémas sont ignorés. Toutes les routes sauf `/health`, `/check_apis` et la documentation sont liées à la session : sans jeton Bearer, elles répondent 401 avant tout appel amont, et leurs réponses portent `Cache-Control: no-store`. Le jeton de l’appelant, normalisé en `Bearer <token>`, est transmis à chaque appel amont (Message API, Core API, Project API, Calendar API) ; il n’y a aucun jeton par défaut. Le `sub` du JWT est lu sans vérifier la signature, uniquement pour construire les requêtes envoyées en amont avec ce même jeton et le sens des messages, jamais pour accorder un accès ni comme clé de limitation de débit. Les profils locaux et réponses de lecture ne doivent pas être interprétés comme une validation de stockage ou de droits par l’API distante.
 
 Toutes les erreurs sont renvoyées dans l’enveloppe commune à tous les BFFs (`@mairie360/bffs-lib`,
 schéma `ErrorResponse` du contrat) : `{ "error": { "code": "NOT_FOUND", "message": "Resource not found", "details": [] } }`.
@@ -107,7 +111,7 @@ retentées une fois sur une panne transitoire. Tous les appels amont et leur tra
 
 `/check_apis` sonde l’opération `/health` de Message API et Core API avec les mêmes variables que les
 vrais appels et répond `{ status, message_api, core_api }` (`Connected` / `Unreachable`), 200 si les deux
-répondent, 502 sinon. BFF Project et BFF Calendar ne sont pas sondés : `GET /business-references` les
+répondent, 502 sinon. Project API et Calendar API ne sont pas sondés : `GET /business-references` les
 signale source par source. Les messages et corps amont ne sont jamais relayés ; une erreur inattendue donne
 un 500 générique.
 
@@ -121,7 +125,7 @@ npm run lint
 npm run build
 ```
 
-Les tests de `tests/messages.upstream-mocks.test.ts` exécutent le vrai client Message API et le vrai `fetch` contre des mocks HTTP locaux pilotés par les contrats Message API, BFF Project et BFF Calendar, reconstruits depuis les paquets `@mairie360/*-openapi` installés (types orval, versions épinglées dans `package.json`): chaque requête (chemin, paramètres, corps JSON) et chaque réponse de succès simulée est validée contre ces contrats, et les réponses du BFF contre `contracts/openapi.json`. Monter la version d'un paquet suffit à tester le nouveau contrat; les statuts d'erreur ne sont pas typés par orval et sont simulés explicitement. La table `users` (contacts) reste simulée par `jest.mock`.
+Les tests de `tests/messages.upstream-mocks.test.ts` exécutent le vrai client Message API et le vrai `fetch` contre des mocks HTTP locaux pilotés par les contrats Message API, Core API, Project API et Calendar API (`tests/stream.upstream-mocks.test.ts` couvre `GET /stream`), reconstruits depuis les paquets `@mairie360/*-openapi` installés (types orval, versions épinglées dans `package.json`): chaque requête (chemin, paramètres, corps JSON) et chaque réponse de succès simulée est validée contre ces contrats, et les réponses du BFF contre `contracts/openapi.json`. Monter la version d'un paquet suffit à tester le nouveau contrat; les statuts d'erreur ne sont pas typés par orval et sont simulés explicitement. La table `users` (contacts) reste simulée par `jest.mock`.
 
 `contracts:generate` exporte le registre runtime dans `contracts/openapi.json` et régénère `contracts/bff.d.ts`. `contracts:check` échoue si le contrat ou les types sont périmés. Exécuter ensuite `npm run contracts:sync` dans chaque web service associé et livrer les modifications de contrat ensemble.
 
