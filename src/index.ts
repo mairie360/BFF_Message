@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { assertConfigured } from '@mairie360/bffs-lib';
 import app from './app';
+import { logger } from './logger';
 
 /** Every upstream the BFF calls, configured by `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`). */
 export const UPSTREAMS = ['MESSAGE_API', 'CORE_API', 'PROJECT_API', 'CALENDAR_API'] as const;
@@ -14,5 +15,5 @@ if (require.main === module) {
   // The session tokens are verified with it (bffs-lib requireSession): without it every route answers 503.
   if (!process.env.JWT_SECRET?.trim()) throw new Error('Missing configuration: JWT_SECRET');
   const port = Number(process.env.PORT?.trim() || DEFAULT_PORT);
-  app.listen(port, () => console.log(`Server listening on port ${port}`));
+  app.listen(port, () => logger.info('server listening', { port }));
 }
