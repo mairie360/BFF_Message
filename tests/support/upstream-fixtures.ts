@@ -34,26 +34,38 @@ export function axiosResponse<T>(data: T, status = 200): AxiosResponse<T> {
 // --- Message API (@mairie360/message-api-openapi) ---
 
 // Message API (MAIR-478) adds the kind of a chat and, for a direct chat, the other agent; MAIR-507 its member count
-// and a ready-to-display name (the other participant's full name for a direct chat).
+// and a ready-to-display name (the other participant's full name for a direct chat); MAIR-524 the cursor of its last
+// change (`last_activity_at`), which the BFF does not read.
+const LAST_ACTIVITY_AT = '2026-09-15T09:00:00Z';
+
 export function chatView(id: number, name = `Conversation ${id}`, unread_count = 0, member_count = 3): ChatView {
-  return { id, name, unread_count, kind: 'group', contact_id: null, member_count };
+  return { id, name, unread_count, kind: 'group', contact_id: null, member_count, last_activity_at: LAST_ACTIVITY_AT };
 }
 
 /** A direct chat as the list shows it: named after the contact, always two participants. */
 export function directChatView(id: number, contact_id: number, name: string, unread_count = 0): ChatView {
-  return { id, name, unread_count, kind: 'direct', contact_id, member_count: 2 };
+  return { id, name, unread_count, kind: 'direct', contact_id, member_count: 2, last_activity_at: LAST_ACTIVITY_AT };
 }
 
 export function chatsResult(chats: ChatView[], has_more = false): GetChatsResultView {
   return { chats, has_more };
 }
 
+/** A message of the history: never deleted there, not edited, last changed when posted (MAIR-524 fields). */
 export function messageView(id: number, sender_id: number, overrides: Partial<MessageView> = {}): MessageView {
-  return { id, sender_id, content: `Message ${id}`, created_at: '2026-09-15T09:00:00Z', citation: null, quoted: null, ...overrides };
+  const created_at = overrides.created_at ?? '2026-09-15T09:00:00Z';
+  return {
+    id, sender_id, content: `Message ${id}`, created_at, citation: null, quoted: null,
+    deleted: false, edited_at: null, updated_at: created_at, ...overrides,
+  };
 }
 
+/** A history page; `next_since` / `next_since_id` (MAIR-524, incremental reads) are not read by the BFF. */
 export function chatResult(chat: ChatView, messages: MessageView[], next_before: number | null = null): GetChatResultView {
-  return { chat, messages, has_more: next_before !== null, next_before };
+  return {
+    chat, messages, has_more: next_before !== null, next_before,
+    next_since: chat.last_activity_at, next_since_id: messages[messages.length - 1]?.id ?? 0,
+  };
 }
 
 /** Members of a chat with their names (MAIR-507): `names` maps an id to `[first_name, last_name]`. */
@@ -127,12 +139,12 @@ export const tasksResult = (tasks: TaskView[]): GetTasksResultView => ({ tasks, 
 
 // --- Calendar API (@mairie360/calendar-api-openapi), read directly since MAIR-525 ---
 
-/** An event of `GET /api/v1/calendar` (list view). `start` / `end` are UTC instants. */
+/** An event of `GET /api/v1/calendar` (list view, with its members since MAIR-524). `start` / `end` are UTC instants. */
 export function eventView(id: number, overrides: Partial<EventView> = {}): EventView {
   return {
     id, name: `Événement ${id}`, start: '2026-09-08T08:00:00Z', end: '2026-09-08T09:00:00Z',
     category: EventCategory.meeting, visibility: EventVisibility.Private, is_member: true, location: null, service: null,
-    recurrence: null, ...overrides,
+    recurrence: null, members: [], ...overrides,
   };
 }
 
