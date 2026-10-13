@@ -22,6 +22,7 @@ import {
   projectListItem, projectsResult, sessionToken, taskView, tasksResult, tokenFor, users,
 } from './support/upstream-fixtures';
 import { MAX_PROJECT_DETAILS, PROJECTS_PAGE_LIMIT } from '../src/routes/Messages/business_references';
+import { captureLogs } from './support/logs';
 
 const { agent, sophie, thomas } = users;
 
@@ -66,7 +67,7 @@ afterAll(async () => { await Promise.all(mocks.map((mock) => mock.stop())); });
 
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.spyOn(console, 'log').mockImplementation(() => undefined);
+  captureLogs();
   for (const mock of mocks) mock.reset();
   // Annuaire Core : la recherche et la sélection par identifiants sont appliquées comme par Core API.
   const directory = [agent, sophie, thomas];
@@ -959,7 +960,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
 
     test('maps a Message API 500 to 502 without leaking the upstream message', async () => {
       mockMessageApi();
-      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      captureLogs();
       messageApi.on('post', MESSAGE_API.messages, { status: 500, raw: 'An error occurred while accessing the database.', contentType: 'text/plain', outOfContract: true });
 
       const response = await request(app).post('/conversations/conversation-4/messages').set('Authorization', authorizationFor(agent.id)).send({ content: 'Bonjour' });
@@ -1002,7 +1003,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
 
     test('maps a dropped Message API connection to 502', async () => {
       mockMessageApi();
-      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      captureLogs();
       messageApi.on('post', MESSAGE_API.chats, { dropConnection: true });
 
       const response = await request(app).post('/groups').set('Authorization', authorizationFor(agent.id)).send({ name: 'Équipe', memberIds: [8] });
@@ -1268,7 +1269,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
 
     test('GET /check_apis reports an unconfigured upstream as unreachable', async () => {
       coreApi.on('get', CORE_API.health, { raw: 'OK', contentType: 'text/plain' });
-      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      captureLogs();
 
       const response = await withoutUrl('MESSAGE_API', () => request(app).get('/check_apis'));
 

@@ -2,6 +2,7 @@ import { checkApis, checkApisResponseSchema, withoutSession } from '@mairie360/b
 import { Router } from 'express';
 import { checkCoreApi } from '../clients/coreClient';
 import messageClient from '../clients/messageClient';
+import { logger } from '../logger';
 import { registry } from '../openapi-registry';
 
 const router = Router();
@@ -35,6 +36,6 @@ registry.registerPath({
 router.get('/', checkApis({
   message_api: () => messageClient.health(withoutSession('MESSAGE_API', PROBE_TIMEOUT_MS)),
   core_api: () => checkCoreApi(),
-}));
+}, { logger }));
 
 export default router;
