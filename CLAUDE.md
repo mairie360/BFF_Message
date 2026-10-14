@@ -90,7 +90,8 @@ generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('M
 BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, role from `sessionRole` or roles from Core
 `getMe`) and degrades per-source (`sources: available | unavailable`). `stream.ts` (MAIR-525) relays Message API's
 SSE `GET /api/v1/stream` as `GET /stream`: signals translated to `{ type, conversationId }`, pings kept, `id:` /
-`Last-Event-ID` relayed, ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full
+`Last-Event-ID` relayed, head + `retry:` + `: connected` sent before Message API answers (MAIR-561: its refusal or
+failure is then an `event: stream_error` carrying the `ErrorResponse`, not a status), ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full
 answer; k6 covers it in `crud` only).
 
 **ID convention.** Outward IDs are prefixed strings: `conversation-<n>`, `message-<n>`, `user-<n>`.
