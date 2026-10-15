@@ -16,7 +16,7 @@ Attachments are not supported yet: `POST /attachments` answers 503 to an authent
 
 `GET /business-references` reads the APIs, never another BFF (MAIR-525): one Project API listing of 50 projects, the task list of the listed projects that have active tasks only (at most 20, 4 at a time, until Project API lists the caller's tasks in one call), filtered like BFF Project (Admin, Maire and Responsable see every task, other roles their own; roles from the token, or Core API for an older token, the narrowest view when they cannot be read), and one Calendar API list over 182 days on each side of today (the events the caller is a member of; no detail per event).
 
-`GET /stream` (MAIR-525) relays Message API's SSE channel (`text/event-stream`): each `data:` line is a `MessageStreamEvent` `{ type, conversationId }` naming a conversation to reload, so the front no longer polls. `: ping` comments are kept; an `id:` is relayed and `Last-Event-ID` is forwarded to Message API (resuming needs its cursor, MAIR-524). The stream ends with the session and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default); the client reconnects (`retry: 3000`). A refused session answers 401, an unavailable Message API 502. It is rate limited per caller (see `BUSINESS_REFERENCES_RATE_LIMIT_*`). Conversation groups use the API, while some profile data remains local to the process.
+`GET /stream` (MAIR-525) relays Message API's SSE channel (`text/event-stream`): each `data:` line is a `MessageStreamEvent` `{ type, conversationId }` naming a conversation to reload, so the front no longer polls. `: ping` comments are kept; an `id:` is relayed and `Last-Event-ID` is forwarded to Message API (resuming needs its cursor, MAIR-524). The stream ends with the session and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default); the client reconnects (`retry: 3000`). The response starts at once (`retry: 3000` then a `: connected` comment) without waiting for Message API (MAIR-561), so a missing session still answers 401 and an unconfigured Message API 503, but a session Message API refuses or an unavailable Message API ends the stream with one `event: stream_error` whose `data:` is the `ErrorResponse` (`UNAUTHORIZED`: sign in again; `BAD_GATEWAY`: reconnect later). It is rate limited per caller (see `BUSINESS_REFERENCES_RATE_LIMIT_*`). Conversation groups use the API, while some profile data remains local to the process.
 
 ## Installation and local startup
 
@@ -79,7 +79,7 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401, 429 |
-| GET | `/stream` | `Last-Event-ID` (optional) | 200 (`text/event-stream`), 401, 502, 503 |
+| GET | `/stream` | `Last-Event-ID` (optional) | 200 (`text/event-stream`, `stream_error` event on an upstream refusal or failure), 401, 503 |
 | POST | `/attachments` | multipart/form-data | 401, 502, 503 |
 | GET | `/messaging/bootstrap` | — | 200, 401, 502, 503 |
 | GET | `/contacts` | — | 200, 400, 401, 502, 503 |

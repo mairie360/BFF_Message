@@ -1,8 +1,12 @@
 import type { Readable } from 'node:stream';
-import { HttpError, INVALID_SESSION_MESSAGE, asCaller, upstreamError, upstreamStatus } from '@mairie360/bffs-lib';
+import {
+  HttpError, INVALID_SESSION_MESSAGE, asCaller, describeError, httpErrorBody, requestId, upstreamError, upstreamStatus,
+  type UpstreamRequestOptions,
+} from '@mairie360/bffs-lib';
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import messageClient from '../../clients/messageClient';
+import { logger } from '../../logger';
 import { errorResponses, registry } from '../../openapi-registry';
 
 /**
@@ -27,6 +31,12 @@ export function streamMaxMs(): number {
 
 /** Delay before the browser reconnects after the stream ends, in ms (SSE `retry:` field). */
 export const RECONNECT_DELAY_MS = 3_000;
+
+/**
+ * SSE event closing a stream whose upstream one could not be opened (MAIR-561): the head of the response is sent before
+ * Message API answers, so its refusal or failure can no longer be an HTTP status. Its `data:` is the `ErrorResponse`.
+ */
+export const STREAM_ERROR_EVENT = 'stream_error';
 
 const UpstreamSignal = z.object({ type: z.string(), chat_id: z.number().int().nonnegative() });
 
@@ -57,7 +67,11 @@ registry.registerPath({
   summary: 'Real-time stream of the caller\'s conversations',
   description: 'An **SSE** channel (`text/event-stream`) relaying Message API\'s: each `data:` line holds a '
     + '`MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the '
-    + 'conversations the caller is a member of are signalled. A `: ping` comment comes every 15 seconds. The stream ends '
+    + 'conversations the caller is a member of are signalled. The response starts at once with `retry: 3000` and a '
+    + '`: connected` comment, before Message API answers; a `: ping` comment comes every 15 seconds. When Message API '
+    + `refuses the session or fails, the stream sends one \`event: ${STREAM_ERROR_EVENT}\` whose \`data:\` is an `
+    + '`ErrorResponse` (`UNAUTHORIZED`: sign in again instead of reconnecting; `BAD_GATEWAY`: reconnect later), then ends. '
+    + 'The stream ends '
     + 'when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client '
     + 'reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.',
   responses: {
@@ -66,17 +80,14 @@ registry.registerPath({
       content: { 'text/event-stream': { schema: MessageStreamEventSchema } },
     },
     ...errorResponses({
-      401: 'Missing or invalid session, or session refused by Message API',
-      502: 'Message API is unavailable or failed',
+      401: 'Missing or invalid session (Message API refusing it is a `stream_error` event, the head is already sent)',
       503: 'Message API is not configured on the BFF',
     }),
   },
 });
 
 /** Opens Message API's stream for the caller; refusals and failures become the BFF's errors. */
-async function openUpstream(req: Request, signal: AbortSignal): Promise<Readable> {
-  // No timeout: the stream stays open; the abort signal closes it when the client leaves or the max life ends.
-  const options = asCaller('MESSAGE_API', req, 0);
+async function openUpstream(req: Request, options: UpstreamRequestOptions, signal: AbortSignal): Promise<Readable> {
   const lastEventId = req.get('Last-Event-ID');
   try {
     const response = await messageClient.sseStreamRoute({
@@ -110,10 +121,11 @@ function relay(upstream: Readable, res: Response, close: () => void): void {
 }
 
 router.get('/', async (req: Request, res: Response) => {
+  // Read before the head is sent, so that an unconfigured Message API is still a 503. No timeout: the stream stays open;
+  // the abort signal closes it when the client leaves or the max life ends.
+  const options = asCaller('MESSAGE_API', req, 0);
   const controller = new AbortController();
-  // `close` on the response: the client left (or the stream ended): the upstream stream is closed too.
-  res.on('close', () => controller.abort());
-  const upstream = await openUpstream(req, controller.signal);
+  let upstream: Readable | undefined;
 
   let ended = false;
   const close = () => {
@@ -121,10 +133,11 @@ router.get('/', async (req: Request, res: Response) => {
     ended = true;
     clearTimeout(maxLife);
     controller.abort();
-    upstream.destroy();
+    upstream?.destroy();
     res.end();
   };
   const maxLife = setTimeout(close, streamMaxMs());
+  // `close` on the response: the client left (or the stream ended): the upstream stream is closed too.
   res.on('close', close);
 
   res.status(200).set({
@@ -134,7 +147,25 @@ router.get('/', async (req: Request, res: Response) => {
     'X-Accel-Buffering': 'no',
   });
   res.flushHeaders();
-  res.write(`retry: ${RECONNECT_DELAY_MS}\n\n`);
+  // MAIR-561: the client gets the head and a first comment at once, not once Message API has answered.
+  res.write(`retry: ${RECONNECT_DELAY_MS}\n\n: connected\n\n`);
+
+  try {
+    upstream = await openUpstream(req, options, controller.signal);
+  } catch (error) {
+    if (ended) return;
+    const failure = error instanceof HttpError ? error : upstreamError('MESSAGE_API', error);
+    if (failure.status >= 500) {
+      logger.error('stream failed', { request_id: requestId(req), status: failure.status, error: describeError(failure) });
+    }
+    res.write(`event: ${STREAM_ERROR_EVENT}\ndata: ${JSON.stringify(httpErrorBody(failure))}\n\n`);
+    close();
+    return;
+  }
+  if (ended) {
+    upstream.destroy();
+    return;
+  }
   relay(upstream, res, close);
 });
 

@@ -2447,7 +2447,7 @@ export interface paths {
         };
         /**
          * Real-time stream of the caller's conversations
-         * @description An **SSE** channel (`text/event-stream`) relaying Message API's: each `data:` line holds a `MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the conversations the caller is a member of are signalled. A `: ping` comment comes every 15 seconds. The stream ends when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.
+         * @description An **SSE** channel (`text/event-stream`) relaying Message API's: each `data:` line holds a `MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the conversations the caller is a member of are signalled. The response starts at once with `retry: 3000` and a `: connected` comment, before Message API answers; a `: ping` comment comes every 15 seconds. When Message API refuses the session or fails, the stream sends one `event: stream_error` whose `data:` is an `ErrorResponse` (`UNAUTHORIZED`: sign in again instead of reconnecting; `BAD_GATEWAY`: reconnect later), then ends. The stream ends when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.
          */
         get: {
             parameters: {
@@ -2467,17 +2467,8 @@ export interface paths {
                         "text/event-stream": components["schemas"]["MessageStreamEvent"];
                     };
                 };
-                /** @description Missing or invalid session, or session refused by Message API */
+                /** @description Missing or invalid session (Message API refusing it is a `stream_error` event, the head is already sent) */
                 401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Message API is unavailable or failed */
-                502: {
                     headers: {
                         [name: string]: unknown;
                     };

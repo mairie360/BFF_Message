@@ -16,7 +16,7 @@ Les pièces jointes ne sont pas encore prises en charge : `POST /attachments` r�
 
 `GET /business-references` lit les API, jamais un autre BFF (MAIR-525) : une liste Project API de 50 projets, la liste des tâches des seuls projets listés qui ont des tâches actives (au plus 20, 4 à la fois, tant que Project API ne liste pas les tâches de l’appelant en un appel), filtrées comme dans BFF Project (Admin, Maire et Responsable voient toutes les tâches, les autres rôles les leurs ; rôles lus dans le jeton, ou auprès de Core API pour un jeton plus ancien, la vue la plus restreinte s’ils ne peuvent pas être lus), et une seule liste Calendar API sur 182 jours de part et d’autre d’aujourd’hui (les événements dont l’appelant est membre ; aucun détail par événement).
 
-`GET /stream` (MAIR-525) relaie le canal SSE de Message API (`text/event-stream`) : chaque ligne `data:` est un `MessageStreamEvent` `{ type, conversationId }` désignant une conversation à recharger, le front n’interroge plus en boucle. Les commentaires `: ping` sont conservés ; un `id:` est relayé et `Last-Event-ID` est transmis à Message API (la reprise demande son curseur, MAIR-524). Le flux se termine avec la session et après `MESSAGE_STREAM_MAX_MS` (5 minutes par défaut) ; le client se reconnecte (`retry: 3000`). Une session refusée répond 401, une Message API indisponible 502. La route est limitée en débit par appelant (voir `BUSINESS_REFERENCES_RATE_LIMIT_*`). Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
+`GET /stream` (MAIR-525) relaie le canal SSE de Message API (`text/event-stream`) : chaque ligne `data:` est un `MessageStreamEvent` `{ type, conversationId }` désignant une conversation à recharger, le front n’interroge plus en boucle. Les commentaires `: ping` sont conservés ; un `id:` est relayé et `Last-Event-ID` est transmis à Message API (la reprise demande son curseur, MAIR-524). Le flux se termine avec la session et après `MESSAGE_STREAM_MAX_MS` (5 minutes par défaut) ; le client se reconnecte (`retry: 3000`). La réponse démarre immédiatement (`retry: 3000` puis un commentaire `: connected`) sans attendre Message API (MAIR-561) : une session absente répond toujours 401 et une Message API non configurée 503, mais une session refusée par Message API ou une Message API indisponible termine le flux par un unique `event: stream_error` dont le `data:` est l’`ErrorResponse` (`UNAUTHORIZED` : se reconnecter à la session ; `BAD_GATEWAY` : se reconnecter plus tard). La route est limitée en débit par appelant (voir `BUSINESS_REFERENCES_RATE_LIMIT_*`). Les groupes de conversation passent par l’API, tandis que certaines données de profil restent locales au processus.
 
 ## Installation et lancement local
 
@@ -79,7 +79,7 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 | GET | `/health` | — | 200 |
 | GET | `/check_apis` | — | 200, 502 |
 | GET | `/business-references` | — | 200, 401, 429 |
-| GET | `/stream` | `Last-Event-ID` (optionnel) | 200 (`text/event-stream`), 401, 502, 503 |
+| GET | `/stream` | `Last-Event-ID` (optionnel) | 200 (`text/event-stream`, événement `stream_error` sur un refus ou une panne amont), 401, 503 |
 | POST | `/attachments` | multipart/form-data | 401, 502, 503 |
 | GET | `/messaging/bootstrap` | — | 200, 401, 502, 503 |
 | GET | `/contacts` | — | 200, 400, 401, 502, 503 |
