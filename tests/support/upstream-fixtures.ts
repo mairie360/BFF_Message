@@ -96,9 +96,9 @@ export const users = {
   thomas: { id: 9, first_name: 'Thomas', last_name: 'Bernard', email: '' },
 } satisfies Record<string, ContactUser>;
 
-/** Fiche annuaire complète : rôles et groupes ne sont pas lus par ce BFF. */
+/** Full directory entry: this BFF reads neither the role nor the groups. */
 export function directoryUser(user: ContactUser, overrides: Partial<DirectoryUser> = {}): DirectoryUser {
-  return { ...user, roles: ['User'], group_ids: [1], ...overrides };
+  return { ...user, role: 'User', roles: ['User'], group_ids: [1], ...overrides };
 }
 
 /** Corps de `GET /api/v1/user/`. */
@@ -122,7 +122,7 @@ export function projectsResult(projects: ProjectListItemView[], total = projects
     projects,
     total,
     summary: {
-      by_status: { active: projects.length, suspended: 0, completed: 0, other: 0 },
+      by_status: { todo: 0, active: projects.length, review: 0, suspended: 0, completed: 0, other: 0 },
       by_priority: { low: 0, medium: projects.length, high: 0 },
     },
   };
