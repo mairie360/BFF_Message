@@ -2,6 +2,7 @@ import { checkApis, checkApisResponseSchema, withoutSession } from '@mairie360/b
 import { Router } from 'express';
 import { checkCoreApi } from '../clients/coreClient';
 import messageClient from '../clients/messageClient';
+import { logger } from '../logger';
 import { registry } from '../openapi-registry';
 
 const router = Router();
@@ -17,7 +18,7 @@ registry.registerPath({
   security: [],
   tags: ['Connectivity'],
   summary: 'Checks that Message API and Core API (directory) are reachable',
-  description: 'BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source '
+  description: 'Project API and Calendar API are not probed: `GET /business-references` degrades per source '
     + '(`sources.projects` / `sources.calendar`) when they are unavailable.',
   responses: {
     200: {
@@ -35,6 +36,6 @@ registry.registerPath({
 router.get('/', checkApis({
   message_api: () => messageClient.health(withoutSession('MESSAGE_API', PROBE_TIMEOUT_MS)),
   core_api: () => checkCoreApi(),
-}));
+}, { logger }));
 
 export default router;

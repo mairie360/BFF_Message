@@ -6,6 +6,6 @@ import type { Request } from 'express';
  * `callUpstream` relays as is (anything else becomes a 502).
  */
 export interface CallContext {
-  req: Pick<Request, 'headers'>;
+  req: Request;
   declared: readonly number[];
 }
