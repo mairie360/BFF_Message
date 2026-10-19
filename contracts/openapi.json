@@ -3011,6 +3011,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Core API is unavailable or failed",
             "content": {
@@ -3523,6 +3533,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Message API or Core API is unavailable or failed",
             "content": {
@@ -3671,6 +3691,16 @@
           },
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3880,6 +3910,16 @@
           },
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4409,6 +4449,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Message API is unavailable or failed",
             "content": {
@@ -4527,6 +4577,16 @@
           },
           "404": {
             "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4681,6 +4741,16 @@
           },
           "404": {
             "description": "Unknown conversation, the caller is not one of its members, or the message is not one of this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4900,6 +4970,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Message API is unavailable or failed",
             "content": {
@@ -5005,6 +5085,16 @@
           },
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -5461,6 +5551,16 @@
           },
           "404": {
             "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -5943,6 +6043,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Message API is unavailable or failed",
             "content": {
@@ -6357,6 +6467,16 @@
           },
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
