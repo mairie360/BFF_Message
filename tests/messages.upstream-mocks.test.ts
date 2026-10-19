@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import type { Express } from 'express';
 import request from 'supertest';
 import type { ChatView, MessageView } from '@mairie360/message-api-openapi/model';
@@ -728,6 +729,31 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expectApiError(response, 502, 'BAD_GATEWAY');
       expectBffContract('get', '/messaging/bootstrap', response);
       expect(JSON.stringify(response.body)).not.toContain('Database error');
+    });
+
+    test('mair_562 GET /messaging/bootstrap answers a persistent Message API 429 with 429 and Retry-After, not 502', async () => {
+      mockMessageApi({ chats: [chatView(4, 'Équipe communication')], members: { 4: [agent.id] } });
+      messageApi.on('get', MESSAGE_API.chat, { status: 429, raw: 'Too many requests', contentType: 'text/plain', headers: { 'Retry-After': '30' }, outOfContract: true });
+
+      const response = await request(app).get('/messaging/bootstrap').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 429, 'TOO_MANY_REQUESTS');
+      expect(response.headers['retry-after']).toBe('30');
+      expectBffContract('get', '/messaging/bootstrap', response);
+      expect(messageApi.requests.every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
+    });
+
+    test('mair_562 every route answering 502 also declares the upstream 429 relayed by bffs-lib', () => {
+      const document = JSON.parse(readFileSync(path.join(__dirname, '..', 'contracts', 'openapi.json'), 'utf8')) as {
+        paths: Record<string, Record<string, { responses?: Record<string, unknown> }>>;
+      };
+      const undeclared = Object.entries(document.paths)
+        .filter(([route]) => route !== '/check_apis')
+        .flatMap(([route, operations]) => Object.entries(operations).map(([method, operation]) => ({ route, method, responses: operation.responses ?? {} })))
+        .filter(({ responses }) => '502' in responses && !('429' in responses))
+        .map(({ method, route }) => `${method.toUpperCase()} ${route}`);
+
+      expect(undeclared).toEqual([]);
     });
 
     test('GET /messaging/bootstrap without conversation does not request any chat messages', async () => {
