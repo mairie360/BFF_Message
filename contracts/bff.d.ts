@@ -180,6 +180,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Core API is unavailable or failed */
                 502: {
                     headers: {
@@ -501,6 +510,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Message API or Core API is unavailable or failed */
                 502: {
                     headers: {
@@ -613,6 +631,15 @@ export interface paths {
                 };
                 /** @description Missing or invalid session */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -767,6 +794,15 @@ export interface paths {
                 };
                 /** @description Missing or invalid session */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1110,6 +1146,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
@@ -1195,6 +1240,15 @@ export interface paths {
                 };
                 /** @description Unknown conversation, or the caller is not one of its members */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1311,6 +1365,15 @@ export interface paths {
                 };
                 /** @description Unknown conversation, the caller is not one of its members, or the message is not one of this conversation */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1474,6 +1537,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
@@ -1553,6 +1625,15 @@ export interface paths {
                 };
                 /** @description Missing or invalid session */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1855,6 +1936,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Message API is unavailable or failed */
                 502: {
                     headers: {
@@ -2125,6 +2215,15 @@ export interface paths {
                 };
                 /** @description Unknown conversation, or the caller is not one of its members */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2405,6 +2504,15 @@ export interface paths {
                 };
                 /** @description Missing or invalid session */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };

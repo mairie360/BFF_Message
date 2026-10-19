@@ -558,9 +558,16 @@ export const MessagingBootstrapResponse = z.object({
 // adds .openapi() to schemas created after the extension.
 export const ErrorResponse = registry.register('ErrorResponse', ErrorResponseSchema.clone());
 
-/** Error responses of an operation, `{ status: description }`, all answered with `ErrorResponse`. */
+/**
+ * Error responses of an operation, `{ status: description }`, all answered with `ErrorResponse`. An operation
+ * answering 502 calls an upstream, whose 429 bffs-lib >= 2.4.0 relays with its Retry-After (MAIR-562): it is
+ * declared too unless the operation describes its own.
+ */
 export function errorResponses(descriptions: Record<number, string>) {
-    return Object.fromEntries(Object.entries(descriptions).map(([status, description]) => [status, {
+    const declared = 502 in descriptions && !(429 in descriptions)
+        ? { ...descriptions, 429: 'An upstream API rate limit is reached: retry after the Retry-After header (seconds)' }
+        : descriptions;
+    return Object.fromEntries(Object.entries(declared).map(([status, description]) => [status, {
         description,
         content: { 'application/json': { schema: ErrorResponse } },
     }]));
