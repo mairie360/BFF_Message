@@ -740,6 +740,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expectApiError(response, 429, 'TOO_MANY_REQUESTS');
       expect(response.headers['retry-after']).toBe('30');
       expectBffContract('get', '/messaging/bootstrap', response);
+      expect(messageApi.requests.every((call) => call.headers.authorization === authorizationFor(agent.id))).toBe(true);
     });
 
     test('mair_562 every route answering 502 also declares the upstream 429 relayed by bffs-lib', () => {
