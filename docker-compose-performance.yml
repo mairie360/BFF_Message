@@ -135,7 +135,7 @@ services:
       - backend
 
   core-api:
-    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:dev-30d9bb5}
+    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:staging-b900797}
     container_name: bff-message-perf-core-api
     depends_on:
       liquibase:
