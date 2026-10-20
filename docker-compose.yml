@@ -40,7 +40,7 @@ services:
 
   message-api:
     container_name: message-api-bff-message-developpement
-    image: ghcr.io/mairie360/message-api:dev-68cb513
+    image: ghcr.io/mairie360/message-api:dev-75d7650
     ports:
       - "3003:3003"
     networks:
