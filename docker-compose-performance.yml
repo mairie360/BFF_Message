@@ -28,7 +28,7 @@ x-db-env: &db-env
 
 services:
   postgres:
-    image: ${DB_IMAGE:-ghcr.io/mairie360/database:dev-949384c}
+    image: ${DB_IMAGE:-ghcr.io/mairie360/database:3.3.0}
     container_name: bff-message-perf-db
     environment:
       POSTGRES_USER: postgres
@@ -48,7 +48,7 @@ services:
 
   liquibase:
     # Database >= MAIR-413 only seeds the template admin (users.id = 1) with -Dallow_template_admin=true.
-    image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:dev-949384c}
+    image: ${LIQUIBASE_IMAGE:-ghcr.io/mairie360/liquibase-migrations:3.3.0}
     container_name: bff-message-perf-liquibase
     depends_on:
       postgres:
@@ -98,7 +98,7 @@ services:
       retries: 5
 
   message-api:
-    image: ${MESSAGE_API_IMAGE:-ghcr.io/mairie360/message-api:dev-75d7650}
+    image: ${MESSAGE_API_IMAGE:-ghcr.io/mairie360/message-api:2.1.0}
     container_name: bff-message-perf-message-api
     depends_on:
       liquibase:
@@ -135,7 +135,7 @@ services:
       - backend
 
   core-api:
-    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:staging-b900797}
+    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:2.2.0}
     container_name: bff-message-perf-core-api
     depends_on:
       liquibase:
