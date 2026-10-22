@@ -1,0 +1,1 @@
+Attachment fixture of the newman integration collection (MAIR-262): sent to POST /attachments, which answers 503 until an upstream stores attachments (MAIR-400).
