@@ -20,7 +20,7 @@ Attachments are not supported yet: `POST /attachments` answers 503 to an authent
 
 ## Installation and local startup
 
-Use Node.js 24 (CI and Docker images) to reproduce the contract job and npm with the committed lockfile. Other job and Docker versions are detailed below.
+Use Node.js 24.22.1 (CI and Docker images) to reproduce the contract job and npm with the committed lockfile. Other job and Docker versions are detailed below.
 
 Private `@mairie360/*` dependencies require GitHub Packages access. Set `NODE_AUTH_TOKEN` in the environment to a token allowed to read these packages, as configured in `.npmrc`. Do not commit its value.
 
@@ -133,11 +133,11 @@ The type generator is pinned to `openapi-typescript@7.10.1` in `scripts/contract
 
 ## CI/CD and Docker execution
 
-The `contracts.yml` job uses Node.js 24, `actions/checkout@v7` and `actions/setup-node@v7`. It runs on pushes, pull requests and manual dispatch; it installs with `npm ci`, checks contracts and runs the associated tests.
+The `contracts.yml` job uses Node.js 24.22.1, `actions/checkout@v7` and `actions/setup-node@v7`. It runs on pushes, pull requests and manual dispatch; it installs with `npm ci`, checks contracts and runs the associated tests.
 
-`cicd.yml` calls `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v4.5.0`, with `cicd_version: v4.5.0` and `node_version: "24"`. Reusable steps and GitHub environments determine actual checks, publications and deployments. A push to `main` stops after `release-dev`; staging and prod go through the manual `promote-staging.yml` / `promote-prod.yml` workflows (MAIR-494).
+`cicd.yml` calls `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v4.5.0`, with `cicd_version: v4.5.0` and `node_version: "24.22.1"`. Reusable steps and GitHub environments determine actual checks, publications and deployments. A push to `main` stops after `release-dev`; staging and prod go through the manual `promote-staging.yml` / `promote-prod.yml` workflows (MAIR-494).
 
-The Dockerfile uses `node:24-alpine`, pinned by digest (as in `development.Dockerfile`), for build and runtime; the image command is `["node", "dist/index.js"]` (the code only imports types from the `@mairie360/*` packages). CI, the contract job and the images all use Node.js 24.
+The Dockerfile uses `node:24.22.1-alpine`, pinned by digest (as in `development.Dockerfile`), for build and runtime; the image command is `["node", "dist/index.js"]` (the code only imports types from the `@mairie360/*` packages). CI, the contract job and the images all use Node.js 24.
 
 `integration_test.sh` (MAIR-262) runs the stack of `docker-compose-integration.yml`: the published Message API and Core API images, the database with its migrations and `init-test.sql`, Redis, the BFF image under test and a `newman` service that replays `tests/postman/collection.json` (environment `tests/postman/environment.json`) against the BFF with `--bail`; Project API and Calendar API are not part of the stack. Its exit code is the exit code of newman. The collection holds working checks (the BFF starts, `/health`, `/check_apis`, `/openapi.json`, the session of the seeded administrator and agent through `/me` and `/messaging/bootstrap`, the contacts of the Core directory) and the messaging journeys (the seeded conversation 101, the direct conversation between the administrator and the agent: one per pair, listed on both sides with its unread counter, paged history, acknowledgement, hidden by each side and deleted with the last one; the group conversation created by the agent, posted in, searched, paged, read and acknowledged by the administrator, left by both; the business references degrading without Project API and Calendar API; the attachment upload answering its documented 503; `GET /stream` ended by the stack after `MESSAGE_STREAM_MAX_MS`). The seeded accounts are impersonated with JWTs forged from the `JWT_SECRET` of the run (random, `stack_secrets.sh`); the committed environment holds no secret. In CI this stack is the `integration_tests` gate of the staging promotion: it blocks the promotion on failure and publishes the junit report (`newman-reports/newman.xml`) as job summary and artifact. The jest test `tests/integration-collection.test.ts` checks that every operation of `contracts/openapi.json` has a request in the collection and that every request asserts something.
 

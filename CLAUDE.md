@@ -30,7 +30,7 @@ npm run contracts:check         # fails if contracts/ is stale (CI gate)
 `npm run build` type-checks with `tsc --noEmit` then bundles `dist/index.js` with esbuild
 (`scripts/build.mjs`): the `@mairie360/*` clients are published as TypeScript, so they are inlined
 while the other dependencies stay external. Node **24** everywhere: the contract job / CI (`.github/workflows/contracts.yml`,
-`cicd.yml` → `mairie360/CICD` reusable workflow, `node_version: "24"`) and the Docker images (`node:24-alpine`, pinned by digest). The production image runs `node dist/index.js` (bundle);
+`cicd.yml` → `mairie360/CICD` reusable workflow, `node_version: "24.22.1"`) and the Docker images (`node:24.22.1-alpine`, pinned by digest). The production image runs `node dist/index.js` (bundle);
 the test stacks run the image named by `IMAGE_REF` (in CI, the image published by `release-dev`;
 locally, `bff-message:local` built from `development.Dockerfile` by the scripts).
 

@@ -20,7 +20,7 @@ Les pièces jointes ne sont pas encore prises en charge : `POST /attachments` r�
 
 ## Installation et lancement local
 
-Utiliser Node.js 24 (CI et images Docker) pour reproduire le job de contrats et npm avec le fichier de verrouillage versionné. Les versions des autres jobs et de Docker sont précisées plus bas.
+Utiliser Node.js 24.22.1 (CI et images Docker) pour reproduire le job de contrats et npm avec le fichier de verrouillage versionné. Les versions des autres jobs et de Docker sont précisées plus bas.
 
 Les dépendances privées `@mairie360/*` nécessitent un accès GitHub Packages. Configurer `NODE_AUTH_TOKEN` dans l’environnement avec un jeton autorisé à lire ces packages, conformément à `.npmrc`. Ne pas enregistrer la valeur dans Git.
 
@@ -135,11 +135,11 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1` dans `scripts/
 
 ## CI/CD et exécution Docker
 
-Le job `contracts.yml` utilise Node.js 24, `actions/checkout@v7` et `actions/setup-node@v7`. Il s’exécute sur push, pull request et lancement manuel; il installe avec `npm ci`, contrôle les contrats et lance les tests dédiés.
+Le job `contracts.yml` utilise Node.js 24.22.1, `actions/checkout@v7` et `actions/setup-node@v7`. Il s’exécute sur push, pull request et lancement manuel; il installe avec `npm ci`, contrôle les contrats et lance les tests dédiés.
 
-`cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v4.5.0`, avec `cicd_version: v4.5.0` et `node_version: "24"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs. Un push sur `main` s’arrête après `release-dev` ; staging et prod passent par les workflows manuels `promote-staging.yml` / `promote-prod.yml` (MAIR-494).
+`cicd.yml` appelle `mairie360/CICD/.github/workflows/BFFs-cicd.yml@v4.5.0`, avec `cicd_version: v4.5.0` et `node_version: "24.22.1"`. Les étapes réutilisables et les environnements GitHub déterminent les contrôles, publications et déploiements effectifs. Un push sur `main` s’arrête après `release-dev` ; staging et prod passent par les workflows manuels `promote-staging.yml` / `promote-prod.yml` (MAIR-494).
 
-Le Dockerfile utilise `node:24-alpine`, épinglée par digest (comme `development.Dockerfile`), pour la construction et l’exécution ; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). La CI, le job de contrats et les images utilisent tous Node.js 24.
+Le Dockerfile utilise `node:24.22.1-alpine`, épinglée par digest (comme `development.Dockerfile`), pour la construction et l’exécution ; la commande de l’image est `["node", "dist/index.js"]` (le code n’importe que des types des paquets `@mairie360/*`). La CI, le job de contrats et les images utilisent tous Node.js 24.
 
 `integration_test.sh` (MAIR-262) lance la stack de `docker-compose-integration.yml`: les images publiées de Message API et de Core API, la base avec ses migrations et `init-test.sql`, Redis, l’image du BFF sous test et un service `newman` qui rejoue `tests/postman/collection.json` (environnement `tests/postman/environment.json`) contre le BFF avec `--bail` ; Project API et Calendar API ne font pas partie de la stack. Son code de sortie est celui de newman. La collection contient des vérifications de fonctionnement (le BFF démarre, `/health`, `/check_apis`, `/openapi.json`, la session de l’administrateur et de l’agent seedés via `/me` et `/messaging/bootstrap`, les contacts de l’annuaire Core) et les parcours de messagerie (la conversation seedée 101 ; la conversation directe entre l’administrateur et l’agent : une par paire, listée des deux côtés avec son compteur de non-lus, historique paginé, accusé de lecture, masquée par chacun et supprimée avec le dernier ; la conversation de groupe créée par l’agent, alimentée, recherchée, paginée, lue et acquittée par l’administrateur, quittée par les deux ; les références métier dégradées sans Project API ni Calendar API ; l’envoi de pièce jointe répondant son 503 documenté ; `GET /stream` terminé par la stack après `MESSAGE_STREAM_MAX_MS`). Les comptes seedés sont incarnés par des JWT forgés à partir du `JWT_SECRET` du run (aléatoire, `stack_secrets.sh`) ; l’environnement commité ne contient aucun secret. En CI cette stack est la porte `integration_tests` de la promotion staging : elle bloque la promotion en cas d’échec et publie le rapport junit (`newman-reports/newman.xml`) en résumé de job et en artefact. Le test jest `tests/integration-collection.test.ts` vérifie que chaque opération de `contracts/openapi.json` a une requête dans la collection et que chaque requête vérifie quelque chose.
 
