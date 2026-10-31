@@ -9,7 +9,7 @@
 version: 1
 target: http://bff-message:4003
 wait: /health
-# The admin JWT of the stack (sub=1, the seeded Admin), the same one the ZAP scan uses.
+# The admin JWT of the run (sub=1, the seeded Admin), signed by stack_secrets.sh with its random secret.
 env: [ADMIN_JWT]
 steps:
   - name: search the contacts for the marker (query string)
@@ -58,8 +58,8 @@ steps:
       path: /conversations/999999/messages
       headers: {Authorization: "Bearer {{env.ADMIN_JWT}}"}
       json: {content: "Hello {{marker.last_name}}, {{marker.phone}}"}
-    # Message API 0.7.1 (the stack's) answers 500 there, relayed as 502; newer ones 403 / 404.
-    expect: [403, 404, 502]
+    # Message API 2.1.0 (the stack's) answers 404; 403 is kept for a chat the caller may not post in.
+    expect: [403, 404]
   - name: read the messages
     request: {method: GET, path: "/conversations/{{group_id}}/messages?limit=20", headers: {Authorization: "Bearer {{env.ADMIN_JWT}}"}}
   - name: read the messages with a refused cursor (deliberate error, query string)
