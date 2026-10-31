@@ -11,15 +11,17 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | GET | `/health` | 200 OK |
 | GET | `/check_apis` | 200 / 502 CheckApisResponse |
 | GET | `/business-references` | 200 BusinessReferencesResponse |
+| GET | `/stream` | 200 flux SSE de `MessageStreamEvent` (MAIR-525) |
 | POST | `/attachments` | 503 Attachment upload not available yet (401 without a session) |
 | GET | `/messaging/bootstrap` | 200 Informations de démarrage pour l’utilisateur actuel |
 | GET | `/contacts` | 200 Liste des contacts |
-| GET | `/conversations` | 200 Liste des conversations de l’utilisateur actuel |
+| GET | `/conversations` | 200 Une page de conversations (`limit` 1-30, `cursor`, `search`), `nextCursor` |
+| GET | `/conversations/{conversationId}` | 200 Conversation ouverte : conversation, participants (id, nom) et une page de messages (`limit`, `before`), `nextCursor` |
 | DELETE | `/conversations/{conversationId}` | 200 Conversation supprimée avec succès |
 | POST | `/conversations/{conversationId}/read` | 200 `{ conversationId, unreadCount }`: acknowledges reads up to the optional `readUntilMessageId` (latest message when absent) through Message API; 401/403/404 relayed, 502 on upstream failure |
 | POST | `/groups` | 201 Groupe créé avec succès |
 | GET | `/me` | 200 Profil utilisateur actuel |
-| GET | `/conversations/{conversationId}/messages` | 200 Liste des messages de la conversation |
+| GET | `/conversations/{conversationId}/messages` | 200 Une page de messages (`limit`, `before`) avec la conversation, `nextCursor` |
 | POST | `/conversations/{conversationId}/messages` | 201 Message créé avec succès |
 | POST | `/direct-messages` | 201 Message direct créé avec succès |
 
@@ -31,4 +33,4 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1`. Il est exécu
 
 ## Références métier
 
-`/business-references` est agrégé dans BFF Message depuis `PROJECT_BFF_URL` et `CALENDAR_BFF_URL`. Le web service relaie la même réponse. Les pièces jointes ou groupes déjà gérés en mémoire par le BFF ne deviennent pas persistants par cet alignement.
+`/business-references` est construit dans BFF Message depuis Project API et Calendar API (`PROJECT_API_URL`, `CALENDAR_API_URL`), jamais depuis un autre BFF (MAIR-525). `/stream` remplace le rechargement toutes les 2 s : le front ouvre un `EventSource` et recharge la conversation signalée. Le web service relaie la même réponse. Les pièces jointes ou groupes déjà gérés en mémoire par le BFF ne deviennent pas persistants par cet alignement.

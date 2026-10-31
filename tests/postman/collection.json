@@ -1,0 +1,2463 @@
+{
+  "info": {
+    "name": "BFF Message integration tests",
+    "description": "MAIR-262: working checks (the BFF starts, reaches Message API and Core API, resolves sessions) and the messaging journeys the front relies on, replayed by newman on docker-compose-integration.yml (./integration_test.sh). The seeded administrator (user 1) and agent (user 2) are impersonated with JWTs forged from the JWT_SECRET of the stack; the conversations created by a run carry its run_id and are left (deleted) at the end.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// One fresh account per run so the collection is replayable against a persistent database.",
+          "if (!pm.environment.get('run_id')) {",
+          "    pm.environment.set('run_id', String(Date.now()));",
+          "}",
+          "if (!pm.environment.get('test_user_email')) {",
+          "    pm.environment.set('test_user_email', `newman.${pm.environment.get('run_id')}@mairie360.test`);",
+          "}",
+          "// The seeded accounts have no known password: forge their JWT exactly like mairie360_api_lib::jwt_manager",
+          "// does (HS256, claims { sub, role, exp }), signed with the JWT_SECRET of the stack, injected by",
+          "// docker-compose-integration.yml (random per run, MAIR-428). `role` is the claim the BFFs read (MAIR-529).",
+          "const cryptoJs = require('crypto-js');",
+          "const b64url = (words) => cryptoJs.enc.Base64.stringify(words).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+          "const signJwt = (sub, role) => {",
+          "    const header = b64url(cryptoJs.enc.Utf8.parse(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));",
+          "    const payload = b64url(cryptoJs.enc.Utf8.parse(JSON.stringify({ sub: String(sub), role, exp: Math.floor(Date.now() / 1000) + 3600 })));",
+          "    return `${header}.${payload}.${b64url(cryptoJs.HmacSHA256(`${header}.${payload}`, pm.environment.get('jwt_secret')))}`;",
+          "};",
+          "pm.environment.set('jwt_admin', signJwt(pm.environment.get('admin_user_id'), 'admin'));",
+          "pm.environment.set('jwt_agent', signJwt(pm.environment.get('agent_user_id'), 'user'));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Service",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Body says ok\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Message API and Core API are reachable",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/check_apis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "check_apis"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Both upstream APIs are connected\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('OK');",
+                  "    pm.expect(body.message_api).to.eql('Connected');",
+                  "    pm.expect(body.core_api).to.eql('Connected');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "OpenAPI document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "openapi.json"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Document lists the routes\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.openapi).to.be.a('string');",
+                  "    pm.expect(body.paths).to.have.property('/conversations');",
+                  "    pm.expect(body.paths).to.have.property('/messaging/bootstrap');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Unknown route answers a JSON 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/newman/unknown-route",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "newman",
+                "unknown-route"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "The BFF is up and reaches its upstream APIs."
+    },
+    {
+      "name": "Session resolution",
+      "item": [
+        {
+          "name": "Profile without a session is rejected",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Profile of the seeded administrator",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Profile comes from the Core API directory\", function () {",
+                  "    const user = pm.response.json().currentUser;",
+                  "    pm.expect(user.id).to.eql('user-1');",
+                  "    pm.expect(user.name, 'name of the seeded Admin (liquibase keeps its own)').to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('admin_name', user.name);",
+                  "    pm.expect(user.email).to.be.a('string').and.not.empty;",
+                  "    pm.expect(String(user.role).toLowerCase()).to.eql('admin');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Profile of the seeded agent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Agent is a plain user\", function () {",
+                  "    const user = pm.response.json().currentUser;",
+                  "    pm.expect(user.id).to.eql('user-2');",
+                  "    pm.expect(user.name).to.eql('Perf Tester');",
+                  "    pm.expect(String(user.role).toLowerCase()).to.eql('user');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Bootstrap of the agent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/messaging/bootstrap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messaging",
+                "bootstrap"
+              ]
+            },
+            "description": "The first screen: the profile, the contacts, the conversations and the messages of the first one. At this point the agent is only a member of the seeded conversation 101."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Profile, contacts, conversations and the messages of the active conversation\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.currentUser.id).to.eql('user-2');",
+                  "    const contactIds = body.contacts.map((c) => c.id);",
+                  "    pm.expect(contactIds).to.not.include('user-2');",
+                  "    pm.expect(contactIds).to.include('user-3');",
+                  "    const seeded = body.conversations.find((c) => c.id === 'conversation-101');",
+                  "    pm.expect(seeded, 'conversation 101').to.be.an('object');",
+                  "    pm.expect(seeded.name).to.eql('Scan conversation');",
+                  "    pm.expect(seeded.kind).to.eql('group');",
+                  "    pm.expect(seeded.memberCount).to.eql(3);",
+                  "    pm.expect(seeded.department).to.eql('3 membres');",
+                  "    pm.expect(body.activeConversationId).to.eql('conversation-101');",
+                  "    const message = body.messages.find((m) => m.id === 'message-1001');",
+                  "    pm.expect(message, 'message 1001').to.be.an('object');",
+                  "    pm.expect(message.conversationId).to.eql('conversation-101');",
+                  "    pm.expect(message.content).to.eql('Message read by the ZAP scan');",
+                  "    pm.expect(message.authorId).to.eql('user-3');",
+                  "    pm.expect(message.authorName).to.eql('Contact Sample');",
+                  "    pm.expect(message.direction).to.eql('incoming');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "The session is the Bearer JWT verified by the BFF; the profile is read from the Core API directory."
+    },
+    {
+      "name": "Directory",
+      "item": [
+        {
+          "name": "Contacts of the agent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Every other agent, with initials and presence\", function () {",
+                  "    const contacts = pm.response.json().contacts;",
+                  "    const ids = contacts.map((c) => c.id);",
+                  "    pm.expect(ids).to.not.include('user-2');",
+                  "    pm.expect(ids).to.include('user-1');",
+                  "    pm.expect(ids).to.include('user-3');",
+                  "    const contact = contacts.find((c) => c.id === 'user-3');",
+                  "    pm.expect(contact.name).to.eql('Contact Sample');",
+                  "    pm.expect(contact.initials).to.eql('CS');",
+                  "    pm.expect(contact.presence).to.eql('offline');",
+                  "    contacts.forEach((c) => pm.expect(c.name, `name of ${c.id}`).to.be.a('string').and.not.empty);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Search a contact by name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts?search=Sample&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Sample"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The contact is found, at most 10 results\", function () {",
+                  "    const contacts = pm.response.json().contacts;",
+                  "    pm.expect(contacts.length).to.be.at.most(10);",
+                  "    pm.expect(contacts.map((c) => c.id)).to.include('user-3');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "The contacts come from the Core API directory, without the caller."
+    },
+    {
+      "name": "Seeded conversation",
+      "item": [
+        {
+          "name": "Open the seeded conversation by its numeric id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "101"
+              ]
+            },
+            "description": "A bare numeric id is accepted as well as `conversation-101`; the answer uses the public id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Members with their names and the seeded message\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.id).to.eql('conversation-101');",
+                  "    pm.expect(body.conversation.kind).to.eql('group');",
+                  "    pm.expect(body.participants.map((p) => p.id).sort()).to.eql(['user-1', 'user-2', 'user-3']);",
+                  "    pm.expect(body.participants.map((p) => p.name)).to.include.members([pm.environment.get('admin_name'), 'Perf Tester', 'Contact Sample']);",
+                  "    pm.expect(body.messages.map((m) => m.id)).to.eql(['message-1001']);",
+                  "    pm.expect(body.messages[0].direction).to.eql('incoming');",
+                  "    pm.expect(body.messages[0].authorName).to.eql('Contact Sample');",
+                  "    pm.expect(body.hasMore).to.eql(false);",
+                  "    pm.expect(body).to.not.have.property('nextCursor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "A conversation the agent is not a member of is unknown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/conversation-102",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "conversation-102"
+              ]
+            },
+            "description": "Conversation 102 only has users 1 and 3: Message API answers the same 404 as for an unknown chat."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Posting in a conversation the agent is not a member of is refused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/conversation-102/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "conversation-102",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Intrusion {{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Acknowledge the seeded message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/conversation-101/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "conversation-101",
+                "read"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"readUntilMessageId\": \"message-1001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Nothing left unread\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversationId).to.eql('conversation-101');",
+                  "    pm.expect(body.unreadCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The seeded conversation is found by its name with no unread message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?search=Scan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Scan"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Only conversation 101 matches for the agent\", function () {",
+                  "    const conversations = pm.response.json().conversations;",
+                  "    pm.expect(conversations.map((c) => c.id)).to.eql(['conversation-101']);",
+                  "    pm.expect(conversations[0].unreadCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Conversation 101 of init-test.sql (members 1, 2 and 3, message 1001 by user 3)."
+    },
+    {
+      "name": "Direct conversation",
+      "item": [
+        {
+          "name": "The administrator writes to the agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/direct-messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "direct-messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"user-2\",\n  \"message\": \"Hello from the administrator {{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('direct_conversation_id', body.conversation.id);",
+                  "});",
+                  "pm.test(\"The direct conversation and the message sent\", function () {",
+                  "    const body = pm.response.json();",
+                  "    const text = `Hello from the administrator ${pm.environment.get('run_id')}`;",
+                  "    pm.expect(body.conversation.id).to.match(/^conversation-\\d+$/);",
+                  "    pm.expect(body.conversation.kind).to.eql('direct');",
+                  "    pm.expect(body.conversation.contactId).to.eql('user-2');",
+                  "    pm.expect(body.conversation.name).to.eql('Perf Tester');",
+                  "    pm.expect(body.conversation.memberCount).to.eql(2);",
+                  "    pm.expect(body.conversation.lastMessage).to.eql(text);",
+                  "    pm.expect(body.message.id).to.match(/^message-\\d+$/);",
+                  "    pm.expect(`conversation-${String(body.message.conversationId).replace(/^conversation-/, '')}`).to.eql(body.conversation.id);",
+                  "    pm.expect(body.message.content).to.eql(text);",
+                  "    pm.expect(body.message.authorId).to.eql('user-1');",
+                  "    pm.expect(body.message.authorName).to.eql(pm.environment.get('admin_name'));",
+                  "    pm.expect(body.message.direction).to.eql('outgoing');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The conversation is in the administrator list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Listed as a direct conversation with the agent\", function () {",
+                  "    const found = pm.response.json().conversations.find((c) => c.id === pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(found, 'direct conversation').to.be.an('object');",
+                  "    pm.expect(found.kind).to.eql('direct');",
+                  "    pm.expect(found.contactId).to.eql('user-2');",
+                  "    pm.expect(found.name).to.eql('Perf Tester');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The conversation is in the agent list with one unread message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Listed as a direct conversation with the administrator, unread\", function () {",
+                  "    const found = pm.response.json().conversations.find((c) => c.id === pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(found, 'direct conversation').to.be.an('object');",
+                  "    pm.expect(found.kind).to.eql('direct');",
+                  "    pm.expect(found.contactId).to.eql('user-1');",
+                  "    pm.expect(found.name).to.eql(pm.environment.get('admin_name'));",
+                  "    pm.expect(found.unreadCount).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent answers through the direct route: the same conversation is reused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/direct-messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "direct-messages"
+              ]
+            },
+            "description": "One direct conversation per pair, whoever opened it; a numeric recipient id is accepted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": {{admin_user_id}},\n  \"message\": \"Hello from the agent {{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Same conversation, message sent by the agent\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(body.conversation.contactId).to.eql('user-1');",
+                  "    pm.expect(body.message.authorId).to.eql('user-2');",
+                  "    pm.expect(body.message.direction).to.eql('outgoing');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent opens the conversation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Both participants and the two messages, oldest first\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(body.conversation.kind).to.eql('direct');",
+                  "    pm.expect(body.participants.map((p) => p.id).sort()).to.eql(['user-1', 'user-2']);",
+                  "    pm.expect(body.participants.map((p) => p.name).sort()).to.eql(['Perf Tester', pm.environment.get('admin_name')].sort());",
+                  "    pm.expect(body.messages).to.have.lengthOf(2);",
+                  "    pm.expect(body.messages[0].authorId).to.eql('user-1');",
+                  "    pm.expect(body.messages[0].authorName).to.eql(pm.environment.get('admin_name'));",
+                  "    pm.expect(body.messages[0].direction).to.eql('incoming');",
+                  "    pm.expect(body.messages[1].authorId).to.eql('user-2');",
+                  "    pm.expect(body.messages[1].direction).to.eql('outgoing');",
+                  "    pm.expect(body.hasMore).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The administrator replies in the conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Reply from the administrator {{run_id}}\",\n  \"mentionIds\": [\n    \"user-2\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('direct_last_message_id', body.message.id);",
+                  "});",
+                  "pm.test(\"The reply and the conversation it was posted in\", function () {",
+                  "    const body = pm.response.json();",
+                  "    const text = `Reply from the administrator ${pm.environment.get('run_id')}`;",
+                  "    pm.expect(body.message.id).to.match(/^message-\\d+$/);",
+                  "    pm.expect(body.message.content).to.eql(text);",
+                  "    pm.expect(body.message.authorId).to.eql('user-1');",
+                  "    pm.expect(body.message.direction).to.eql('outgoing');",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(body.conversation.lastMessage).to.eql(text);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent reads the latest page of messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}/messages?limit=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('direct_next_cursor', body.nextCursor);",
+                  "});",
+                  "pm.test(\"Two messages, the oldest one left for the next page\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(body.messages).to.have.lengthOf(2);",
+                  "    pm.expect(body.messages[0].content).to.eql(`Hello from the agent ${pm.environment.get('run_id')}`);",
+                  "    pm.expect(body.messages[1].id).to.eql(pm.environment.get('direct_last_message_id'));",
+                  "    pm.expect(body.hasMore).to.eql(true);",
+                  "    pm.expect(body.nextCursor).to.match(/^\\d+$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent reads the older page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}/messages?limit=2&before={{direct_next_cursor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "before",
+                  "value": "{{direct_next_cursor}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The first message only, nothing older\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.messages).to.have.lengthOf(1);",
+                  "    pm.expect(body.messages[0].content).to.eql(`Hello from the administrator ${pm.environment.get('run_id')}`);",
+                  "    pm.expect(body.messages[0].direction).to.eql('incoming');",
+                  "    pm.expect(body.hasMore).to.eql(false);",
+                  "    pm.expect(body).to.not.have.property('nextCursor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent acknowledges up to the last message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}",
+                "read"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"readUntilMessageId\": \"{{direct_last_message_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Nothing left unread\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversationId).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(body.unreadCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Nothing is left unread in the agent list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The direct conversation shows the reply and no unread message\", function () {",
+                  "    const found = pm.response.json().conversations.find((c) => c.id === pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(found, 'direct conversation').to.be.an('object');",
+                  "    pm.expect(found.unreadCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Acknowledging without a body reads up to the latest message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}",
+                "read"
+              ]
+            },
+            "description": "The body is optional: the BFF resolves the latest message itself."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Nothing left unread for the administrator\", function () {",
+                  "    pm.expect(pm.response.json().unreadCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The administrator leaves the conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}"
+              ]
+            },
+            "description": "Leaving a direct conversation hides it on the caller side; it is deleted once both sides left."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deleted for the caller\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.deleted).to.eql(true);",
+                  "    pm.expect(body.conversationId).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The conversation left the administrator list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"No longer listed\", function () {",
+                  "    const found = pm.response.json().conversations.find((c) => c.id === pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(found).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent still reads the whole history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Three messages kept\", function () {",
+                  "    pm.expect(pm.response.json().messages).to.have.lengthOf(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent leaves too: the conversation is deleted",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deleted for the caller\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The deleted conversation is unknown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Leaving it again answers 404",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "The administrator writes to the agent: one direct conversation per pair, seen by both, read, acknowledged, then hidden by each side (deleted with the last one)."
+    },
+    {
+      "name": "Group conversation",
+      "item": [
+        {
+          "name": "The agent creates a group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "groups"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Newman group {{run_id}}\",\n  \"description\": \"Group created by the integration tests\",\n  \"memberIds\": [\n    \"user-1\",\n    \"user-3\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('group_id', (body.conversation ?? body).id);",
+                  "});",
+                  "pm.test(\"The group with its creator and the two members\", function () {",
+                  "    const conversation = pm.response.json().conversation;",
+                  "    pm.expect(conversation.id).to.match(/^conversation-\\d+$/);",
+                  "    pm.expect(conversation.kind).to.eql('group');",
+                  "    pm.expect(conversation.name).to.eql(`Newman group ${pm.environment.get('run_id')}`);",
+                  "    pm.expect(conversation.memberCount).to.eql(3);",
+                  "    pm.expect(conversation.department).to.eql('3 membres');",
+                  "    pm.expect(conversation.unreadCount).to.eql(0);",
+                  "    pm.expect(conversation.initials).to.eql('NG');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent posts in the group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello group {{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('group_message_id', body.message.id);",
+                  "});",
+                  "pm.test(\"The message with the group it was posted in\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.message.content).to.eql(`Hello group ${pm.environment.get('run_id')}`);",
+                  "    pm.expect(body.message.authorId).to.eql('user-2');",
+                  "    pm.expect(body.message.authorName).to.eql('Perf Tester');",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('group_id'));",
+                  "    pm.expect(body.conversation.kind).to.eql('group');",
+                  "    pm.expect(body.conversation.memberCount).to.eql(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent finds the group by its name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?search={{run_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "{{run_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Only the group of this run matches\", function () {",
+                  "    const conversations = pm.response.json().conversations;",
+                  "    pm.expect(conversations.map((c) => c.id)).to.eql([pm.environment.get('group_id')]);",
+                  "    pm.expect(conversations[0].memberCount).to.eql(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The list is paged",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?limit=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "The agent has two conversations (101 and the group): one per page."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('first_page_conversation_id', body.conversations[0].id);",
+                  "});",
+                  "pm.test(\"One conversation and the cursor of the next page\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversations).to.have.lengthOf(1);",
+                  "    pm.expect(body.nextCursor).to.eql('1');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The next page follows the cursor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?limit=1&cursor=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "1"
+                },
+                {
+                  "key": "cursor",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The other conversation, last page\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversations).to.have.lengthOf(1);",
+                  "    pm.expect(body.conversations[0].id).to.not.eql(pm.environment.get('first_page_conversation_id'));",
+                  "    pm.expect(body).to.not.have.property('nextCursor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The administrator opens the group with one unread message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The three members with their names and the message of the agent\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('group_id'));",
+                  "    pm.expect(body.conversation.department).to.eql('3 membres');",
+                  "    pm.expect(body.conversation.unreadCount).to.eql(1);",
+                  "    pm.expect(body.participants.map((p) => p.id).sort()).to.eql(['user-1', 'user-2', 'user-3']);",
+                  "    pm.expect(body.participants.map((p) => p.name)).to.include.members([pm.environment.get('admin_name'), 'Perf Tester', 'Contact Sample']);",
+                  "    pm.expect(body.messages.map((m) => m.id)).to.eql([pm.environment.get('group_message_id')]);",
+                  "    pm.expect(body.messages[0].authorName).to.eql('Perf Tester');",
+                  "    pm.expect(body.messages[0].direction).to.eql('incoming');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The administrator acknowledges the group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}",
+                "read"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Nothing left unread\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversationId).to.eql(pm.environment.get('group_id'));",
+                  "    pm.expect(body.unreadCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The administrator leaves the group",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deleted for the caller\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The group has two members left",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The administrator is no longer a member, the message is kept\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.participants.map((p) => p.id).sort()).to.eql(['user-2', 'user-3']);",
+                  "    pm.expect(body.conversation.memberCount).to.eql(2);",
+                  "    pm.expect(body.conversation.department).to.eql('2 membres');",
+                  "    pm.expect(body.messages).to.have.lengthOf(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The administrator no longer lists the group",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?search={{run_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "{{run_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"No conversation of this run left for the administrator\", function () {",
+                  "    pm.expect(pm.response.json().conversations).to.eql([]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent leaves the group",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deleted for the caller\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The agent no longer reaches the group",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{group_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{group_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "The agent creates a group with the administrator and a contact, posts in it, the list is searched and paged, the administrator reads and acknowledges, then both leave."
+    },
+    {
+      "name": "Business references and attachments",
+      "item": [
+        {
+          "name": "Business references without a session are rejected",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/business-references",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business-references"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Business references degrade without Project API and Calendar API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business-references",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business-references"
+              ]
+            },
+            "description": "docker-compose-integration.yml points PROJECT_API_URL and CALENDAR_API_URL at a closed port: both sources are reported unavailable and the route still answers 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"Empty references, both sources unavailable\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.references).to.eql([]);",
+                  "    pm.expect(body.sources).to.eql({ projects: 'unavailable', calendar: 'unavailable' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Attachment upload without a session is rejected",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attachments"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "newman-attachment.txt"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Attachment upload is not available yet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attachments"
+              ]
+            },
+            "description": "The file is tests/postman/newman-attachment.txt (newman reads it from its --working-dir). No upstream stores attachments yet: the BFF answers 503 rather than made-up ids (MAIR-400).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "newman-attachment.txt"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 503\", function () {",
+                  "    pm.response.to.have.status(503);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Project API and Calendar API are not part of the stack (the references degrade per source); attachment upload is not available yet (MAIR-400)."
+    },
+    {
+      "name": "Real-time stream",
+      "item": [
+        {
+          "name": "The stream without a session is rejected",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stream"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The stream opens and ends after MESSAGE_STREAM_MAX_MS",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stream"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "pm.test(\"An event stream, connected to Message API\", function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.match(/^text\\/event-stream/);",
+                  "    const body = pm.response.text();",
+                  "    pm.expect(body).to.match(/^retry: 3000\\n\\n: connected\\n\\n/);",
+                  "    pm.expect(body).to.not.include('stream_error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "GET /stream relays Message API's SSE channel; the stack ends each stream after MESSAGE_STREAM_MAX_MS (1 s), so newman gets a complete answer."
+    }
+  ]
+}

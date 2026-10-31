@@ -282,6 +282,11 @@
             "type": "integer",
             "description": "Nombre de messages non lus dans la conversation",
             "example": 5
+          },
+          "memberCount": {
+            "type": "integer",
+            "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+            "example": 8
           }
         },
         "required": [
@@ -446,6 +451,62 @@
             },
             "description": "Liste des mentions dans le message",
             "example": []
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+            "example": "message-117"
+          },
+          "quoted": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "example": "12345"
+              },
+              "authorId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                "example": "user-12"
+              },
+              "authorName": {
+                "type": "string",
+                "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                "example": "Alice Dupont"
+              },
+              "excerpt": {
+                "type": "string",
+                "description": "First 100 characters of the quoted message",
+                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+              }
+            },
+            "required": [
+              "id",
+              "excerpt"
+            ],
+            "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
           }
         },
         "required": [
@@ -626,6 +687,11 @@
                   "type": "integer",
                   "description": "Nombre de messages non lus dans la conversation",
                   "example": 5
+                },
+                "memberCount": {
+                  "type": "integer",
+                  "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                  "example": 8
                 }
               },
               "required": [
@@ -638,8 +704,8 @@
           },
           "nextCursor": {
             "type": "string",
-            "description": "Curseur pour la pagination des résultats",
-            "example": "abc123"
+            "description": "Pass it as `cursor` to get the next page; absent on the last page",
+            "example": "20"
           }
         },
         "required": [
@@ -731,6 +797,11 @@
                 "type": "integer",
                 "description": "Nombre de messages non lus dans la conversation",
                 "example": 5
+              },
+              "memberCount": {
+                "type": "integer",
+                "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                "example": 8
               }
             },
             "required": [
@@ -897,6 +968,62 @@
                   },
                   "description": "Liste des mentions dans le message",
                   "example": []
+                },
+                "citation": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                  "example": "message-117"
+                },
+                "quoted": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "authorId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                      "example": "user-12"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                      "example": "Alice Dupont"
+                    },
+                    "excerpt": {
+                      "type": "string",
+                      "description": "First 100 characters of the quoted message",
+                      "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "excerpt"
+                  ],
+                  "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                 }
               },
               "required": [
@@ -909,10 +1036,15 @@
             },
             "description": "Liste des messages"
           },
+          "hasMore": {
+            "type": "boolean",
+            "description": "Whether older messages remain",
+            "example": true
+          },
           "nextCursor": {
             "type": "string",
-            "description": "Curseur pour la pagination des résultats",
-            "example": "def456"
+            "description": "Pass it as `before` to get the previous (older) page; absent on the last page",
+            "example": "117"
           }
         },
         "required": [
@@ -1152,6 +1284,62 @@
                 },
                 "description": "Liste des mentions dans le message",
                 "example": []
+              },
+              "citation": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                "example": "message-117"
+              },
+              "quoted": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                    "example": "12345"
+                  },
+                  "authorId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                    "example": "user-12"
+                  },
+                  "authorName": {
+                    "type": "string",
+                    "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                    "example": "Alice Dupont"
+                  },
+                  "excerpt": {
+                    "type": "string",
+                    "description": "First 100 characters of the quoted message",
+                    "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                  }
+                },
+                "required": [
+                  "id",
+                  "excerpt"
+                ],
+                "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               }
             },
             "required": [
@@ -1243,6 +1431,11 @@
                 "type": "integer",
                 "description": "Nombre de messages non lus dans la conversation",
                 "example": 5
+              },
+              "memberCount": {
+                "type": "integer",
+                "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                "example": 8
               }
             },
             "required": [
@@ -1341,6 +1534,11 @@
                 "type": "integer",
                 "description": "Nombre de messages non lus dans la conversation",
                 "example": 5
+              },
+              "memberCount": {
+                "type": "integer",
+                "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                "example": 8
               }
             },
             "required": [
@@ -1505,6 +1703,62 @@
                 },
                 "description": "Liste des mentions dans le message",
                 "example": []
+              },
+              "citation": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                "example": "message-117"
+              },
+              "quoted": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                    "example": "12345"
+                  },
+                  "authorId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                    "example": "user-12"
+                  },
+                  "authorName": {
+                    "type": "string",
+                    "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                    "example": "Alice Dupont"
+                  },
+                  "excerpt": {
+                    "type": "string",
+                    "description": "First 100 characters of the quoted message",
+                    "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                  }
+                },
+                "required": [
+                  "id",
+                  "excerpt"
+                ],
+                "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               }
             },
             "required": [
@@ -1606,6 +1860,11 @@
                 "type": "integer",
                 "description": "Nombre de messages non lus dans la conversation",
                 "example": 5
+              },
+              "memberCount": {
+                "type": "integer",
+                "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                "example": 8
               }
             },
             "required": [
@@ -1937,6 +2196,11 @@
                   "type": "integer",
                   "description": "Nombre de messages non lus dans la conversation",
                   "example": 5
+                },
+                "memberCount": {
+                  "type": "integer",
+                  "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                  "example": 8
                 }
               },
               "required": [
@@ -2116,6 +2380,62 @@
                   },
                   "description": "Liste des mentions dans le message",
                   "example": []
+                },
+                "citation": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                  "example": "message-117"
+                },
+                "quoted": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "example": "12345"
+                    },
+                    "authorId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                      "example": "user-12"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                      "example": "Alice Dupont"
+                    },
+                    "excerpt": {
+                      "type": "string",
+                      "description": "First 100 characters of the quoted message",
+                      "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "excerpt"
+                  ],
+                  "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                 }
               },
               "required": [
@@ -2373,20 +2693,21 @@
           "search": {
             "type": "string",
             "maxLength": 100,
-            "description": "Terme de recherche pour filtrer les conversations",
-            "example": "Marketing"
+            "description": "Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list.",
+            "example": "Xavier Bertrand"
           },
           "limit": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
-            "description": "Nombre maximum de conversations à retourner",
-            "example": 10
+            "maximum": 30,
+            "description": "Number of conversations per page, 1 to 30. Default 20.",
+            "example": 20
           },
           "cursor": {
             "type": "string",
-            "description": "Curseur pour la pagination des résultats",
-            "example": "abc123"
+            "pattern": "^\\d{1,9}$",
+            "description": "The `nextCursor` of the previous page. Absent: the first page.",
+            "example": "20"
           }
         },
         "description": "Paramètres de requête pour filtrer et paginer les conversations"
@@ -2398,23 +2719,18 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100,
-            "description": "Nombre maximum de messages à retourner",
-            "example": 20
+            "description": "Number of messages per page, 1 to 100. Default 30.",
+            "example": 30
           },
           "before": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Curseur pour récupérer les messages avant un certain point",
-            "example": "2026-06-23T12:32:00Z"
-          },
-          "after": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Curseur pour récupérer les messages après un certain point",
-            "example": "2026-06-23T12:32:00Z"
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.",
+            "example": 117
           }
         },
-        "description": "Paramètres de requête pour filtrer et paginer les messages"
+        "description": "Paramètres de requête pour paginer les messages"
       },
       "ContactsQuery": {
         "type": "object",
@@ -2422,7 +2738,7 @@
           "search": {
             "type": "string",
             "maxLength": 100,
-            "description": "Terme de recherche pour filtrer les contacts",
+            "description": "Search term filtering the contacts (no control characters)",
             "example": "Alice"
           },
           "limit": {
@@ -2550,6 +2866,25 @@
           "references",
           "sources"
         ]
+      },
+      "MessageStreamEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "What happened, as Message API names it (`NEW_MSG`...)",
+            "example": "NEW_MSG"
+          },
+          "conversationId": {
+            "type": "string",
+            "description": "Conversation to reload",
+            "example": "conversation-5"
+          }
+        },
+        "required": [
+          "type",
+          "conversationId"
+        ]
       }
     },
     "parameters": {}
@@ -2576,7 +2911,7 @@
           "Connectivity"
         ],
         "summary": "Checks that Message API and Core API (directory) are reachable",
-        "description": "BFF Project and BFF Calendar are not probed: `GET /business-references` degrades per source (`sources.projects` / `sources.calendar`) when they are unavailable.",
+        "description": "Project API and Calendar API are not probed: `GET /business-references` degrades per source (`sources.projects` / `sources.calendar`) when they are unavailable.",
         "responses": {
           "200": {
             "description": "Every upstream answered its /health operation",
@@ -2605,7 +2940,7 @@
       "get": {
         "responses": {
           "200": {
-            "description": "Références des BFF Projets et Calendrier",
+            "description": "References read from Project API and Calendar API (never another BFF)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2668,6 +3003,16 @@
         "responses": {
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2915,6 +3260,11 @@
                             "type": "integer",
                             "description": "Nombre de messages non lus dans la conversation",
                             "example": 5
+                          },
+                          "memberCount": {
+                            "type": "integer",
+                            "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                            "example": 8
                           }
                         },
                         "required": [
@@ -3094,6 +3444,62 @@
                             },
                             "description": "Liste des mentions dans le message",
                             "example": []
+                          },
+                          "citation": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                            "example": "message-117"
+                          },
+                          "quoted": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "example": "12345"
+                              },
+                              "authorId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                                "example": "user-12"
+                              },
+                              "authorName": {
+                                "type": "string",
+                                "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                                "example": "Alice Dupont"
+                              },
+                              "excerpt": {
+                                "type": "string",
+                                "description": "First 100 characters of the quoted message",
+                                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "excerpt"
+                            ],
+                            "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                           }
                         },
                         "required": [
@@ -3119,6 +3525,16 @@
           },
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3161,11 +3577,11 @@
             "schema": {
               "type": "string",
               "maxLength": 100,
-              "description": "Terme de recherche pour filtrer les contacts",
+              "description": "Search term filtering the contacts (no control characters)",
               "example": "Alice"
             },
             "required": false,
-            "description": "Terme de recherche pour filtrer les contacts",
+            "description": "Search term filtering the contacts (no control characters)",
             "name": "search",
             "in": "query"
           },
@@ -3283,6 +3699,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Core API is unavailable or failed",
             "content": {
@@ -3312,16 +3738,17 @@
           "Conversations"
         ],
         "summary": "Récupère la liste des conversations de l’utilisateur actuel",
+        "description": "One page of the caller's conversations, newest first (`limit` 1 to 30, default 20; pass `nextCursor` as `cursor` for the next page), read with ONE Message API call. Each conversation carries what the list displays: its name (the other participant's name for a direct conversation), kind, contact id, member count and unread counter. The members and their names come with `GET /conversations/{conversationId}`. `search` keeps the conversations whose name contains the text, or in which another member's name does (\"autoroute\" finds \"Projet autoroute\", \"Xavier Bertrand\" finds the direct conversation with him and the groups he belongs to); the pagination applies to the filtered list.",
         "parameters": [
           {
             "schema": {
               "type": "string",
               "maxLength": 100,
-              "description": "Terme de recherche pour filtrer les conversations",
-              "example": "Marketing"
+              "description": "Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list.",
+              "example": "Xavier Bertrand"
             },
             "required": false,
-            "description": "Terme de recherche pour filtrer les conversations",
+            "description": "Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list.",
             "name": "search",
             "in": "query"
           },
@@ -3329,23 +3756,24 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 100,
-              "description": "Nombre maximum de conversations à retourner",
-              "example": 10
+              "maximum": 30,
+              "description": "Number of conversations per page, 1 to 30. Default 20.",
+              "example": 20
             },
             "required": false,
-            "description": "Nombre maximum de conversations à retourner",
+            "description": "Number of conversations per page, 1 to 30. Default 20.",
             "name": "limit",
             "in": "query"
           },
           {
             "schema": {
               "type": "string",
-              "description": "Curseur pour la pagination des résultats",
-              "example": "abc123"
+              "pattern": "^\\d{1,9}$",
+              "description": "The `nextCursor` of the previous page. Absent: the first page.",
+              "example": "20"
             },
             "required": false,
-            "description": "Curseur pour la pagination des résultats",
+            "description": "The `nextCursor` of the previous page. Absent: the first page.",
             "name": "cursor",
             "in": "query"
           }
@@ -3441,6 +3869,11 @@
                             "type": "integer",
                             "description": "Nombre de messages non lus dans la conversation",
                             "example": 5
+                          },
+                          "memberCount": {
+                            "type": "integer",
+                            "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                            "example": 8
                           }
                         },
                         "required": [
@@ -3453,8 +3886,8 @@
                     },
                     "nextCursor": {
                       "type": "string",
-                      "description": "Curseur pour la pagination des résultats",
-                      "example": "abc123"
+                      "description": "Pass it as `cursor` to get the next page; absent on the last page",
+                      "example": "20"
                     }
                   },
                   "required": [
@@ -3485,8 +3918,18 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
-            "description": "Message API or Core API is unavailable or failed",
+            "description": "Message API is unavailable or failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -3496,7 +3939,7 @@
             }
           },
           "503": {
-            "description": "Message API or Core API is not configured on the BFF",
+            "description": "Message API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -3509,6 +3952,535 @@
       }
     },
     "/conversations/{conversationId}": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Opens a conversation: its members and one page of messages",
+        "description": "Everything needed to display one conversation, read with two Message API calls made in parallel (the members with their names, and a page of messages with the conversation itself): the conversation (name, kind, contact, member count, unread counter), its `participants`, and the latest `limit` messages (1 to 100, default 30) oldest first, each with its sender id and, when it answers another message, the quoted message (author and excerpt) also when that message is older than the page. `nextCursor` goes in `before` of `GET /conversations/{conversationId}/messages` to load older messages without reloading the members.",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(?:conversation-)?\\d+$"
+                }
+              ],
+              "description": "Identifiant (conversation-<id> ou entier)",
+              "example": "conversation-101"
+            },
+            "required": true,
+            "description": "Identifiant (conversation-<id> ou entier)",
+            "name": "conversationId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Number of messages per page, 1 to 100. Default 30.",
+              "example": 30
+            },
+            "required": false,
+            "description": "Number of messages per page, 1 to 100. Default 30.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "description": "The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.",
+              "example": 117
+            },
+            "required": false,
+            "description": "The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.",
+            "name": "before",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The conversation, its participants and one page of messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "example": "12345"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Nom de la conversation",
+                          "example": "Discussion de groupe"
+                        },
+                        "department": {
+                          "type": "string",
+                          "description": "Département associé à la conversation",
+                          "example": "Marketing"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "direct",
+                            "group"
+                          ],
+                          "description": "Conversation type: `direct` for a conversation created by `POST /direct-messages` between the caller and one contact, `group` otherwise",
+                          "example": "direct"
+                        },
+                        "contactId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Direct conversations only: id of the other participant (the contact), to post a new message to that contact in this conversation instead of creating another one",
+                          "example": "user-8"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "URL de l’avatar de la conversation",
+                          "example": "https://example.com/avatar.png"
+                        },
+                        "initials": {
+                          "type": "string",
+                          "description": "Initiales de la conversation",
+                          "example": "DG"
+                        },
+                        "presence": {
+                          "type": "string",
+                          "enum": [
+                            "online",
+                            "offline",
+                            "away"
+                          ],
+                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "example": "online"
+                        },
+                        "lastMessage": {
+                          "type": "string",
+                          "description": "Dernier message de la conversation",
+                          "example": "Bonjour à tous !"
+                        },
+                        "lastMessageAt": {
+                          "type": "string",
+                          "description": "Date et heure du dernier message (format ISO)",
+                          "example": "2026-06-23T12:32:00Z"
+                        },
+                        "unreadCount": {
+                          "type": "integer",
+                          "description": "Nombre de messages non lus dans la conversation",
+                          "example": 5
+                        },
+                        "memberCount": {
+                          "type": "integer",
+                          "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                          "example": 8
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "description": "The conversation: name to display, kind, contact, member count, unread counter"
+                    },
+                    "participants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nom du contact",
+                            "example": "Alice Dupont"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Adresse email du contact",
+                            "example": "alice.dupont@mairie360.fr"
+                          },
+                          "department": {
+                            "type": "string",
+                            "description": "Département associé au contact",
+                            "example": "Marketing"
+                          },
+                          "avatarUrl": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL de l’avatar du contact",
+                            "example": "https://example.com/avatar.png"
+                          },
+                          "initials": {
+                            "type": "string",
+                            "description": "Initiales du contact",
+                            "example": "AD"
+                          },
+                          "presence": {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "offline",
+                              "away"
+                            ],
+                            "description": "Présence du contact, en ligne, hors ligne ou absent",
+                            "example": "online"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "description": "Représentation d’un contact"
+                      },
+                      "description": "The members of the conversation, the caller included, with their names"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "conversationId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "example": "12345"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "Contenu du message",
+                            "example": "Bonjour à tous !"
+                          },
+                          "sentAt": {
+                            "type": "string",
+                            "description": "Date et heure d’envoi du message (format ISO)",
+                            "example": "2026-06-23T12:32:00Z"
+                          },
+                          "authorId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Id of the author (`user-<n>`), absent once the author's account is deleted",
+                            "example": "user-12"
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "description": "Nom de l’auteur du message",
+                            "example": "Alice Dupont"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "incoming",
+                              "outgoing"
+                            ],
+                            "description": "Direction du message, entrant ou sortant",
+                            "example": "incoming"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "example": "12345"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Nom de la pièce jointe",
+                                  "example": "document.pdf"
+                                },
+                                "size": {
+                                  "type": "integer",
+                                  "description": "Taille de la pièce jointe en octets",
+                                  "example": 102400
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "description": "Type MIME de la pièce jointe",
+                                  "example": "application/pdf"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "URL pour accéder à la pièce jointe",
+                                  "example": "https://example.com/document.pdf"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "description": "Représentation d’une pièce jointe"
+                            },
+                            "description": "Liste des pièces jointes du message",
+                            "example": []
+                          },
+                          "mentions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "example": "12345"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Nom de la mention",
+                                  "example": "Alice Dupont"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "direct",
+                                    "group"
+                                  ],
+                                  "description": "Type de conversation associé à la mention",
+                                  "example": "direct"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "description": "Description de la mention",
+                                  "example": "Mention d’un utilisateur dans un message"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "description": "Représentation d’une mention"
+                            },
+                            "description": "Liste des mentions dans le message",
+                            "example": []
+                          },
+                          "citation": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                            "example": "message-117"
+                          },
+                          "quoted": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "example": "12345"
+                              },
+                              "authorId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                                "example": "user-12"
+                              },
+                              "authorName": {
+                                "type": "string",
+                                "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                                "example": "Alice Dupont"
+                              },
+                              "excerpt": {
+                                "type": "string",
+                                "description": "First 100 characters of the quoted message",
+                                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "excerpt"
+                            ],
+                            "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "conversationId",
+                          "content",
+                          "sentAt"
+                        ],
+                        "description": "Représentation d’un message"
+                      },
+                      "description": "One page of messages, oldest first, with the sender id and the quoted message"
+                    },
+                    "hasMore": {
+                      "type": "boolean",
+                      "description": "Whether older messages remain",
+                      "example": true
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "description": "Pass it as `before` to `GET /conversations/{conversationId}/messages` to get the previous page; absent on the last page",
+                      "example": "117"
+                    }
+                  },
+                  "required": [
+                    "conversation",
+                    "participants",
+                    "messages",
+                    "hasMore"
+                  ],
+                  "description": "A conversation opened: the conversation, its members and one page of messages"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid conversation id or query (details lists the invalid fields)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Message API is unavailable or failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Message API is not configured on the BFF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "Conversations"
@@ -3605,6 +4577,16 @@
           },
           "404": {
             "description": "Unknown conversation, or the caller is not one of its members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3759,6 +4741,16 @@
           },
           "404": {
             "description": "Unknown conversation, the caller is not one of its members, or the message is not one of this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3936,6 +4928,11 @@
                           "type": "integer",
                           "description": "Nombre de messages non lus dans la conversation",
                           "example": 5
+                        },
+                        "memberCount": {
+                          "type": "integer",
+                          "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                          "example": 8
                         }
                       },
                       "required": [
@@ -3965,6 +4962,16 @@
           },
           "401": {
             "description": "Missing or invalid session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4086,6 +5093,16 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Core API is unavailable or failed",
             "content": {
@@ -4115,6 +5132,7 @@
           "Messages"
         ],
         "summary": "Récupère la liste des messages d’une conversation",
+        "description": "One page of messages, oldest first (`limit` 1 to 100, default 30), with the conversation: `nextCursor` goes in `before` for the older page. The whole history is never read. The author names come from the members of the conversation (one Message API call, no Core API call); `GET /conversations/{conversationId}` returns them with the first page.",
         "parameters": [
           {
             "schema": {
@@ -4141,36 +5159,25 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "description": "Nombre maximum de messages à retourner",
-              "example": 20
+              "description": "Number of messages per page, 1 to 100. Default 30.",
+              "example": 30
             },
             "required": false,
-            "description": "Nombre maximum de messages à retourner",
+            "description": "Number of messages per page, 1 to 100. Default 30.",
             "name": "limit",
             "in": "query"
           },
           {
             "schema": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Curseur pour récupérer les messages avant un certain point",
-              "example": "2026-06-23T12:32:00Z"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "description": "The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.",
+              "example": 117
             },
             "required": false,
-            "description": "Curseur pour récupérer les messages avant un certain point",
+            "description": "The `nextCursor` of the previous page: only the messages older than the message with this numeric id are returned. Absent: the latest messages.",
             "name": "before",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Curseur pour récupérer les messages après un certain point",
-              "example": "2026-06-23T12:32:00Z"
-            },
-            "required": false,
-            "description": "Curseur pour récupérer les messages après un certain point",
-            "name": "after",
             "in": "query"
           }
         ],
@@ -4263,6 +5270,11 @@
                           "type": "integer",
                           "description": "Nombre de messages non lus dans la conversation",
                           "example": 5
+                        },
+                        "memberCount": {
+                          "type": "integer",
+                          "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                          "example": 8
                         }
                       },
                       "required": [
@@ -4429,6 +5441,62 @@
                             },
                             "description": "Liste des mentions dans le message",
                             "example": []
+                          },
+                          "citation": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                            "example": "message-117"
+                          },
+                          "quoted": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "example": "12345"
+                              },
+                              "authorId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                                "example": "user-12"
+                              },
+                              "authorName": {
+                                "type": "string",
+                                "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                                "example": "Alice Dupont"
+                              },
+                              "excerpt": {
+                                "type": "string",
+                                "description": "First 100 characters of the quoted message",
+                                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "excerpt"
+                            ],
+                            "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                           }
                         },
                         "required": [
@@ -4441,10 +5509,15 @@
                       },
                       "description": "Liste des messages"
                     },
+                    "hasMore": {
+                      "type": "boolean",
+                      "description": "Whether older messages remain",
+                      "example": true
+                    },
                     "nextCursor": {
                       "type": "string",
-                      "description": "Curseur pour la pagination des résultats",
-                      "example": "def456"
+                      "description": "Pass it as `before` to get the previous (older) page; absent on the last page",
+                      "example": "117"
                     }
                   },
                   "required": [
@@ -4486,8 +5559,18 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
-            "description": "Message API or Core API is unavailable or failed",
+            "description": "Message API is unavailable or failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -4497,7 +5580,7 @@
             }
           },
           "503": {
-            "description": "Message API or Core API is not configured on the BFF",
+            "description": "Message API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -4761,6 +5844,62 @@
                           },
                           "description": "Liste des mentions dans le message",
                           "example": []
+                        },
+                        "citation": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                          "example": "message-117"
+                        },
+                        "quoted": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                              "example": "12345"
+                            },
+                            "authorId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                              "example": "user-12"
+                            },
+                            "authorName": {
+                              "type": "string",
+                              "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                              "example": "Alice Dupont"
+                            },
+                            "excerpt": {
+                              "type": "string",
+                              "description": "First 100 characters of the quoted message",
+                              "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "excerpt"
+                          ],
+                          "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         }
                       },
                       "required": [
@@ -4852,6 +5991,11 @@
                           "type": "integer",
                           "description": "Nombre de messages non lus dans la conversation",
                           "example": 5
+                        },
+                        "memberCount": {
+                          "type": "integer",
+                          "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                          "example": 8
                         }
                       },
                       "required": [
@@ -4899,8 +6043,18 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
-            "description": "Message API or Core API is unavailable or failed",
+            "description": "Message API is unavailable or failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -4910,7 +6064,7 @@
             }
           },
           "503": {
-            "description": "Message API or Core API is not configured on the BFF",
+            "description": "Message API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
@@ -5056,6 +6210,11 @@
                           "type": "integer",
                           "description": "Nombre de messages non lus dans la conversation",
                           "example": 5
+                        },
+                        "memberCount": {
+                          "type": "integer",
+                          "description": "Number of members of a group conversation (always 2 for a direct one). The names of the members come with `GET /conversations/{conversationId}`.",
+                          "example": 8
                         }
                       },
                       "required": [
@@ -5220,6 +6379,62 @@
                           },
                           "description": "Liste des mentions dans le message",
                           "example": []
+                        },
+                        "citation": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted",
+                          "example": "message-117"
+                        },
+                        "quoted": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                              "example": "12345"
+                            },
+                            "authorId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "description": "Id of the author of the quoted message (`user-<n>`), absent once the account is deleted",
+                              "example": "user-12"
+                            },
+                            "authorName": {
+                              "type": "string",
+                              "description": "Name of the author of the quoted message when they are a current member of the conversation",
+                              "example": "Alice Dupont"
+                            },
+                            "excerpt": {
+                              "type": "string",
+                              "description": "First 100 characters of the quoted message",
+                              "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "excerpt"
+                          ],
+                          "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         }
                       },
                       "required": [
@@ -5260,8 +6475,18 @@
               }
             }
           },
+          "429": {
+            "description": "An upstream API rate limit is reached: retry after the Retry-After header (seconds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "502": {
-            "description": "Message API or Core API is unavailable or failed",
+            "description": "Message API is unavailable or failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -5271,7 +6496,48 @@
             }
           },
           "503": {
-            "description": "Message API or Core API is not configured on the BFF",
+            "description": "Message API is not configured on the BFF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stream": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Real-time stream of the caller's conversations",
+        "description": "An **SSE** channel (`text/event-stream`) relaying Message API's: each `data:` line holds a `MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the conversations the caller is a member of are signalled. The response starts at once with `retry: 3000` and a `: connected` comment, before Message API answers; a `: ping` comment comes every 15 seconds. When Message API refuses the session or fails, the stream sends one `event: stream_error` whose `data:` is an `ErrorResponse` (`UNAUTHORIZED`: sign in again instead of reconnecting; `BAD_GATEWAY`: reconnect later), then ends. The stream ends when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.",
+        "responses": {
+          "200": {
+            "description": "Stream established; the body documented is the payload of **one** event",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageStreamEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session (Message API refusing it is a `stream_error` event, the head is already sent)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Message API is not configured on the BFF",
             "content": {
               "application/json": {
                 "schema": {
