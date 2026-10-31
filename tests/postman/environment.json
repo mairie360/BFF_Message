@@ -1,0 +1,90 @@
+{
+  "name": "BFF Message integration",
+  "_postman_variable_scope": "environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4003",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "jwt_secret",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "admin_user_id",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "agent_user_id",
+      "value": "2",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "run_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "jwt_admin",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "jwt_agent",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "direct_conversation_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "direct_last_message_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "direct_next_cursor",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "group_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "group_message_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "first_page_conversation_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "admin_name",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ]
+}

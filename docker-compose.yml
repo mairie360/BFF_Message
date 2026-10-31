@@ -40,7 +40,7 @@ services:
 
   message-api:
     container_name: message-api-bff-message-developpement
-    image: ghcr.io/mairie360/message-api:0.7.1
+    image: ghcr.io/mairie360/message-api:2.1.0
     ports:
       - "3003:3003"
     networks:
@@ -60,6 +60,9 @@ services:
       DB_PASSWORD: password
       DB_PORT: 5432
       PUBLIC_URL: http://message.development.mairie360.fr
+      # mairie360_api_lib >= 2.0 refuses the well-known b"secret" without this flag. Local dev stack
+      # only: a deployment uses a random secret of at least 32 bytes (MAIR-428).
+      JWT_ALLOW_WEAK_SECRET: "true"
       JWT_SECRET: b"secret"
       JWT_TIMEOUT: 3600
     depends_on:
@@ -95,8 +98,12 @@ services:
       CORE_API_URL: ${CORE_API_HOST:-core-api}
       CORE_API_PORT: ${CORE_API_PORT:-3000}
       # Business references: BFF Project and BFF Calendar, run from their own repositories on the host.
-      PROJECT_BFF_URL: ${PROJECT_BFF_URL:-http://host.docker.internal:4001}
-      CALENDAR_BFF_URL: ${CALENDAR_BFF_URL:-http://host.docker.internal:4002}
+      # The APIs, never another BFF (MAIR-525).
+      PROJECT_API_URL: ${PROJECT_API_URL:-http://host.docker.internal:3001}
+      CALENDAR_API_URL: ${CALENDAR_API_URL:-http://host.docker.internal:3002}
+      # Same development secret as the APIs of the local stacks: the BFF verifies the session tokens with it
+      # (bffs-lib requireSession, MAIR-474) and refuses to start without it.
+      JWT_SECRET: b"secret"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

@@ -13,34 +13,34 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "9.1.0",
-    "@mairie360/bffs-lib": "1.2.1",
-    "@mairie360/core-api-openapi": "1.2.0",
-    "@mairie360/message-api-openapi": "0.7.1",
+    "@mairie360/bffs-lib": "2.5.0",
+    "@mairie360/calendar-api-openapi": "1.2.0",
+    "@mairie360/core-api-openapi": "2.2.0",
+    "@mairie360/message-api-openapi": "2.1.0",
+    "@mairie360/project-api-openapi": "1.2.0",
     "axios": "1.20.0",
     "dotenv": "17.4.2",
-    "express": "5.2.1",
+    "express": "5.3.0",
     "swagger-ui-express": "5.0.1",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "overrides": {
     "js-yaml": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@mairie360/bff-calendar-openapi": "0.3.0",
-    "@mairie360/bff-project-openapi": "0.3.0",
     "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
     "@types/supertest": "7.2.1",
     "@types/swagger-ui-express": "4.1.8",
     "esbuild": "0.28.2",
-    "eslint": "10.10.0",
-    "globals": "17.12.0",
-    "jest": "30.5.1",
-    "supertest": "7.2.2",
-    "ts-jest": "29.4.12",
-    "tsx": "4.23.13",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "jest": "30.5.2",
+    "supertest": "7.3.1",
+    "ts-jest": "29.4.15",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.70.0"
+    "typescript-eslint": "8.72.0"
   }
 }

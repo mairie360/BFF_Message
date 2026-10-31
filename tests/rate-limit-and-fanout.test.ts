@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { errorHandler } from '@mairie360/bffs-lib';
 import {
-  calendarDateRange, CALENDAR_WINDOW_HALF_DAYS, createBusinessReferencesRateLimiter, settleWithConcurrency,
+  calendarDateRange, CALENDAR_WINDOW_HALF_DAYS, createBusinessReferencesRateLimiter,
 } from '../src/routes/Messages/business_references';
 import { authorizationFor, tokenFor } from './support/upstream-fixtures';
 
@@ -46,7 +46,7 @@ describe('business references rate limiter', () => {
   test('keys on the session, never on the unverified JWT sub (MAIR-429)', async () => {
     const app = limitedApp(1);
     // Same `sub` claim, different tokens: a forged `sub` cannot use or exhaust another session's counter.
-    const forged = `Bearer ${tokenFor(7).replace(/\.signature$/, '.forged')}`;
+    const forged = `Bearer ${tokenFor(7).replace(/\.[^.]+$/, '.forged')}`;
 
     await request(app).get('/limited').set('Authorization', authorizationFor(7)).expect(200);
     await request(app).get('/limited').set('Authorization', forged).expect(200);
@@ -76,25 +76,8 @@ describe('business references rate limiter', () => {
   });
 });
 
-describe('business references fan-out', () => {
-  test('never runs more than the given number of calls at once and keeps the result order', async () => {
-    let inFlight = 0;
-    let peak = 0;
-    const results = await settleWithConcurrency([1, 2, 3, 4, 5, 6, 7], 3, async (value) => {
-      inFlight += 1;
-      peak = Math.max(peak, inFlight);
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      inFlight -= 1;
-      if (value === 4) throw new Error('failed');
-      return value * 10;
-    });
-
-    expect(peak).toBe(3);
-    expect(results.map((result) => (result.status === 'fulfilled' ? result.value : 'rejected')))
-      .toEqual([10, 20, 30, 'rejected', 50, 60, 70]);
-  });
-
-  test('asks BFF Calendar for a window of less than one year around the Paris day', () => {
+describe('business references calendar window', () => {
+  test('asks Calendar API for a window of less than one year around the Paris day', () => {
     expect(calendarDateRange(new Date('2026-10-02T10:00:00Z'))).toEqual({ from: '2026-04-03', to: '2027-04-02' });
     expect(2 * CALENDAR_WINDOW_HALF_DAYS).toBeLessThan(365);
   });

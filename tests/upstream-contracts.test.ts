@@ -3,9 +3,8 @@ import path from 'node:path';
 import type { JsonSchema, OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract, resolveOrvalPackage } from './support/orval-contract';
 import {
-  calendarBffUrls, calendarBootstrapResponse, calendarEvent, chatResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult,
-  directoryUsers, messageApiUrls, messageView, postMessageResult, projectBffUrls, projectDetailsResponse, projectListItem, projectsPageResponse,
-  taskItem, users,
+  calendarApiUrls, calendarResult, eventView, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult, directChatView,
+  directoryUsers, messageApiUrls, messageView, postMessageResult, projectApiUrls, projectListItem, projectsResult, taskView, tasksResult, users,
 } from './support/upstream-fixtures';
 
 // Les contrats des services amont sont reconstruits depuis les paquets @mairie360/*-openapi installés :
@@ -14,14 +13,14 @@ import {
 const PACKAGES = [
   '@mairie360/message-api-openapi',
   '@mairie360/core-api-openapi',
-  '@mairie360/bff-project-openapi',
-  '@mairie360/bff-calendar-openapi',
+  '@mairie360/project-api-openapi',
+  '@mairie360/calendar-api-openapi',
 ] as const;
 
 const messageApi = loadOrvalContract('@mairie360/message-api-openapi');
 const coreApi = loadOrvalContract('@mairie360/core-api-openapi');
-const projectBff = loadOrvalContract('@mairie360/bff-project-openapi');
-const calendarBff = loadOrvalContract('@mairie360/bff-calendar-openapi');
+const projectApi = loadOrvalContract('@mairie360/project-api-openapi');
+const calendarApi = loadOrvalContract('@mairie360/calendar-api-openapi');
 
 /** Chemin d'une opération tel que le client généré le construit (helper `get*Url`), sans sa query string. */
 const pathname = (url: string) => new URL(url, 'http://upstream').pathname;
@@ -31,16 +30,20 @@ const pathname = (url: string) => new URL(url, 'http://upstream').pathname;
 const CONSUMED = [
   { contract: messageApi, operationId: 'getChats', method: 'get', url: messageApiUrls.getGetChatsUrl() },
   { contract: messageApi, operationId: 'createChat', method: 'post', url: messageApiUrls.getCreateChatUrl() },
+  { contract: messageApi, operationId: 'openDirectChat', method: 'post', url: messageApiUrls.getOpenDirectChatUrl() },
   { contract: messageApi, operationId: 'getChat', method: 'get', url: messageApiUrls.getGetChatUrl(4) },
   { contract: messageApi, operationId: 'removeUserFromChat', method: 'delete', url: messageApiUrls.getRemoveUserFromChatUrl(4, 7) },
   { contract: messageApi, operationId: 'postMessage', method: 'post', url: messageApiUrls.getPostMessageUrl(4) },
   { contract: messageApi, operationId: 'getChatUsers', method: 'get', url: messageApiUrls.getGetChatUsersUrl(4) },
+  { contract: messageApi, operationId: 'acknowledgeRead', method: 'post', url: messageApiUrls.getAcknowledgeReadUrl(4) },
   { contract: messageApi, operationId: 'health', method: 'get', url: messageApiUrls.getHealthUrl() },
   { contract: coreApi, operationId: 'listDirectoryUsers', method: 'get', url: coreApiUrls.getListDirectoryUsersUrl({ ids: '7,8' }) },
   { contract: coreApi, operationId: 'health', method: 'get', url: coreApiUrls.getHealthUrl() },
-  { contract: projectBff, operationId: 'getProjectsPage', method: 'get', url: projectBffUrls.getGetProjectsPageUrl({ limit: 100 }) },
-  { contract: projectBff, operationId: 'getProjectsProjectId', method: 'get', url: projectBffUrls.getGetProjectsProjectIdUrl('project-1') },
-  { contract: calendarBff, operationId: 'getCalendarBootstrap', method: 'get', url: calendarBffUrls.getGetCalendarBootstrapUrl() },
+  { contract: messageApi, operationId: 'sseStreamRoute', method: 'get', url: messageApiUrls.getSseStreamRouteUrl() },
+  { contract: coreApi, operationId: 'getMe', method: 'get', url: coreApiUrls.getGetMeUrl() },
+  { contract: projectApi, operationId: 'getProjects', method: 'get', url: projectApiUrls.getGetProjectsUrl({ limit: 50 }) },
+  { contract: projectApi, operationId: 'getProjectTasks', method: 'get', url: projectApiUrls.getGetProjectTasksUrl(1, { limit: 500 }) },
+  { contract: calendarApi, operationId: 'getCalendar', method: 'get', url: calendarApiUrls.getGetCalendarUrl({ start: '2026-01-01T00:00:00Z', end: '2026-12-31T00:00:00Z' }) },
 ] as const;
 
 function responseSchema(contract: OpenApiContract, method: string, url: string, status: number): JsonSchema {
@@ -66,12 +69,24 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
     expect((match?.operation as { operationId?: string } | undefined)?.operationId).toBe(operationId);
   });
 
+  test('MAIR-525: the BFF depends on no other BFF contract', () => {
+    const { dependencies, devDependencies } = JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>; devDependencies: Record<string, string>;
+    };
+    expect(Object.keys({ ...dependencies, ...devDependencies }).filter((name) => name.startsWith('@mairie360/bff-'))).toEqual([]);
+  });
+
   test('keeps request bodies, path parameters and response models of the Message API operations', () => {
     const post = messageApi.match('POST', messageApiUrls.getPostMessageUrl(4))!;
     expect(post.operation.parameters).toEqual([{ name: 'chatId', in: 'path', required: true, schema: { type: 'number' } }]);
     expect(messageApi.requestBodySchema(post)).toEqual({ required: true, schema: { $ref: '#/components/schemas/PostMessageView' } });
     expect(messageApi.schema('CreateChatView')).toMatchObject({ required: ['members', 'name'] });
-    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['id', 'name', 'unread_count'] });
+    // MAIR-524: `last_activity_at`, the cursor of the incremental reads, which the BFF does not use.
+    expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'last_activity_at', 'member_count', 'name', 'unread_count'] });
+    // MAIR-507: the chat page carries the chat itself, the members carry their names.
+    expect(messageApi.schema('GetChatResultView')).toMatchObject({ required: expect.arrayContaining(['chat', 'messages']) });
+    expect(messageApi.schema('User')).toMatchObject({ required: ['first_name', 'id', 'last_name'] });
+    expect(messageApi.schema('GetChatsParams')).toMatchObject({ properties: { limit: expect.anything(), offset: expect.anything(), search: expect.anything() } });
     expect(messageApi.responseSchema(messageApi.match('DELETE', messageApiUrls.getRemoveUserFromChatUrl(4, 7))!, 200)).toEqual({ documented: true, schema: undefined });
     // Les erreurs ne sont pas typées par orval : aucun statut hors 2XX n'est documenté.
     expect(messageApi.responseSchema(messageApi.match('GET', messageApiUrls.getGetChatUrl(4))!, 404).documented).toBe(false);
@@ -79,17 +94,22 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
 });
 
 describe('upstream fixtures conform to the upstream contracts', () => {
-  const project = projectListItem();
   test.each([
-    ['Message API getChats 200', messageApi, 'get', messageApiUrls.getGetChatsUrl(), chatsResult([chatView(4, 'Équipe communication', 2)])],
+    ['Message API getChats 200', messageApi, 'get', messageApiUrls.getGetChatsUrl(), chatsResult([chatView(4, 'Équipe communication', 2), directChatView(5, 8, 'Sophie Leroy')])],
     ['Message API createChat 200', messageApi, 'post', messageApiUrls.getCreateChatUrl(), createChatResult(12)],
-    ['Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4), chatResult([messageView(41, 7), messageView(42, 8, { sitation: 41 })])],
+    ['Message API openDirectChat 200', messageApi, 'post', messageApiUrls.getOpenDirectChatUrl(), { id: 21, created: true }],
+    [
+      'Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4),
+      chatResult(chatView(4, 'Équipe communication'), [messageView(41, 7), messageView(42, 8, { citation: 41, quoted: { id: 41, sender_id: 7, excerpt: 'Message 41' } })]),
+    ],
     ['Message API postMessage 200', messageApi, 'post', messageApiUrls.getPostMessageUrl(4), postMessageResult(31)],
-    ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8])],
+    ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8], false, { 7: ['Agent', 'Test'], 8: ['Sophie', 'Leroy'] })],
+    ['Message API acknowledgeRead 200', messageApi, 'post', messageApiUrls.getAcknowledgeReadUrl(4), acknowledgeReadResult(2)],
     ['Core API listDirectoryUsers 200', coreApi, 'get', coreApiUrls.getListDirectoryUsersUrl(), directoryUsers([users.agent, users.thomas])],
-    ['BFF Project getProjectsPage 200', projectBff, 'get', projectBffUrls.getGetProjectsPageUrl(), projectsPageResponse([project])],
-    ['BFF Project getProjectsProjectId 200', projectBff, 'get', projectBffUrls.getGetProjectsProjectIdUrl(project.id), projectDetailsResponse(project, [taskItem()])],
-    ['BFF Calendar getCalendarBootstrap 200', calendarBff, 'get', calendarBffUrls.getGetCalendarBootstrapUrl(), calendarBootstrapResponse([calendarEvent(), calendarEvent({ id: 'evt-2' })])],
+    ['Core API getMe 200', coreApi, 'get', coreApiUrls.getGetMeUrl(), { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: 'User', roles: ['User'] }],
+    ['Project API getProjects 200', projectApi, 'get', projectApiUrls.getGetProjectsUrl(), projectsResult([projectListItem(1), projectListItem(2, { tasks_total: 0 })])],
+    ['Project API getProjectTasks 200', projectApi, 'get', projectApiUrls.getGetProjectTasksUrl(1), tasksResult([taskView(1), taskView(2, { assigned_to: 7 })])],
+    ['Calendar API getCalendar 200', calendarApi, 'get', calendarApiUrls.getGetCalendarUrl({ start: '', end: '' }), calendarResult([eventView(1), eventView(2, { is_member: false })])],
   ] as const)('%s', (_name, contract, method, url, body) => {
     expect(contract.validate(responseSchema(contract, method, url, 200), body)).toEqual([]);
   });
@@ -110,8 +130,8 @@ describe('contract validator', () => {
     expect(messageApi.match('GET', messageApiUrls.getGetChatUsersUrl(4))).toMatchObject({ template: '/api/v1/{chatId}/users/', pathParams: { chatId: '4' } });
     expect(messageApi.validateRequest('GET', new URL('http://api/api/v1/conversation-4/')).errors)
       .toEqual([expect.stringContaining('path.chatId: type number attendu')]);
-    expect(projectBff.validateRequest('GET', new URL('http://bff/projects-page?limit=beaucoup')).errors)
-      .toEqual([expect.stringContaining('query.limit: type number|null attendu')]);
+    expect(projectApi.validateRequest('GET', new URL('http://api/api/v1/projects/?limit=beaucoup')).errors)
+      .toEqual([expect.stringContaining('query.limit')]);
     const match = messageApi.match('POST', messageApiUrls.getCreateChatUrl())!;
     expect(messageApi.validate(messageApi.requestBodySchema(match).schema!, { name: 'Sans membres', members: ['user-8'] }))
       .toEqual([expect.stringContaining('$.members[0]: type number attendu')]);

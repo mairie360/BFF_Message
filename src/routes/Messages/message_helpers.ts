@@ -1,10 +1,12 @@
-import { asCaller, authorization, callUpstream, HttpError, unverifiedSubject } from '@mairie360/bffs-lib';
+import { asCaller, callUpstream, HttpError, sessionUserId, upstreamStatus } from '@mairie360/bffs-lib';
 import type { z } from 'zod';
 import type { CallContext } from '../../clients/context';
 import messageClient from '../../clients/messageClient';
-import { getContactUser, listContacts, listContactsByIds } from '../../clients/coreClient';
+import { getContactUser, listContacts } from '../../clients/coreClient';
 import type {
   ChatView,
+  GetChatParams,
+  GetChatResultView,
   MessageView,
 } from '@mairie360/message-api-openapi/model';
 import {
@@ -21,6 +23,22 @@ export type BffMessage = z.infer<typeof MessageDtoSchema>;
 
 const MESSAGE_API_TIMEOUT_MS = 5_000;
 
+/** Largest page a Message API listing serves (`limit` 1 to 100, default 50). */
+const MESSAGE_API_PAGE_SIZE = 100;
+
+/** Conversations per page of `GET /conversations` when `limit` is absent (MAIR-507). */
+export const DEFAULT_CONVERSATIONS_LIMIT = 20;
+/** Messages per page of a conversation when `limit` is absent (MAIR-507). */
+export const DEFAULT_MESSAGES_LIMIT = 30;
+
+/**
+ * Most pages read when listing the members of one chat, so that a single BFF request cannot fan out without
+ * bound: 20 pages of 100 members.
+ */
+const MAX_MESSAGE_API_PAGES = 20;
+/** Conversations the bootstrap tries to open when the first ones are deleted while it runs. */
+const MAX_BOOTSTRAP_ATTEMPTS = 3;
+
 /**
  * Options of a Message API call made on behalf of the caller: MESSAGE_API_URL (+ MESSAGE_API_PORT) read
  * now (503 when missing, no localhost default) and the caller's own `Bearer` header, never a default token.
@@ -29,9 +47,54 @@ function messageApi(context: CallContext) {
   return asCaller('MESSAGE_API', context.req, MESSAGE_API_TIMEOUT_MS);
 }
 
-/** Caller id: the JWT `sub` read without verifying the signature (see `fetchCurrentUser`). */
-function callerId(context: CallContext): number | undefined {
-  return unverifiedSubject(authorization(context.req));
+/** Caller id: the `sub` of the token `requireSession` verified (MAIR-474); 401 when the route skipped it. */
+function callerId(context: CallContext): number {
+  return sessionUserId(context.req);
+}
+
+/** A member of a chat as Message API lists it: Core API id and names. */
+type ChatUser = { id: number; first_name: string; last_name: string };
+
+/** Every member of the chat with their names, read page by page from Message API (by increasing id). */
+async function listChatUsers(
+  chatId: number,
+  context: CallContext,
+  declared?: CallContext['declared'],
+): Promise<ChatUser[]> {
+  const users = new Map<number, ChatUser>();
+
+  for (let page = 0; page < MAX_MESSAGE_API_PAGES; page += 1) {
+    const params = { limit: MESSAGE_API_PAGE_SIZE, offset: page * MESSAGE_API_PAGE_SIZE };
+    // Sequential on purpose: Message API gives no total, only `has_more`, so the next page is only known after
+    // this one (a chat has a few members: one page in practice).
+    // eslint-disable-next-line no-await-in-loop
+    const response = await callUpstream(
+      'MESSAGE_API',
+      () => messageClient.getChatUsers(chatId, params, messageApi(context)),
+      { declared, retry: true },
+    );
+    for (const user of response.data.users) users.set(user.id, user);
+    if (!response.data.has_more) break;
+  }
+
+  return [...users.values()];
+}
+
+/**
+ * One page of the messages of the chat, oldest first, with the chat itself (`chat`): the `limit` latest
+ * messages, or the ones before the message `before`. One Message API call whatever the length of the history.
+ */
+async function getChatPage(
+  chatId: number,
+  params: GetChatParams,
+  context: CallContext,
+): Promise<GetChatResultView> {
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.getChat(chatId, params, messageApi(context)),
+    { declared: context.declared, retry: true },
+  );
+  return response.data;
 }
 
 function parseNumericId(value: string | number | undefined): number | null {
@@ -70,9 +133,8 @@ function publicUserId(userId: string | number): string {
 }
 
 /**
- * The caller's profile. Its id is the JWT `sub` read **without verifying the signature**
- * (`unverifiedSubject`): it only shapes requests sent upstream with the same token, which the upstream
- * verifies, and the message direction; it never grants access by itself.
+ * The caller's profile. Its id is the `sub` of the token the BFF verified (`requireSession`, MAIR-474); the
+ * upstream APIs verify the token again and check revocation.
  */
 export async function fetchCurrentUser(context: CallContext): Promise<BffCurrentUser> {
   const id = callerId(context);
@@ -97,87 +159,6 @@ export async function fetchCurrentUser(context: CallContext): Promise<BffCurrent
     name,
     ...(user.email?.trim() ? { email: user.email } : {}),
     ...(roles.length > 0 ? { role: roles.join(', ') } : {}),
-  };
-}
-
-type ConversationParticipants = {
-  /** Every member id of the chat, the caller included. */
-  memberIds: number[];
-  /** Directory entries of the other members. */
-  others: BffContact[];
-  /** Directory entries of every member looked up (the caller only when `includeCaller` was asked). */
-  members: BffContact[];
-};
-
-const noParticipants: ConversationParticipants = { memberIds: [], others: [], members: [] };
-
-// Name given by `createDirectMessage` to the chats it creates; the id is the recipient's.
-const DIRECT_CHAT_NAME = /^Direct (\d+)$/;
-
-function directMessageName(recipientId: number): string {
-  return `Direct ${recipientId}`;
-}
-
-/**
- * Id of the other participant when the chat is a direct conversation: created by
- * `POST /direct-messages` (named `Direct <recipientId>`, the recipient being either member) and
- * holding exactly the caller and one contact. Message API's own `kind` column is not used: it is
- * set to `direct` for every chat without a group and is not exposed.
- */
-function directContactId(
-  chatName: string,
-  memberIds: number[],
-  currentUserId: number | undefined,
-): number | undefined {
-  const match = DIRECT_CHAT_NAME.exec(chatName);
-  if (!match || currentUserId === undefined) return undefined;
-
-  const members = [...new Set(memberIds)];
-  if (members.length !== 2 || !members.includes(currentUserId)) return undefined;
-  if (!members.includes(Number(match[1]))) return undefined;
-
-  return members.find((memberId) => memberId !== currentUserId);
-}
-
-function mapChatToConversation(
-  chat: ChatView | { id: number; name: string; unread_count?: number },
-  messages: MessageView[] = [],
-  participants: ConversationParticipants = noParticipants,
-  currentUserId?: number,
-): BffConversation {
-  const lastMessage = messages[messages.length - 1];
-  const summary = {
-    id: publicChatId(chat.id),
-    lastMessage: lastMessage?.content,
-    lastMessageAt: lastMessage?.created_at,
-    unreadCount: chat.unread_count ?? 0,
-  };
-  const contactId = directContactId(chat.name, participants.memberIds, currentUserId);
-
-  if (contactId !== undefined) {
-    // A direct conversation is shown under the contact's name, the same on both sides.
-    const contact = participants.others.find((other) => other.id === publicUserId(contactId));
-    const name = contact?.name ?? `Utilisateur ${contactId}`;
-
-    return {
-      ...summary,
-      name,
-      kind: 'direct',
-      contactId: publicUserId(contactId),
-      initials: initials(name),
-    };
-  }
-
-  const participantNames = participants.others.map((other) => other.name);
-
-  return {
-    ...summary,
-    name: chat.name,
-    department: participantNames.length > 0
-      ? `Avec ${participantNames.join(', ')}`
-      : undefined,
-    kind: 'group',
-    initials: initials(chat.name),
   };
 }
 
@@ -211,132 +192,183 @@ function mapCoreUserToContact(user: CoreUser): BffContact | null {
   };
 }
 
-async function fetchConversationParticipants(
-  chatId: number,
-  currentUserId: number | undefined,
-  context: CallContext,
-  includeCaller = false,
-): Promise<ConversationParticipants> {
-  try {
-    const response = await callUpstream('MESSAGE_API', () => messageClient.getChatUsers(chatId, messageApi(context)), { retry: true });
-    const memberIds = [...new Set(response.data.users.map((user) => user.id))];
-    const participants = await listContactsByIds(
-      includeCaller ? memberIds : memberIds.filter((userId) => userId !== currentUserId),
-      context,
-    );
-    const members = participants.flatMap((participant) => {
-      const contact = mapCoreUserToContact(participant);
-      return contact ? [contact] : [];
-    });
-    const callerPublicId = currentUserId === undefined ? undefined : publicUserId(currentUserId);
-
-    return {
-      memberIds,
-      others: members.filter((member) => member.id !== callerPublicId),
-      members,
-    };
-  } catch {
-    return noParticipants;
-  }
-}
-
-async function fetchChatSummary(
-  chatId: number,
-  context: CallContext,
-): Promise<ChatView | undefined> {
-  try {
-    const response = await callUpstream('MESSAGE_API', () => messageClient.getChats(messageApi(context)), { retry: true });
-    return response.data.chats.find((chat) => chat.id === chatId);
-  } catch {
-    return undefined;
-  }
+/** "8 membres": what a group conversation shows instead of the names of its members (not loaded by the list). */
+function memberCountLabel(memberCount: number): string {
+  return `${memberCount} ${memberCount > 1 ? 'membres' : 'membre'}`;
 }
 
 /**
- * `authorName` is the author's directory name when the author is a member found in Core API, and is
- * left out otherwise (former member, directory unavailable): no placeholder name is made up.
+ * A conversation as Message API lists it: `name` is ready to display (the title of a group, the other
+ * participant's name for a direct conversation), so nothing else is read to build it.
+ */
+/** The fields of a chat a conversation is built from: a chat just created has no `last_activity_at` to read. */
+type ChatSummary = Pick<ChatView, 'id' | 'name' | 'kind' | 'contact_id' | 'member_count' | 'unread_count'>;
+
+function mapChatToConversation(chat: ChatSummary, lastMessage?: Pick<MessageView, 'content' | 'created_at'>): BffConversation {
+  const summary = {
+    id: publicChatId(chat.id),
+    lastMessage: lastMessage?.content,
+    lastMessageAt: lastMessage?.created_at,
+    unreadCount: chat.unread_count,
+    memberCount: chat.member_count,
+  };
+
+  if (chat.kind === 'direct') {
+    const name = chat.name || (chat.contact_id == null ? '' : `Utilisateur ${chat.contact_id}`);
+
+    return {
+      ...summary,
+      name,
+      kind: 'direct',
+      ...(chat.contact_id == null ? {} : { contactId: publicUserId(chat.contact_id) }),
+      initials: initials(name),
+    };
+  }
+
+  return {
+    ...summary,
+    name: chat.name,
+    department: chat.member_count > 0 ? memberCountLabel(chat.member_count) : undefined,
+    kind: 'group',
+    initials: initials(chat.name),
+  };
+}
+
+/**
+ * `authorName` is the author's name when the author is a current member of the chat, and is left out
+ * otherwise (former member): no placeholder name is made up. `authorId` is left out too once the author's
+ * account is deleted (Message API `sender_id: null`). A quoted message carries its author and an excerpt, also
+ * when it is older than the page.
  */
 function mapMessageToDto(
   conversationId: string | number,
-  message: MessageView,
-  currentUserId?: number,
+  message: Pick<MessageView, 'id' | 'content' | 'created_at' | 'sender_id'> & Partial<Pick<MessageView, 'citation' | 'quoted'>>,
+  currentUserId: number,
   members: BffContact[] = [],
 ): BffMessage {
-  const authorId = publicUserId(message.sender_id);
-  const currentAuthorId = currentUserId === undefined
-    ? undefined
-    : publicUserId(currentUserId);
-  const authorName = members.find((member) => member.id === authorId)?.name;
+  const nameOf = (id: string | undefined) => (id === undefined ? undefined : members.find((member) => member.id === id)?.name);
+  const authorId = message.sender_id == null ? undefined : publicUserId(message.sender_id);
+  const authorName = nameOf(authorId);
+  const quotedAuthorId = message.quoted?.sender_id == null ? undefined : publicUserId(message.quoted.sender_id);
+  const quotedAuthorName = nameOf(quotedAuthorId);
 
   return {
     id: publicMessageId(message.id),
     conversationId,
     content: message.content,
     sentAt: message.created_at,
-    authorId,
+    ...(authorId ? { authorId } : {}),
     ...(authorName ? { authorName } : {}),
-    direction: currentAuthorId === authorId ? 'outgoing' : 'incoming',
+    direction: authorId !== undefined && publicUserId(currentUserId) === authorId ? 'outgoing' : 'incoming',
     attachments: [],
     mentions: [],
+    ...(message.citation == null ? {} : { citation: publicMessageId(message.citation) }),
+    ...(message.quoted == null
+      ? {}
+      : {
+        quoted: {
+          id: publicMessageId(message.quoted.id),
+          ...(quotedAuthorId ? { authorId: quotedAuthorId } : {}),
+          ...(quotedAuthorName ? { authorName: quotedAuthorName } : {}),
+          excerpt: message.quoted.excerpt,
+        },
+      }),
   };
 }
 
+/** Offset of a `cursor` of `GET /conversations` (the `nextCursor` of the previous page). */
+function parseConversationsCursor(cursor: string | undefined): number {
+  if (cursor === undefined) return 0;
+  if (!/^\d{1,9}$/.test(cursor)) throw new HttpError(400, 'Invalid cursor');
+  return Number(cursor);
+}
+
+/**
+ * One page of the caller's conversations, newest first: ONE Message API call, whatever the number of
+ * conversations. `search` (name of the conversation or of one of its members) is applied by Message API,
+ * before the pagination. `nextCursor` is absent on the last page.
+ */
 export async function fetchConversations(
   search: string | undefined,
   limit: number | undefined,
+  cursor: string | undefined,
   context: CallContext,
-): Promise<BffConversation[]> {
-  const response = await callUpstream('MESSAGE_API', () => messageClient.getChats(messageApi(context)), { declared: context.declared, retry: true });
-  const chats = response.data.chats as ChatView[];
-  const filteredChats = search
-    ? chats.filter((chat) => chat.name.toLowerCase().includes(search.toLowerCase()))
-    : chats;
-  const visibleChats = typeof limit === 'number' ? filteredChats.slice(0, limit) : filteredChats;
-  const currentUserId = callerId(context);
-
-  return Promise.all(
-    visibleChats.map(async (chat) => {
-      const participants = await fetchConversationParticipants(
-        chat.id,
-        currentUserId,
-        context,
-      );
-
-      return mapChatToConversation(chat, [], participants, currentUserId);
-    }),
+): Promise<{ conversations: BffConversation[]; nextCursor?: string }> {
+  const pageSize = Math.min(limit ?? DEFAULT_CONVERSATIONS_LIMIT, MESSAGE_API_PAGE_SIZE);
+  const offset = parseConversationsCursor(cursor);
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.getChats(
+      { limit: pageSize, offset, ...(search?.trim() ? { search: search.trim() } : {}) },
+      messageApi(context),
+    ),
+    { declared: context.declared, retry: true },
   );
+
+  return {
+    conversations: response.data.chats.map((chat) => mapChatToConversation(chat)),
+    ...(response.data.has_more ? { nextCursor: String(offset + pageSize) } : {}),
+  };
 }
 
-export async function fetchConversationMessages(
+export type LoadedConversation = {
+  conversation: BffConversation;
+  participants: BffContact[];
+  messages: BffMessage[];
+  hasMore: boolean;
+  nextCursor?: string;
+};
+
+/**
+ * Opens a conversation: the members (id and name) and one page of messages with the conversation itself, two
+ * Message API calls made in parallel and no Core API call. `before` is the `nextCursor` of the previous page
+ * (the numeric id of the oldest message loaded): older messages are read without ever loading the whole history.
+ */
+export async function loadConversation(
   conversationId: string | number,
-  limit: number | undefined,
+  page: { limit?: number; before?: string | number },
   context: CallContext,
-): Promise<{ conversation: BffConversation; messages: BffMessage[] }> {
+): Promise<LoadedConversation> {
   const chatId = parseNumericId(conversationId);
   if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
+  const before = page.before === undefined ? undefined : parseNumericId(page.before);
+  if (before === null) {
+    throw new HttpError(400, 'Invalid cursor');
+  }
 
   const currentUserId = callerId(context);
-  const [response, participants, chat] = await Promise.all([
-    callUpstream('MESSAGE_API', () => messageClient.getChat(chatId, messageApi(context)), { declared: context.declared, retry: true }),
-    fetchConversationParticipants(chatId, currentUserId, context, true),
-    fetchChatSummary(chatId, context),
+  const [result, users] = await Promise.all([
+    getChatPage(chatId, {
+      limit: Math.min(page.limit ?? DEFAULT_MESSAGES_LIMIT, MESSAGE_API_PAGE_SIZE),
+      ...(before === undefined ? {} : { before }),
+    }, context),
+    listChatUsers(chatId, context, context.declared),
   ]);
-  const apiMessages = response.data.messages as MessageView[];
-  const messages = apiMessages.map((message) => (
-    mapMessageToDto(conversationId, message, currentUserId, participants.members)
-  ));
+  const participants = users.flatMap((user) => {
+    const contact = mapCoreUserToContact(user);
+    return contact ? [contact] : [];
+  });
+  const latest = result.messages[result.messages.length - 1];
 
   return {
-    conversation: mapChatToConversation(
-      chat ?? { id: chatId, name: `Conversation ${chatId}` },
-      apiMessages,
-      participants,
-      currentUserId,
-    ),
-    messages: typeof limit === 'number' ? messages.slice(-limit) : messages,
+    conversation: mapChatToConversation(result.chat, latest),
+    participants,
+    messages: result.messages.map((message) => mapMessageToDto(conversationId, message, currentUserId, participants)),
+    hasMore: result.has_more,
+    ...(result.has_more && result.next_before != null ? { nextCursor: String(result.next_before) } : {}),
   };
+}
+
+/** `GET /conversations/{id}/messages`: the same page as `loadConversation`, without the member list. */
+export async function fetchConversationMessages(
+  conversationId: string | number,
+  page: { limit?: number; before?: string | number },
+  context: CallContext,
+): Promise<Omit<LoadedConversation, 'participants'>> {
+  const { conversation, messages, hasMore, nextCursor } = await loadConversation(conversationId, page, context);
+  return { conversation, messages, hasMore, ...(nextCursor === undefined ? {} : { nextCursor }) };
 }
 
 export async function sendMessageToConversation(
@@ -350,31 +382,21 @@ export async function sendMessageToConversation(
   }
 
   const currentUserId = callerId(context);
-  if (currentUserId === undefined) {
-    throw new HttpError(401, 'User id missing from the token');
-  }
-
-  const [response, participants, chat] = await Promise.all([
+  // The post, the conversation (one message of its page carries it) and the members' names, in parallel.
+  const [response, header, users] = await Promise.all([
     callUpstream('MESSAGE_API', () => messageClient.postMessage(chatId, { content }, messageApi(context)), { declared: context.declared }),
-    fetchConversationParticipants(chatId, currentUserId, context, true),
-    fetchChatSummary(chatId, context),
+    getChatPage(chatId, { limit: 1 }, context),
+    listChatUsers(chatId, context, context.declared),
   ]);
-  const now = new Date().toISOString();
-  const message = mapMessageToDto(conversationId, {
-    id: response.data.id,
-    content,
-    created_at: now,
-    sender_id: currentUserId,
-  }, currentUserId, participants.members);
+  const members = users.flatMap((user) => {
+    const contact = mapCoreUserToContact(user);
+    return contact ? [contact] : [];
+  });
+  const sent = { id: response.data.id, content, created_at: new Date().toISOString(), sender_id: currentUserId };
 
   return {
-    conversation: mapChatToConversation(
-      chat ?? { id: chatId, name: `Conversation ${chatId}` },
-      [],
-      participants,
-      currentUserId,
-    ),
-    message,
+    conversation: mapChatToConversation(header.chat, sent),
+    message: mapMessageToDto(conversationId, sent, currentUserId, members),
   };
 }
 
@@ -389,50 +411,19 @@ export async function createDirectMessage(
   }
 
   const currentUserId = callerId(context);
-  if (currentUserId === undefined) {
-    throw new HttpError(401, 'User id missing from the token');
-  }
   if (recipientNumericId === currentUserId) {
     throw new HttpError(400, 'A direct message cannot be sent to oneself');
   }
 
-  // Reuse the direct conversation the caller already has with this contact: a new chat per message
-  // would split the history over duplicated conversations.
-  const existingChatId = await findDirectChat(recipientNumericId, currentUserId, context);
-  const chatId = existingChatId ?? (await callUpstream('MESSAGE_API', () => messageClient.createChat({
-    name: directMessageName(recipientNumericId),
-    members: [recipientNumericId],
-  }, messageApi(context)), { declared: context.declared })).data.id;
+  // Message API finds the caller's direct conversation with the recipient or creates it (one per pair), so a
+  // message never splits the history over duplicated conversations.
+  const opened = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.openDirectChat({ contact_id: recipientNumericId }, messageApi(context)),
+    { declared: context.declared },
+  );
 
-  return sendMessageToConversation(chatId, message, context);
-}
-
-/**
- * Id of the caller's direct chat with `contactId`, if any. Message API does not expose a chat kind, so
- * the candidates are the caller's chats named `Direct <id>` after either side (the contact may have
- * started it), and a candidate is kept only when its members are exactly the caller and the contact.
- * Only those candidates are inspected, so the lookup costs one listing plus one call per candidate.
- */
-async function findDirectChat(
-  contactId: number,
-  currentUserId: number,
-  context: CallContext,
-): Promise<number | undefined> {
-  const response = await callUpstream('MESSAGE_API', () => messageClient.getChats(messageApi(context)), { declared: context.declared, retry: true });
-  const candidateNames = new Set([directMessageName(contactId), directMessageName(currentUserId)]);
-  const candidates = response.data.chats.filter((chat) => candidateNames.has(chat.name));
-
-  for (const chat of candidates) {
-    const members = await callUpstream(
-      'MESSAGE_API',
-      () => messageClient.getChatUsers(chat.id, messageApi(context)),
-      { declared: context.declared, retry: true },
-    );
-    const memberIds = members.data.users.map((user) => user.id);
-    if (directContactId(chat.name, memberIds, currentUserId) === contactId) return chat.id;
-  }
-
-  return undefined;
+  return sendMessageToConversation(opened.data.id, message, context);
 }
 
 export async function createGroupConversation(
@@ -443,7 +434,15 @@ export async function createGroupConversation(
   const members = memberIds.map(parseNumericId).filter((id): id is number => id !== null);
   const response = await callUpstream('MESSAGE_API', () => messageClient.createChat({ name, members }, messageApi(context)), { declared: context.declared });
 
-  return mapChatToConversation({ id: response.data.id, name });
+  // The creator is a member too.
+  return mapChatToConversation({
+    id: response.data.id,
+    name,
+    kind: 'group',
+    contact_id: null,
+    member_count: new Set([...members, callerId(context)]).size,
+    unread_count: 0,
+  });
 }
 
 export async function deleteConversation(conversationId: string | number, context: CallContext): Promise<void> {
@@ -459,19 +458,61 @@ export async function deleteConversation(conversationId: string | number, contex
 
   // "Delete" removes the conversation from the caller's list: the caller leaves it, and Message API deletes the
   // chat with its last member. Message API >= MAIR-394 keeps DELETE of a whole chat for administrators.
-  await callUpstream('MESSAGE_API', () => messageClient.removeUserFromChat(chatId, userId, messageApi(context)), {
-    declared: context.declared,
-  });
+  // Message API answers 400 when the caller is not a member: for the caller, the conversation does not exist.
+  try {
+    await callUpstream('MESSAGE_API', () => messageClient.removeUserFromChat(chatId, userId, messageApi(context)), {
+      declared: context.declared,
+    });
+  } catch (error) {
+    if (error instanceof HttpError && upstreamStatus(error.cause) === 400) {
+      throw new HttpError(404, 'Conversation not found');
+    }
+    throw error;
+  }
 }
 
-export async function markConversationAsRead(conversationId: string | number): Promise<{ conversationId: string | number; unreadCount: number }> {
-  if (parseNumericId(conversationId) === null) {
+/**
+ * Acknowledges the messages of the conversation as read up to `readUntilMessageId` (Message API
+ * `acknowledgeRead`). Without an id, everything is acknowledged up to the latest message (one call with
+ * `limit=1`); an empty conversation has nothing to acknowledge and nothing unread.
+ */
+export async function markConversationAsRead(
+  conversationId: string | number,
+  readUntilMessageId: string | number | undefined,
+  context: CallContext,
+): Promise<{ conversationId: string | number; unreadCount: number }> {
+  const chatId = parseNumericId(conversationId);
+  if (chatId === null) {
     throw new HttpError(400, 'Invalid conversation id');
   }
 
-  // Message_API has no explicit read operation yet. A fabricated zero would
-  // incorrectly tell callers that the unread count was persisted.
-  throw new HttpError(503, 'Read acknowledgement unavailable');
+  const requestedId = readUntilMessageId === undefined ? undefined : parseNumericId(readUntilMessageId);
+  if (requestedId === null) {
+    throw new HttpError(400, 'Invalid message id');
+  }
+
+  let untilId: number | undefined = requestedId;
+  if (untilId === undefined) {
+    const latest = await callUpstream(
+      'MESSAGE_API',
+      () => messageClient.getChat(chatId, { limit: 1 }, messageApi(context)),
+      { declared: context.declared, retry: true },
+    );
+    const { messages } = latest.data;
+    untilId = messages[messages.length - 1]?.id;
+    if (untilId === undefined) {
+      return { conversationId, unreadCount: 0 };
+    }
+  }
+
+  const readUntil = untilId;
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.acknowledgeRead(chatId, { readUntilMessageId: readUntil }, messageApi(context)),
+    { declared: context.declared },
+  );
+
+  return { conversationId, unreadCount: response.data.unread_count };
 }
 
 export async function fetchContacts(
@@ -501,15 +542,28 @@ export async function fetchMessagingBootstrap(context: CallContext): Promise<{
   activeConversationId?: string | number;
   messages: BffMessage[];
 }> {
-  const [user, conversations, contacts] = await Promise.all([
+  const [user, listed, contacts] = await Promise.all([
     fetchCurrentUser(context),
-    fetchConversations(undefined, 20, context),
+    fetchConversations(undefined, DEFAULT_CONVERSATIONS_LIMIT, undefined, context),
     fetchContacts(undefined, undefined, context),
   ]);
-  const activeConversationId = conversations[0]?.id;
-  const activeConversation = activeConversationId
-    ? await fetchConversationMessages(activeConversationId, 30, context)
-    : undefined;
+  // A conversation can be deleted between the list and the read of its messages: Message API then
+  // answers 404. Drop it and open the next one instead of failing the whole bootstrap.
+  const conversations = [...listed.conversations];
+  const messagesContext: CallContext = { ...context, declared: [...context.declared, 404] };
+  let activeConversation: Awaited<ReturnType<typeof loadConversation>> | undefined;
+  for (let attempt = 0; attempt < MAX_BOOTSTRAP_ATTEMPTS && conversations.length > 0; attempt += 1) {
+    try {
+      // Sequential on purpose: the next conversation is only read when this one was deleted meanwhile (404).
+      // eslint-disable-next-line no-await-in-loop
+      activeConversation = await loadConversation(conversations[0].id, { limit: DEFAULT_MESSAGES_LIMIT }, messagesContext);
+      break;
+    } catch (error) {
+      if (!(error instanceof HttpError) || error.status !== 404) throw error;
+      conversations.shift();
+    }
+  }
+  const activeConversationId = activeConversation ? conversations[0]?.id : undefined;
 
   return {
     currentUser: user,
