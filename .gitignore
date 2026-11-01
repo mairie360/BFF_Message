@@ -18,5 +18,8 @@ summary.json
 # performance_test.sh, and by the CI jobs.
 cicd-repo/
 
+# GDPR log marker report (gdpr_marker_test.sh, MAIR-290): raw container logs, never committed.
+/gdpr-report/
+
 # newman junit report of docker-compose-integration.yml (integration_test.sh)
 newman-reports/

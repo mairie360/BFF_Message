@@ -995,6 +995,36 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expect(JSON.stringify(response.body)).not.toContain('database');
     });
 
+    // MAIR-290: the cause of an upstream 502 is the axios error, which holds the caller's Bearer token and the
+    // request and response bodies. Whatever the BFF writes (JSON log lines on stdout, stderr, console) about the
+    // failure describes it by its type and status, never by these values.
+    test('MAIR-290 logs an upstream failure without the token, the message or the upstream body', async () => {
+      mockMessageApi();
+      const stdout = captureLogs();
+      const stderr: string[] = [];
+      jest.spyOn(process.stderr, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+        stderr.push(String(chunk));
+        return true;
+      }) as typeof process.stderr.write);
+      for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+        jest.spyOn(console, level).mockImplementation((...args: unknown[]) => {
+          stderr.push(args.map((arg) => (arg instanceof Error ? `${arg.stack} ${JSON.stringify(arg)}` : typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' '));
+        });
+      }
+      const authorization = authorizationFor(agent.id);
+      const content = 'Call Jeanne Marker-290 at 06 12 34 56 78';
+      messageApi.on('post', MESSAGE_API.messages, { status: 500, raw: 'Insert failed for jeanne.marker290@example.org', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).post('/conversations/conversation-4/messages').set('Authorization', authorization).send({ content });
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      const written = [...stdout.map((line) => JSON.stringify(line)), ...stderr].join('\n');
+      expect(written).toContain('502');
+      for (const value of [authorization.replace(/^Bearer /, ''), 'Marker-290', '06 12 34 56 78', 'jeanne.marker290@example.org']) {
+        expect(written).not.toContain(value);
+      }
+    });
+
     test('keeps a declared Message API 403 when the caller may not leave the chat', async () => {
       mockMessageApi();
       messageApi.on('delete', MESSAGE_API.member, { status: 403, raw: 'Forbidden', contentType: 'text/plain', outOfContract: true });
