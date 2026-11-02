@@ -64,7 +64,7 @@ services:
       - backend
 
   seeder:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     container_name: bff-message-int-seeder
     depends_on:
       liquibase:
@@ -79,7 +79,7 @@ services:
       - backend
 
   redis:
-    image: redis:8.4.0-bookworm
+    image: redis:8.4.0-bookworm@sha256:c22af04bb576503bf16b3e34a1fd2fd82de0f765afd866d2e380145e0af30d78
     container_name: bff-message-int-redis
     expose:
       - "6379"
@@ -119,7 +119,7 @@ services:
     # from the message-api-ready container below.
 
   message-api-ready:
-    image: curlimages/curl:latest
+    image: curlimages/curl:latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     container_name: bff-message-int-message-api-ready
     depends_on:
       message-api:
@@ -161,7 +161,7 @@ services:
     # from the core-api-ready container below.
 
   core-api-ready:
-    image: curlimages/curl:latest
+    image: curlimages/curl:latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     container_name: bff-message-int-core-api-ready
     depends_on:
       core-api:
@@ -215,7 +215,7 @@ services:
   # after MESSAGE_STREAM_MAX_MS (1 s); --timeout-request fails a request that hangs instead of blocking CI.
   # The reports (junit) land in ./newman-reports (gitignored), read by the CI job summary.
   newman:
-    image: postman/newman:6.1.3-alpine
+    image: postman/newman:6.1.3-alpine@sha256:d9b5e780ead0026bbb37f3759cd7b10fc8a88cd4030c8266a7c5e343d75a5198
     container_name: bff-message-int-newman
     depends_on:
       bff-message:

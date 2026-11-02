@@ -64,7 +64,7 @@ services:
       - backend
 
   seeder:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     container_name: bff-message-gdpr-seeder
     depends_on:
       liquibase:
@@ -79,7 +79,7 @@ services:
       - backend
 
   redis:
-    image: redis:8.4.0-bookworm
+    image: redis:8.4.0-bookworm@sha256:c22af04bb576503bf16b3e34a1fd2fd82de0f765afd866d2e380145e0af30d78
     container_name: bff-message-gdpr-redis
     expose:
       - "6379"
@@ -119,7 +119,7 @@ services:
     # from the message-api-ready container below.
 
   message-api-ready:
-    image: curlimages/curl:latest
+    image: curlimages/curl:latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     container_name: bff-message-gdpr-message-api-ready
     depends_on:
       message-api:
@@ -163,7 +163,7 @@ services:
     # from the core-api-ready container below.
 
   core-api-ready:
-    image: curlimages/curl:latest
+    image: curlimages/curl:latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     container_name: bff-message-gdpr-core-api-ready
     depends_on:
       core-api:
@@ -212,7 +212,7 @@ services:
       start_period: 40s
 
   gdpr-marker:
-    image: node:24-bookworm-slim
+    image: node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
     container_name: bff-message-gdpr-marker
     user: "${GDPR_UID:-0}:${GDPR_GID:-0}"
     depends_on:
