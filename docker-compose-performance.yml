@@ -66,7 +66,7 @@ services:
       - backend
 
   seeder:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     container_name: bff-message-perf-seeder
     depends_on:
       liquibase:
@@ -83,7 +83,7 @@ services:
       - backend
 
   redis:
-    image: redis:8.4.0-bookworm
+    image: redis:8.4.0-bookworm@sha256:c22af04bb576503bf16b3e34a1fd2fd82de0f765afd866d2e380145e0af30d78
     container_name: bff-message-perf-redis
     expose:
       - "6379"
@@ -123,7 +123,7 @@ services:
     # sondée depuis le conteneur message-api-ready ci-dessous.
 
   message-api-ready:
-    image: curlimages/curl:latest
+    image: curlimages/curl:latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     container_name: bff-message-perf-message-api-ready
     depends_on:
       message-api:
@@ -165,7 +165,7 @@ services:
     # sondée depuis le conteneur core-api-ready ci-dessous.
 
   core-api-ready:
-    image: curlimages/curl:latest
+    image: curlimages/curl:latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     container_name: bff-message-perf-core-api-ready
     depends_on:
       core-api:
@@ -216,7 +216,7 @@ services:
       start_period: 40s
 
   k6-perf-test:
-    image: grafana/k6:latest
+    image: grafana/k6:latest@sha256:3e4186aea62e11a45560bfc51e19eeafe82fc07ce069c78aff44b7ff893d9a5e
     container_name: bff-message-perf-k6
     depends_on:
       bff-message:
