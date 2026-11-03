@@ -40,7 +40,7 @@ services:
 
   message-api:
     container_name: message-api-bff-message-developpement
-    image: ghcr.io/mairie360/message-api:2.1.0
+    image: ghcr.io/mairie360/message-api:dev-3597cbf
     ports:
       - "3003:3003"
     networks:
@@ -64,6 +64,9 @@ services:
       # only: a deployment uses a random secret of at least 32 bytes (MAIR-428).
       JWT_ALLOW_WEAK_SECRET: "true"
       JWT_SECRET: b"secret"
+      # MAIR-680: Core's public key when the shell provides it (stack_secrets.sh); JWT_SECRET is the
+      # HS256 transition of the dev stack only.
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
       JWT_TIMEOUT: 3600
     depends_on:
       <<: *depends-on
@@ -104,6 +107,9 @@ services:
       # Same development secret as the APIs of the local stacks: the BFF verifies the session tokens with it
       # (bffs-lib requireSession, MAIR-474) and refuses to start without it.
       JWT_SECRET: b"secret"
+      # MAIR-680: Core's public key when the shell provides it (stack_secrets.sh); JWT_SECRET is the
+      # HS256 transition of the dev stack only.
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

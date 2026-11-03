@@ -15,8 +15,8 @@ if [ -z "${IMAGE_REF:-}" ]; then
 fi
 echo "==> BFF under test: $IMAGE_REF"
 
-# Random JWT_SECRET for this run and the JWTs signed with it (MAIR-474): nothing is signed with
-# a committed secret.
+# Fresh Ed25519 session key pair for this run and the JWTs signed with it like Core signs them
+# (MAIR-474, MAIR-680): nothing is signed with a committed key.
 # shellcheck source=stack_secrets.sh
 source ./stack_secrets.sh || exit 1
 
@@ -38,7 +38,13 @@ PERF_CPUS="${PERF_CPUS:-4}"
 CPUS=$(nproc)
 [ "$CPUS" -gt "$PERF_CPUS" ] && CPUS="$PERF_CPUS"
 CPUSET_FILE="$(mktemp --suffix=.yml)"
-trap 'rm -f "$CPUSET_FILE"' EXIT
+# EdDSA tokens of the seeded callers for k6, whose WebCrypto cannot sign Ed25519 (MAIR-680), with
+# the role init-test.sql / init-perf.sql gives them (`user`). Mounted read-only at /tokens.json.
+JWT_TOKENS_FILE="$(mktemp --suffix=.json)"
+trap 'rm -f "$CPUSET_FILE" "$JWT_TOKENS_FILE"' EXIT
+sign_jwt_file "$JWT_TOKENS_FILE" user 14400 2 $(seq 400001 402000) || exit 1
+chmod 644 "$JWT_TOKENS_FILE"
+export JWT_TOKENS_FILE
 {
     echo "services:"
     for service in $(docker compose -f "$COMPOSE_FILE" config --services); do

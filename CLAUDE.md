@@ -57,8 +57,11 @@ router at `/`, `notFoundHandler` and `errorHandler()`. `src/index.ts` loads `.en
 **Auth flow (MAIR-429).** The only credential is `Authorization: Bearer <token>` (the front's proxy turns
 the `accessToken` cookie into it; the BFF reads no cookie, no `x-session-token`). `src/routes/Messages/index.ts`
 mounts `noStore` + `requireSession` (`@mairie360/bffs-lib` >= 1.2.0, MAIR-474) on every session-bound prefix
-(`SESSION_BOUND_PATHS`), so a request without a token signed with `JWT_SECRET` (HS256, numeric `sub`, not
-expired) gets 401 before any upstream call. Route handlers hand their request to helpers (`CallContext`), which
+(`SESSION_BOUND_PATHS`), so a request without a token verified with Core's public key `JWT_PUBLIC_KEY` (EdDSA under
+Core's `kid`, `iss`, `aud`, numeric `sub`, not expired; MAIR-680, bffs-lib >= 2.7.0; HS256 only while `JWT_SECRET`
+is still set, transition) gets 401 before any upstream call. `assertStartupConfiguration()` (`src/index.ts`) refuses
+to start without a key or with a malformed one; the tests sign like Core (`tests/support/session-keys.ts`) and
+`tests/mair-680-eddsa-session.test.ts` pins the refusals. Route handlers hand their request to helpers (`CallContext`), which
 forward the caller's token on every upstream call (`asCaller`); there is no default/service token. The current
 user's numeric id is the verified `sub` (`sessionUserId`).
 
@@ -170,7 +173,7 @@ images, database + liquibase + `init-test.sql`, Redis; Project API and Calendar 
 port) and a `newman` service that replays `tests/postman/collection.json` with `tests/postman/environment.json`
 against the BFF, `--bail` on the first failing request; the exit code of newman is the exit code of the script. Like
 the other stacks it tests the image named by `IMAGE_REF` (`bff-message:local` built from `development.Dockerfile`
-when empty), sources `stack_secrets.sh` (random `JWT_SECRET` per run) and drops the volumes before and after. In CI
+when empty), sources `stack_secrets.sh` (fresh Ed25519 key pair per run, MAIR-680) and drops the volumes before and after. In CI
 it is the `integration_tests` staging gate of `promote-staging.yml` (mairie360/CICD `integration/bffs`) on the
 published `dev-<sha>` image: a failure blocks the promotion; the junit report (`newman-reports/newman.xml`,
 gitignored) is published as job summary and artifact.
@@ -191,9 +194,10 @@ The collection is split in two kinds of checks, both on the BFF's own routes:
   attachment upload (multipart, 401 then the documented 503 of MAIR-400) and `GET /stream` (an event stream ended by
   the stack after `MESSAGE_STREAM_MAX_MS`, 1 s).
 
-The seeded accounts have no known password: the collection-level pre-request script forges their JWTs
-(HS256 `{ sub, role, exp }`, like `mairie360_api_lib`) with the `jwt_secret` the compose file injects
-(`jwt_admin`, `jwt_agent`); the committed `environment.json` holds no secret or token. The names of the conversations
+The seeded accounts have no known password and the Postman sandbox cannot sign EdDSA: `integration_test.sh` signs
+their JWTs with the run's key like Core and the compose file injects them (`jwt_admin`, `jwt_agent`, and
+`jwt_forged`, Core's `kid` with another key); the pre-request script only forges `jwt_hs256`, an HS256 Admin token.
+Both are refused in `Session resolution` and the direct conversation journey (MAIR-680); the committed `environment.json` holds no secret or token. The names of the conversations
 created by a run carry its `run_id`, and the run leaves them, so the collection stays replayable. Isolated endpoint
 checks (validation errors, token refusals) stay in jest: the collection only holds journeys and the checks that need
 a real Message API or Core API.
@@ -232,7 +236,8 @@ get → put → post → delete → patch: `DELETE /conversations/{id}` runs bef
 creates the group it deletes, and `cleanup()` deletes the group and direct conversation the
 iteration kept. `POST /attachments` is sent as a hand-built multipart string body.
 
-MAIR-474: both scripts source `stack_secrets.sh` (a random `JWT_SECRET` per run, `ADMIN_JWT` for the ZAP replacer), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with `JWT_SECRET`, required at startup). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400), and rule `100001` (unexpected content type) is scoped out of `/stream` only, whose documented answer is `text/event-stream` (MAIR-525). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. `GET /conversations` used to read the members and directory names of every chat (about 33 upstream calls for an agent of 16 chats), which saturated the event loop under the rush (`GET /health` p95 of about 75 ms for a 50 ms budget): since MAIR-507 it is one call, `GET /health` has a p95 of about 7 ms and the rush p95 is about 22 ms. The reads also search by member name and page through the list, and the load handler of `GET /conversations/{conversationId}` checks the 8 members and 25 messages with their names.
+MAIR-474: both scripts source `stack_secrets.sh` (a fresh Ed25519 key pair per run, `ADMIN_JWT` for the ZAP replacer;
+k6 reads the EdDSA tokens `performance_test.sh` signs into `/tokens.json`, MAIR-680), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with Core's public key `JWT_PUBLIC_KEY`, required at startup, MAIR-680). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400), and rule `100001` (unexpected content type) is scoped out of `/stream` only, whose documented answer is `text/event-stream` (MAIR-525). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. `GET /conversations` used to read the members and directory names of every chat (about 33 upstream calls for an agent of 16 chats), which saturated the event loop under the rush (`GET /health` p95 of about 75 ms for a 50 ms budget): since MAIR-507 it is one call, `GET /health` has a p95 of about 7 ms and the rush p95 is about 22 ms. The reads also search by member name and page through the list, and the load handler of `GET /conversations/{conversationId}` checks the 8 members and 25 messages with their names.
 
 ## Linting
 
