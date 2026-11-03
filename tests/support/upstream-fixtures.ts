@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { eddsaToken } from './session-keys';
 import { AxiosHeaders, type AxiosResponse } from 'axios';
 import { getMessageAPIMairie360 } from '@mairie360/message-api-openapi/endpoints/messageAPIMairie360';
 import type {
@@ -150,13 +151,16 @@ export function eventView(id: number, overrides: Partial<EventView> = {}): Event
 
 export const calendarResult = (events: EventView[]): GetCalendarResultView => ({ events });
 
+/** The historical shared secret (MAIR-680): the BFF no longer gets it, so a token signed with it must be refused. */
 export const JWT_SECRET = 'message-contract-test-secret';
 
 /**
- * HS256 session token of `sub` signed with `secret` (fixed expiry, so a token is the same in every call). `claims`
- * adds claims, such as the `role` Core signs (MAIR-529); without it the token predates that claim.
+ * Session token of `sub` (fixed expiry, so a token is the same in every call): EdDSA signed like Core (MAIR-680), or
+ * HS256 signed with `secret` when one is given (a historical token). `claims` adds claims, such as the `role` Core
+ * signs (MAIR-529); without it the token predates that claim.
  */
-export function sessionToken(sub: string | number, secret = JWT_SECRET, exp = 4_102_444_800, claims: object = {}): string {
+export function sessionToken(sub: string | number, secret?: string, exp = 4_102_444_800, claims: object = {}): string {
+  if (secret === undefined) return eddsaToken(sub, { claims: { exp, ...claims } });
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
   const unsigned = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: String(sub), exp, ...claims })}`;
   return `${unsigned}.${createHmac('sha256', secret).update(unsigned).digest('base64url')}`;
