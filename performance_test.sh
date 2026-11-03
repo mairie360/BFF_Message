@@ -40,8 +40,11 @@ CPUS=$(nproc)
 CPUSET_FILE="$(mktemp --suffix=.yml)"
 # EdDSA tokens of the seeded callers for k6, whose WebCrypto cannot sign Ed25519 (MAIR-680), with
 # the role init-test.sql / init-perf.sql gives them (`user`). Mounted read-only at /tokens.json.
-JWT_TOKENS_FILE="$(mktemp --suffix=.json)"
-trap 'rm -f "$CPUSET_FILE" "$JWT_TOKENS_FILE"' EXIT
+# In a private directory (mode 700): the file stays readable by the k6 container user through its bind
+# mount, never by the other users of the host (MAIR-680).
+JWT_TOKENS_DIR="$(mktemp -d)"
+JWT_TOKENS_FILE="$JWT_TOKENS_DIR/tokens.json"
+trap 'rm -f "$CPUSET_FILE"; rm -rf "$JWT_TOKENS_DIR"' EXIT
 sign_jwt_file "$JWT_TOKENS_FILE" user 14400 2 $(seq 400001 402000) || exit 1
 chmod 644 "$JWT_TOKENS_FILE"
 export JWT_TOKENS_FILE
