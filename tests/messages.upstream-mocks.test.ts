@@ -583,8 +583,37 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         .toEqual([[messageApiUrls.getPostMessageUrl(21), { content: 'Bonjour Sophie' }]]);
       expect(response.body).toEqual({
         conversation: expect.objectContaining({ id: 'conversation-21', name: 'Sophie Leroy', kind: 'direct', contactId: 'user-8' }),
-        message: expect.objectContaining({ id: 'message-50', conversationId: 21, direction: 'outgoing' }),
+        message: expect.objectContaining({ id: 'message-50', conversationId: 'conversation-21', direction: 'outgoing' }),
       });
+      // MAIR-603: the message carries the id of its conversation, or the front refuses to confirm the write.
+      expect(response.body.message.conversationId).toBe(response.body.conversation.id);
+    });
+
+    // MAIR-603: whatever form of id the client sent (public `conversation-<n>` or bare `<n>`), every message of
+    // the answer carries the public id of its conversation, the value of `conversation.id`.
+    test('MAIR-603 messages carry the public conversation id, also when the request used the numeric one', async () => {
+      mockMessageApi({
+        chats: [chatView(4, 'Équipe communication', 0, 2)],
+        messages: { 4: [messageView(40, sophie.id)] },
+        members: { 4: [agent.id, sophie.id] },
+        postedMessageId: 41,
+      });
+
+      const sent = await request(app).post('/conversations/4/messages').set('Authorization', authorizationFor(agent.id))
+        .send({ content: 'Bonjour' });
+      const opened = await request(app).get('/conversations/4').set('Authorization', authorizationFor(agent.id));
+      const page = await request(app).get('/conversations/4/messages').set('Authorization', authorizationFor(agent.id));
+
+      expect(sent.status).toBe(201);
+      expectBffContract('post', '/conversations/4/messages', sent);
+      expect(sent.body.message.conversationId).toBe('conversation-4');
+      expect(sent.body.message.conversationId).toBe(sent.body.conversation.id);
+      for (const response of [opened, page]) {
+        expect(response.status).toBe(200);
+        expect(response.body.messages.length).toBeGreaterThan(0);
+        for (const message of response.body.messages) expect(message.conversationId).toBe('conversation-4');
+        expect(response.body.conversation.id).toBe('conversation-4');
+      }
     });
 
     test('POST /direct-messages refuses a message to oneself and an anonymous caller before creating any chat', async () => {

@@ -352,10 +352,12 @@ export async function loadConversation(
   });
   const latest = result.messages[result.messages.length - 1];
 
+  // Messages carry the public id of their conversation (= `conversation.id`), never the form the client sent:
+  // the front matches the two before it trusts a page or a write (MAIR-603).
   return {
     conversation: mapChatToConversation(result.chat, latest),
     participants,
-    messages: result.messages.map((message) => mapMessageToDto(conversationId, message, currentUserId, participants)),
+    messages: result.messages.map((message) => mapMessageToDto(publicChatId(chatId), message, currentUserId, participants)),
     hasMore: result.has_more,
     ...(result.has_more && result.next_before != null ? { nextCursor: String(result.next_before) } : {}),
   };
@@ -396,7 +398,7 @@ export async function sendMessageToConversation(
 
   return {
     conversation: mapChatToConversation(header.chat, sent),
-    message: mapMessageToDto(conversationId, sent, currentUserId, members),
+    message: mapMessageToDto(publicChatId(chatId), sent, currentUserId, members),
   };
 }
 
