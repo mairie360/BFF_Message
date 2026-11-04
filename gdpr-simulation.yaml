@@ -1,0 +1,23 @@
+# GDPR usage simulation (MAIR-497), played by mairie360/CICD tests/gdpr/simulation on the test
+# stack only (docker-compose-gdpr-simulation.yml, gdpr_simulation_test.sh).
+#
+# Fictitious personas with unique values go through the marker journey of MAIR-290 through the BFF:
+# their names, e-mails and phone numbers are written in group names, descriptions and messages, in
+# contact and conversation searches, in query strings and in deliberate errors. The logs of every
+# container (BFF, Message API, Core API, Postgres, Redis), the Redis keys, the database after the
+# purge and a sample of its free-text columns are then checked and reviewed (CICD analyze.mjs).
+version: 1
+journey: gdpr-marker.yaml
+personas: 4
+erased: 1
+# A persona lives in the group conversation it named and wrote in (and in a direct message to the
+# seeded agent). The erase step deletes that conversation, the only deletion the BFF offers; until
+# the erasure of MAIR-289 reaches this content, the erasure findings of the analysis are expected
+# failures.
+erase:
+  - name: delete the persona's group conversation
+    request:
+      method: DELETE
+      path: "/conversations/{{group_id}}"
+      headers: {Authorization: "Bearer {{env.ADMIN_JWT}}"}
+    expect: [200, 204]
