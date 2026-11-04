@@ -1,4 +1,5 @@
-import { JWT_SECRET } from './upstream-fixtures';
+import { useSessionPublicKey } from './session-keys';
 
-// Every test app verifies the session tokens with the secret the fixtures sign them with (bffs-lib requireSession).
-process.env.JWT_SECRET = JWT_SECRET;
+// Every test app verifies the session tokens with Core's public key, the fixtures sign them like Core (EdDSA,
+// MAIR-680), and no JWT_SECRET is set: HS256 tokens are refused, like a deployment after the transition.
+useSessionPublicKey();
