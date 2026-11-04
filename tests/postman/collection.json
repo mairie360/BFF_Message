@@ -884,6 +884,7 @@
                   "pm.test(\"Saves the ids for the next requests\", function () {",
                   "    const body = pm.response.json();",
                   "    pm.environment.set('direct_conversation_id', body.conversation.id);",
+                  "    pm.environment.set('direct_conversation_number', String(body.conversation.id).replace(/^conversation-/, ''));",
                   "});",
                   "pm.test(\"The direct conversation and the message sent\", function () {",
                   "    const body = pm.response.json();",
@@ -895,7 +896,8 @@
                   "    pm.expect(body.conversation.memberCount).to.eql(2);",
                   "    pm.expect(body.conversation.lastMessage).to.eql(text);",
                   "    pm.expect(body.message.id).to.match(/^message-\\d+$/);",
-                  "    pm.expect(`conversation-${String(body.message.conversationId).replace(/^conversation-/, '')}`).to.eql(body.conversation.id);",
+                  "    // MAIR-603: the message carries the public id of its conversation, as is (the front matches the two).",
+                  "    pm.expect(body.message.conversationId).to.eql(body.conversation.id);",
                   "    pm.expect(body.message.content).to.eql(text);",
                   "    pm.expect(body.message.authorId).to.eql('user-1');",
                   "    pm.expect(body.message.authorName).to.eql(pm.environment.get('admin_name'));",
@@ -1152,6 +1154,51 @@
                   "    pm.expect(body.messages[1].authorId).to.eql('user-2');",
                   "    pm.expect(body.messages[1].direction).to.eql('outgoing');",
                   "    pm.expect(body.hasMore).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-603 Opened by its numeric id, the conversation answers its public id on every message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{direct_conversation_number}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{direct_conversation_number}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// MAIR-603 technical check: a client may address a conversation by its bare number; the answer still uses",
+                  "// the public id, the same on the conversation and on each message (the front matches the two).",
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Every message carries the public conversation id\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.id).to.eql(pm.environment.get('direct_conversation_id'));",
+                  "    pm.expect(body.messages).to.be.an('array').that.is.not.empty;",
+                  "    body.messages.forEach((message) => pm.expect(message.conversationId).to.eql(body.conversation.id));",
                   "});"
                 ]
               }
