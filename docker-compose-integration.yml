@@ -94,7 +94,7 @@ services:
       retries: 5
 
   message-api:
-    image: ${MESSAGE_API_IMAGE:-ghcr.io/mairie360/message-api:dev-3597cbf}
+    image: ${MESSAGE_API_IMAGE:-ghcr.io/mairie360/message-api:dev-b71b66c}
     container_name: bff-message-int-message-api
     depends_on:
       liquibase:
@@ -132,7 +132,7 @@ services:
       - backend
 
   core-api:
-    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:dev-3b40c2a}
+    image: ${CORE_API_IMAGE:-ghcr.io/mairie360/core-api:dev-156a9b9}
     container_name: bff-message-int-core-api
     depends_on:
       liquibase:
