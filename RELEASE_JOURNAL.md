@@ -1,12 +1,12 @@
 # Journal des releases — BFF_Message
 
-<!-- release-journal-state {"dev": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "prod": "0b7312e73c0f706ba5e69fc20be8292c5b08a21e", "prod_tag": "v1.1.0", "staging": "8908c7867027493ad6205ad24d4de4374041ba04", "updated": {"dev": "2026-11-13 00:20 UTC", "prod": "2026-10-21 10:10 UTC", "staging": "2026-11-12 18:59 UTC"}} -->
+<!-- release-journal-state {"dev": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "prod": "0b7312e73c0f706ba5e69fc20be8292c5b08a21e", "prod_tag": "v1.1.0", "staging": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "updated": {"dev": "2026-11-13 00:20 UTC", "prod": "2026-10-21 10:10 UTC", "staging": "2026-11-13 00:28 UTC"}} -->
 > Tenu à jour par la CI (`mairie360/CICD`, action `release/release-journal`) à chaque passage en dev, staging et prod. Ne pas modifier à la main : le fichier est réécrit au passage suivant.
 
 | Environnement | Version | Commit | Mis à jour |
 | --- | --- | --- | --- |
 | prod | v1.1.0 | `0b7312e` | 2026-10-21 10:10 UTC |
-| staging | — | `8908c78` | 2026-11-12 18:59 UTC |
+| staging | — | `dd66186` | 2026-11-13 00:28 UTC |
 | dev | — | `dd66186` | 2026-11-13 00:20 UTC |
 
 ## Ajouté sur main depuis la dernière release prod (v1.1.0)
@@ -26,10 +26,11 @@
 
 ## Différence dev → staging (en dev, pas encore en staging)
 
-- fix(deps): MAIR-1003 Release prod: align internal versions and deploy ([#259](https://github.com/mairie360/BFF_Message/pull/259))
+_Rien._
 
 ## Différence staging → prod (en staging, pas encore en prod)
 
+- fix(deps): MAIR-1003 Release prod: align internal versions and deploy ([#259](https://github.com/mairie360/BFF_Message/pull/259))
 - fix(deps): MAIR-816 Release dev: align internal versions and deploy (#254) ([#254](https://github.com/mairie360/BFF_Message/pull/254))
 - chore(deps): pin node.js to c86ecea (#248) ([#248](https://github.com/mairie360/BFF_Message/pull/248))
 - fix: MAIR-603 E2E - Parcours utilisateurs Playwright des fronts (#250) ([#250](https://github.com/mairie360/BFF_Message/pull/250))
@@ -49,6 +50,7 @@
 <!-- release-journal-history:start -->
 | Date | Environnement | Version | Commit | Run |
 | --- | --- | --- | --- | --- |
+| 2026-11-13 00:28 UTC | staging | — | `dd66186` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43336355375) |
 | 2026-11-13 00:20 UTC | dev | — | `dd66186` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43334999703) |
 | 2026-11-12 18:59 UTC | staging | — | `8908c78` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43284356758) |
 | 2026-11-12 13:17 UTC | dev | — | `8908c78` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43225068437) |
