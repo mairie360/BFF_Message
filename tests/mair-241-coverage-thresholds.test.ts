@@ -9,7 +9,7 @@ describe('MAIR-241 coverage thresholds', () => {
     ['statements', 80],
     ['functions', 80],
     ['lines', 80],
-    ['branches', 75],
+    ['branches', 80],
   ] as const)('keeps the %s threshold at %i or more', (metric, floor) => {
     expect(global?.[metric]).toBeGreaterThanOrEqual(floor);
   });
