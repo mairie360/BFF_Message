@@ -1,10 +1,11 @@
 // MAIR-248: the contract the fronts read (`contracts/openapi.json`, published as
 // `@mairie360/bff-*-openapi`) is written in English. Fails on any French text that comes back
-// into a summary, a description or an example.
+// into a summary or a description. Examples are left out: they mirror the data the BFF returns,
+// whose labels are shown to French users as they are.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** French texts kept on purpose (labels the fronts show as they are), removed before the check. */
+/** French texts kept on purpose, removed before the check. */
 const ALLOWED: string[] = [];
 
 const FRENCH_WORDS = new Set([
@@ -12,10 +13,16 @@ const FRENCH_WORDS = new Set([
   'utilisateur', 'requête', 'erreur', 'corps', 'chemin', 'récupère', 'liste',
 ]);
 
-function strings(value: unknown, out: string[]): string[] {
-  if (typeof value === 'string') out.push(value);
-  else if (Array.isArray(value)) value.forEach((item) => strings(item, out));
-  else if (value && typeof value === 'object') Object.values(value).forEach((item) => strings(item, out));
+/** Every `summary` and `description` of the document, outside the examples. */
+function texts(value: unknown, out: string[]): string[] {
+  if (Array.isArray(value)) value.forEach((item) => texts(item, out));
+  else if (value && typeof value === 'object') {
+    Object.entries(value).forEach(([key, item]) => {
+      if (key === 'example' || key === 'examples') return;
+      if ((key === 'summary' || key === 'description') && typeof item === 'string') out.push(item);
+      else texts(item, out);
+    });
+  }
   return out;
 }
 
@@ -28,7 +35,7 @@ export function isFrench(text: string): boolean {
 describe('MAIR-248 contract language', () => {
   it('has no French text in contracts/openapi.json', () => {
     const contract = JSON.parse(readFileSync(join(__dirname, '..', 'contracts', 'openapi.json'), 'utf8'));
-    expect(strings(contract, []).filter(isFrench)).toEqual([]);
+    expect(texts(contract, []).filter(isFrench)).toEqual([]);
   });
 
   it('flags French text', () => {
