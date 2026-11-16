@@ -24,7 +24,7 @@ jest.mock('../src/clients/coreClient', () => ({
   listContacts: jest.fn(),
 }));
 
-const { agent, sophie } = users;
+const { agent } = users;
 const authorization = authorizationFor(agent.id);
 // Read on every call by the helpers (MAIR-431); the client itself is mocked.
 const MESSAGE_API_URL = 'http://message-api.test:3003';
