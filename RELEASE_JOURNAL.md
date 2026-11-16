@@ -1,20 +1,22 @@
 # Journal des releases — BFF_Message
 
-<!-- release-journal-state {"dev": "a1bbd3f22705c61a0402e1663d599d0d6169fee6", "prod": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "prod_tag": "v1.2.0", "staging": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "updated": {"dev": "2026-11-13 05:18 UTC", "prod": "2026-11-13 00:46 UTC", "staging": "2026-11-13 00:28 UTC"}} -->
+<!-- release-journal-state {"dev": "d3b9e4694feea4c43229a3f9bb5a23958752447f", "prod": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "prod_tag": "v1.2.0", "staging": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "updated": {"dev": "2026-11-16 14:17 UTC", "prod": "2026-11-13 00:46 UTC", "staging": "2026-11-13 00:28 UTC"}} -->
 > Tenu à jour par la CI (`mairie360/CICD`, action `release/release-journal`) à chaque passage en dev, staging et prod. Ne pas modifier à la main : le fichier est réécrit au passage suivant.
 
 | Environnement | Version | Commit | Mis à jour |
 | --- | --- | --- | --- |
 | prod | v1.2.0 | `dd66186` | 2026-11-13 00:46 UTC |
 | staging | — | `dd66186` | 2026-11-13 00:28 UTC |
-| dev | — | `a1bbd3f` | 2026-11-13 05:18 UTC |
+| dev | — | `d3b9e46` | 2026-11-16 14:17 UTC |
 
 ## Ajouté sur main depuis la dernière release prod (v1.2.0)
 
+- test: MAIR-241 Test the BFF_user admin routes and raise the BFFs coverage thresholds (#257) ([#257](https://github.com/mairie360/BFF_Message/pull/257))
 - chore(deps): update mairie360 database schema to v3.4.0 (#260) ([#260](https://github.com/mairie360/BFF_Message/pull/260))
 
 ## Différence dev → staging (en dev, pas encore en staging)
 
+- test: MAIR-241 Test the BFF_user admin routes and raise the BFFs coverage thresholds (#257) ([#257](https://github.com/mairie360/BFF_Message/pull/257))
 - chore(deps): update mairie360 database schema to v3.4.0 (#260) ([#260](https://github.com/mairie360/BFF_Message/pull/260))
 
 ## Différence staging → prod (en staging, pas encore en prod)
@@ -28,6 +30,7 @@ _Rien._
 <!-- release-journal-history:start -->
 | Date | Environnement | Version | Commit | Run |
 | --- | --- | --- | --- | --- |
+| 2026-11-16 14:17 UTC | dev | — | `d3b9e46` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43883518583) |
 | 2026-11-13 05:18 UTC | dev | — | `a1bbd3f` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43369977293) |
 | 2026-11-13 00:46 UTC | prod | v1.2.0 | `dd66186` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43337472294) |
 | 2026-11-13 00:28 UTC | staging | — | `dd66186` | [run](https://github.com/mairie360/BFF_Message/actions/runs/43336355375) |
