@@ -82,7 +82,7 @@
             "type": "number"
           }
         ],
-        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+        "description": "Unique id, either a string or a number",
         "example": "12345"
       },
       "CurrentUserDtoSchema": {
@@ -97,13 +97,13 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "name": {
             "type": "string",
             "maxLength": 100,
-            "description": "Nom complet de l’utilisateur actuel",
+            "description": "Full name of the current user",
             "example": "Alice Dupont"
           },
           "email": {
@@ -140,7 +140,7 @@
           "id",
           "name"
         ],
-        "description": "Utilisateur actuellement connecté"
+        "description": "Currently signed-in user"
       },
       "ContactDtoSchema": {
         "type": "object",
@@ -154,7 +154,7 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "name": {
@@ -170,7 +170,7 @@
           },
           "department": {
             "type": "string",
-            "description": "Département associé au contact",
+            "description": "Department of the contact",
             "example": "Marketing"
           },
           "avatarUrl": {
@@ -191,7 +191,7 @@
               "offline",
               "away"
             ],
-            "description": "Présence du contact, en ligne, hors ligne ou absent",
+            "description": "Presence of the contact: online, offline or away",
             "example": "online"
           }
         },
@@ -199,7 +199,7 @@
           "id",
           "name"
         ],
-        "description": "Représentation d’un contact"
+        "description": "A contact"
       },
       "ConversationDtoSchema": {
         "type": "object",
@@ -213,7 +213,7 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "name": {
@@ -223,7 +223,7 @@
           },
           "department": {
             "type": "string",
-            "description": "Département associé à la conversation",
+            "description": "Department tied to the conversation",
             "example": "Marketing"
           },
           "kind": {
@@ -265,22 +265,22 @@
               "offline",
               "away"
             ],
-            "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+            "description": "Presence of the user: online, offline or away",
             "example": "online"
           },
           "lastMessage": {
             "type": "string",
             "description": "Dernier message de la conversation",
-            "example": "Bonjour à tous !"
+            "example": "Hello everyone!"
           },
           "lastMessageAt": {
             "type": "string",
-            "description": "Date et heure du dernier message (format ISO)",
+            "description": "Date and time of the last message (ISO format)",
             "example": "2026-06-23T12:32:00Z"
           },
           "unreadCount": {
             "type": "integer",
-            "description": "Nombre de messages non lus dans la conversation",
+            "description": "Number of unread messages in the conversation",
             "example": 5
           },
           "memberCount": {
@@ -293,7 +293,7 @@
           "id",
           "name"
         ],
-        "description": "Représentation d’une conversation"
+        "description": "A conversation"
       },
       "MessageDtoSchema": {
         "type": "object",
@@ -307,7 +307,7 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "conversationId": {
@@ -319,17 +319,17 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "content": {
             "type": "string",
             "description": "Contenu du message",
-            "example": "Bonjour à tous !"
+            "example": "Hello everyone!"
           },
           "sentAt": {
             "type": "string",
-            "description": "Date et heure d’envoi du message (format ISO)",
+            "description": "Date and time the message was sent (ISO format)",
             "example": "2026-06-23T12:32:00Z"
           },
           "authorId": {
@@ -355,7 +355,7 @@
               "incoming",
               "outgoing"
             ],
-            "description": "Direction du message, entrant ou sortant",
+            "description": "Direction of the message, incoming or outgoing",
             "example": "incoming"
           },
           "attachments": {
@@ -372,28 +372,28 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom de la pièce jointe",
+                  "description": "Name of the attachment",
                   "example": "document.pdf"
                 },
                 "size": {
                   "type": "integer",
-                  "description": "Taille de la pièce jointe en octets",
+                  "description": "Size of the attachment in bytes",
                   "example": 102400
                 },
                 "type": {
                   "type": "string",
-                  "description": "Type MIME de la pièce jointe",
+                  "description": "MIME type of the attachment",
                   "example": "application/pdf"
                 },
                 "url": {
                   "type": "string",
                   "format": "uri",
-                  "description": "URL pour accéder à la pièce jointe",
+                  "description": "URL to reach the attachment",
                   "example": "https://example.com/document.pdf"
                 }
               },
@@ -401,9 +401,9 @@
                 "id",
                 "name"
               ],
-              "description": "Représentation d’une pièce jointe"
+              "description": "An attachment"
             },
-            "description": "Liste des pièces jointes du message",
+            "description": "Attachments of the message",
             "example": []
           },
           "mentions": {
@@ -420,7 +420,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
@@ -434,22 +434,22 @@
                     "direct",
                     "group"
                   ],
-                  "description": "Type de conversation associé à la mention",
+                  "description": "Type of conversation tied to the mention",
                   "example": "direct"
                 },
                 "description": {
                   "type": "string",
                   "description": "Description de la mention",
-                  "example": "Mention d’un utilisateur dans un message"
+                  "example": "Mention of a user in a message"
                 }
               },
               "required": [
                 "id",
                 "name"
               ],
-              "description": "Représentation d’une mention"
+              "description": "A mention"
             },
-            "description": "Liste des mentions dans le message",
+            "description": "Mentions in the message",
             "example": []
           },
           "citation": {
@@ -476,7 +476,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "authorId": {
@@ -499,7 +499,7 @@
               "excerpt": {
                 "type": "string",
                 "description": "First 100 characters of the quoted message",
-                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                "example": "Any news about the building permit?"
               }
             },
             "required": [
@@ -515,7 +515,7 @@
           "content",
           "sentAt"
         ],
-        "description": "Représentation d’un message"
+        "description": "A message"
       },
       "AttachmentDtoSchema": {
         "type": "object",
@@ -529,28 +529,28 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "name": {
             "type": "string",
-            "description": "Nom de la pièce jointe",
+            "description": "Name of the attachment",
             "example": "document.pdf"
           },
           "size": {
             "type": "integer",
-            "description": "Taille de la pièce jointe en octets",
+            "description": "Size of the attachment in bytes",
             "example": 102400
           },
           "type": {
             "type": "string",
-            "description": "Type MIME de la pièce jointe",
+            "description": "MIME type of the attachment",
             "example": "application/pdf"
           },
           "url": {
             "type": "string",
             "format": "uri",
-            "description": "URL pour accéder à la pièce jointe",
+            "description": "URL to reach the attachment",
             "example": "https://example.com/document.pdf"
           }
         },
@@ -558,7 +558,7 @@
           "id",
           "name"
         ],
-        "description": "Représentation d’une pièce jointe"
+        "description": "An attachment"
       },
       "MentionDtoSchema": {
         "type": "object",
@@ -572,7 +572,7 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "name": {
@@ -586,20 +586,20 @@
               "direct",
               "group"
             ],
-            "description": "Type de conversation associé à la mention",
+            "description": "Type of conversation tied to the mention",
             "example": "direct"
           },
           "description": {
             "type": "string",
             "description": "Description de la mention",
-            "example": "Mention d’un utilisateur dans un message"
+            "example": "Mention of a user in a message"
           }
         },
         "required": [
           "id",
           "name"
         ],
-        "description": "Représentation d’une mention"
+        "description": "A mention"
       },
       "ConversationsResponse": {
         "type": "object",
@@ -618,7 +618,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
@@ -628,7 +628,7 @@
                 },
                 "department": {
                   "type": "string",
-                  "description": "Département associé à la conversation",
+                  "description": "Department tied to the conversation",
                   "example": "Marketing"
                 },
                 "kind": {
@@ -670,22 +670,22 @@
                     "offline",
                     "away"
                   ],
-                  "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                  "description": "Presence of the user: online, offline or away",
                   "example": "online"
                 },
                 "lastMessage": {
                   "type": "string",
                   "description": "Dernier message de la conversation",
-                  "example": "Bonjour à tous !"
+                  "example": "Hello everyone!"
                 },
                 "lastMessageAt": {
                   "type": "string",
-                  "description": "Date et heure du dernier message (format ISO)",
+                  "description": "Date and time of the last message (ISO format)",
                   "example": "2026-06-23T12:32:00Z"
                 },
                 "unreadCount": {
                   "type": "integer",
-                  "description": "Nombre de messages non lus dans la conversation",
+                  "description": "Number of unread messages in the conversation",
                   "example": 5
                 },
                 "memberCount": {
@@ -698,9 +698,9 @@
                 "id",
                 "name"
               ],
-              "description": "Représentation d’une conversation"
+              "description": "A conversation"
             },
-            "description": "Liste des conversations"
+            "description": "Conversations"
           },
           "nextCursor": {
             "type": "string",
@@ -711,7 +711,7 @@
         "required": [
           "conversations"
         ],
-        "description": "Réponse contenant la liste des conversations et un curseur pour la pagination"
+        "description": "Response holding the conversations and a pagination cursor"
       },
       "MessagesResponse": {
         "type": "object",
@@ -728,7 +728,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "name": {
@@ -738,7 +738,7 @@
               },
               "department": {
                 "type": "string",
-                "description": "Département associé à la conversation",
+                "description": "Department tied to the conversation",
                 "example": "Marketing"
               },
               "kind": {
@@ -780,22 +780,22 @@
                   "offline",
                   "away"
                 ],
-                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "description": "Presence of the user: online, offline or away",
                 "example": "online"
               },
               "lastMessage": {
                 "type": "string",
                 "description": "Dernier message de la conversation",
-                "example": "Bonjour à tous !"
+                "example": "Hello everyone!"
               },
               "lastMessageAt": {
                 "type": "string",
-                "description": "Date et heure du dernier message (format ISO)",
+                "description": "Date and time of the last message (ISO format)",
                 "example": "2026-06-23T12:32:00Z"
               },
               "unreadCount": {
                 "type": "integer",
-                "description": "Nombre de messages non lus dans la conversation",
+                "description": "Number of unread messages in the conversation",
                 "example": 5
               },
               "memberCount": {
@@ -808,7 +808,7 @@
               "id",
               "name"
             ],
-            "description": "Détails de la conversation associée aux messages"
+            "description": "Details of the conversation of the messages"
           },
           "messages": {
             "type": "array",
@@ -824,7 +824,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "conversationId": {
@@ -836,17 +836,17 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "content": {
                   "type": "string",
                   "description": "Contenu du message",
-                  "example": "Bonjour à tous !"
+                  "example": "Hello everyone!"
                 },
                 "sentAt": {
                   "type": "string",
-                  "description": "Date et heure d’envoi du message (format ISO)",
+                  "description": "Date and time the message was sent (ISO format)",
                   "example": "2026-06-23T12:32:00Z"
                 },
                 "authorId": {
@@ -872,7 +872,7 @@
                     "incoming",
                     "outgoing"
                   ],
-                  "description": "Direction du message, entrant ou sortant",
+                  "description": "Direction of the message, incoming or outgoing",
                   "example": "incoming"
                 },
                 "attachments": {
@@ -889,28 +889,28 @@
                             "type": "number"
                           }
                         ],
-                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "description": "Unique id, either a string or a number",
                         "example": "12345"
                       },
                       "name": {
                         "type": "string",
-                        "description": "Nom de la pièce jointe",
+                        "description": "Name of the attachment",
                         "example": "document.pdf"
                       },
                       "size": {
                         "type": "integer",
-                        "description": "Taille de la pièce jointe en octets",
+                        "description": "Size of the attachment in bytes",
                         "example": 102400
                       },
                       "type": {
                         "type": "string",
-                        "description": "Type MIME de la pièce jointe",
+                        "description": "MIME type of the attachment",
                         "example": "application/pdf"
                       },
                       "url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "URL pour accéder à la pièce jointe",
+                        "description": "URL to reach the attachment",
                         "example": "https://example.com/document.pdf"
                       }
                     },
@@ -918,9 +918,9 @@
                       "id",
                       "name"
                     ],
-                    "description": "Représentation d’une pièce jointe"
+                    "description": "An attachment"
                   },
-                  "description": "Liste des pièces jointes du message",
+                  "description": "Attachments of the message",
                   "example": []
                 },
                 "mentions": {
@@ -937,7 +937,7 @@
                             "type": "number"
                           }
                         ],
-                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "description": "Unique id, either a string or a number",
                         "example": "12345"
                       },
                       "name": {
@@ -951,22 +951,22 @@
                           "direct",
                           "group"
                         ],
-                        "description": "Type de conversation associé à la mention",
+                        "description": "Type of conversation tied to the mention",
                         "example": "direct"
                       },
                       "description": {
                         "type": "string",
                         "description": "Description de la mention",
-                        "example": "Mention d’un utilisateur dans un message"
+                        "example": "Mention of a user in a message"
                       }
                     },
                     "required": [
                       "id",
                       "name"
                     ],
-                    "description": "Représentation d’une mention"
+                    "description": "A mention"
                   },
-                  "description": "Liste des mentions dans le message",
+                  "description": "Mentions in the message",
                   "example": []
                 },
                 "citation": {
@@ -993,7 +993,7 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "authorId": {
@@ -1016,7 +1016,7 @@
                     "excerpt": {
                       "type": "string",
                       "description": "First 100 characters of the quoted message",
-                      "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                      "example": "Any news about the building permit?"
                     }
                   },
                   "required": [
@@ -1032,9 +1032,9 @@
                 "content",
                 "sentAt"
               ],
-              "description": "Représentation d’un message"
+              "description": "A message"
             },
-            "description": "Liste des messages"
+            "description": "Messages"
           },
           "hasMore": {
             "type": "boolean",
@@ -1051,7 +1051,7 @@
           "conversation",
           "messages"
         ],
-        "description": "Réponse contenant la liste des messages et un curseur pour la pagination"
+        "description": "Response holding the messages and a pagination cursor"
       },
       "ContactsResponse": {
         "type": "object",
@@ -1070,7 +1070,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
@@ -1086,7 +1086,7 @@
                 },
                 "department": {
                   "type": "string",
-                  "description": "Département associé au contact",
+                  "description": "Department of the contact",
                   "example": "Marketing"
                 },
                 "avatarUrl": {
@@ -1107,7 +1107,7 @@
                     "offline",
                     "away"
                   ],
-                  "description": "Présence du contact, en ligne, hors ligne ou absent",
+                  "description": "Presence of the contact: online, offline or away",
                   "example": "online"
                 }
               },
@@ -1115,15 +1115,15 @@
                 "id",
                 "name"
               ],
-              "description": "Représentation d’un contact"
+              "description": "A contact"
             },
-            "description": "Liste des contacts"
+            "description": "Contacts"
           }
         },
         "required": [
           "contacts"
         ],
-        "description": "Réponse contenant la liste des contacts"
+        "description": "Response holding the contacts"
       },
       "SendMessageResponse": {
         "type": "object",
@@ -1140,7 +1140,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "conversationId": {
@@ -1152,17 +1152,17 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "content": {
                 "type": "string",
                 "description": "Contenu du message",
-                "example": "Bonjour à tous !"
+                "example": "Hello everyone!"
               },
               "sentAt": {
                 "type": "string",
-                "description": "Date et heure d’envoi du message (format ISO)",
+                "description": "Date and time the message was sent (ISO format)",
                 "example": "2026-06-23T12:32:00Z"
               },
               "authorId": {
@@ -1188,7 +1188,7 @@
                   "incoming",
                   "outgoing"
                 ],
-                "description": "Direction du message, entrant ou sortant",
+                "description": "Direction of the message, incoming or outgoing",
                 "example": "incoming"
               },
               "attachments": {
@@ -1205,28 +1205,28 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Nom de la pièce jointe",
+                      "description": "Name of the attachment",
                       "example": "document.pdf"
                     },
                     "size": {
                       "type": "integer",
-                      "description": "Taille de la pièce jointe en octets",
+                      "description": "Size of the attachment in bytes",
                       "example": 102400
                     },
                     "type": {
                       "type": "string",
-                      "description": "Type MIME de la pièce jointe",
+                      "description": "MIME type of the attachment",
                       "example": "application/pdf"
                     },
                     "url": {
                       "type": "string",
                       "format": "uri",
-                      "description": "URL pour accéder à la pièce jointe",
+                      "description": "URL to reach the attachment",
                       "example": "https://example.com/document.pdf"
                     }
                   },
@@ -1234,9 +1234,9 @@
                     "id",
                     "name"
                   ],
-                  "description": "Représentation d’une pièce jointe"
+                  "description": "An attachment"
                 },
-                "description": "Liste des pièces jointes du message",
+                "description": "Attachments of the message",
                 "example": []
               },
               "mentions": {
@@ -1253,7 +1253,7 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "name": {
@@ -1267,22 +1267,22 @@
                         "direct",
                         "group"
                       ],
-                      "description": "Type de conversation associé à la mention",
+                      "description": "Type of conversation tied to the mention",
                       "example": "direct"
                     },
                     "description": {
                       "type": "string",
                       "description": "Description de la mention",
-                      "example": "Mention d’un utilisateur dans un message"
+                      "example": "Mention of a user in a message"
                     }
                   },
                   "required": [
                     "id",
                     "name"
                   ],
-                  "description": "Représentation d’une mention"
+                  "description": "A mention"
                 },
-                "description": "Liste des mentions dans le message",
+                "description": "Mentions in the message",
                 "example": []
               },
               "citation": {
@@ -1309,7 +1309,7 @@
                         "type": "number"
                       }
                     ],
-                    "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                    "description": "Unique id, either a string or a number",
                     "example": "12345"
                   },
                   "authorId": {
@@ -1332,7 +1332,7 @@
                   "excerpt": {
                     "type": "string",
                     "description": "First 100 characters of the quoted message",
-                    "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                    "example": "Any news about the building permit?"
                   }
                 },
                 "required": [
@@ -1348,7 +1348,7 @@
               "content",
               "sentAt"
             ],
-            "description": "Message envoyé"
+            "description": "Sent message"
           },
           "conversation": {
             "type": "object",
@@ -1362,7 +1362,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "name": {
@@ -1372,7 +1372,7 @@
               },
               "department": {
                 "type": "string",
-                "description": "Département associé à la conversation",
+                "description": "Department tied to the conversation",
                 "example": "Marketing"
               },
               "kind": {
@@ -1414,22 +1414,22 @@
                   "offline",
                   "away"
                 ],
-                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "description": "Presence of the user: online, offline or away",
                 "example": "online"
               },
               "lastMessage": {
                 "type": "string",
                 "description": "Dernier message de la conversation",
-                "example": "Bonjour à tous !"
+                "example": "Hello everyone!"
               },
               "lastMessageAt": {
                 "type": "string",
-                "description": "Date et heure du dernier message (format ISO)",
+                "description": "Date and time of the last message (ISO format)",
                 "example": "2026-06-23T12:32:00Z"
               },
               "unreadCount": {
                 "type": "integer",
-                "description": "Nombre de messages non lus dans la conversation",
+                "description": "Number of unread messages in the conversation",
                 "example": 5
               },
               "memberCount": {
@@ -1442,13 +1442,13 @@
               "id",
               "name"
             ],
-            "description": "Détails de la conversation associée au message envoyé"
+            "description": "Details of the conversation of the sent message"
           }
         },
         "required": [
           "message"
         ],
-        "description": "Réponse contenant le message envoyé et les détails de la conversation associée"
+        "description": "Response holding the sent message and the details of its conversation"
       },
       "NewDirectMessageResponse": {
         "type": "object",
@@ -1465,7 +1465,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "name": {
@@ -1475,7 +1475,7 @@
               },
               "department": {
                 "type": "string",
-                "description": "Département associé à la conversation",
+                "description": "Department tied to the conversation",
                 "example": "Marketing"
               },
               "kind": {
@@ -1517,22 +1517,22 @@
                   "offline",
                   "away"
                 ],
-                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "description": "Presence of the user: online, offline or away",
                 "example": "online"
               },
               "lastMessage": {
                 "type": "string",
                 "description": "Dernier message de la conversation",
-                "example": "Bonjour à tous !"
+                "example": "Hello everyone!"
               },
               "lastMessageAt": {
                 "type": "string",
-                "description": "Date et heure du dernier message (format ISO)",
+                "description": "Date and time of the last message (ISO format)",
                 "example": "2026-06-23T12:32:00Z"
               },
               "unreadCount": {
                 "type": "integer",
-                "description": "Nombre de messages non lus dans la conversation",
+                "description": "Number of unread messages in the conversation",
                 "example": 5
               },
               "memberCount": {
@@ -1545,7 +1545,7 @@
               "id",
               "name"
             ],
-            "description": "Détails de la conversation directe créée"
+            "description": "Details of the created direct conversation"
           },
           "message": {
             "type": "object",
@@ -1559,7 +1559,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "conversationId": {
@@ -1571,17 +1571,17 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "content": {
                 "type": "string",
                 "description": "Contenu du message",
-                "example": "Bonjour à tous !"
+                "example": "Hello everyone!"
               },
               "sentAt": {
                 "type": "string",
-                "description": "Date et heure d’envoi du message (format ISO)",
+                "description": "Date and time the message was sent (ISO format)",
                 "example": "2026-06-23T12:32:00Z"
               },
               "authorId": {
@@ -1607,7 +1607,7 @@
                   "incoming",
                   "outgoing"
                 ],
-                "description": "Direction du message, entrant ou sortant",
+                "description": "Direction of the message, incoming or outgoing",
                 "example": "incoming"
               },
               "attachments": {
@@ -1624,28 +1624,28 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Nom de la pièce jointe",
+                      "description": "Name of the attachment",
                       "example": "document.pdf"
                     },
                     "size": {
                       "type": "integer",
-                      "description": "Taille de la pièce jointe en octets",
+                      "description": "Size of the attachment in bytes",
                       "example": 102400
                     },
                     "type": {
                       "type": "string",
-                      "description": "Type MIME de la pièce jointe",
+                      "description": "MIME type of the attachment",
                       "example": "application/pdf"
                     },
                     "url": {
                       "type": "string",
                       "format": "uri",
-                      "description": "URL pour accéder à la pièce jointe",
+                      "description": "URL to reach the attachment",
                       "example": "https://example.com/document.pdf"
                     }
                   },
@@ -1653,9 +1653,9 @@
                     "id",
                     "name"
                   ],
-                  "description": "Représentation d’une pièce jointe"
+                  "description": "An attachment"
                 },
-                "description": "Liste des pièces jointes du message",
+                "description": "Attachments of the message",
                 "example": []
               },
               "mentions": {
@@ -1672,7 +1672,7 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "name": {
@@ -1686,22 +1686,22 @@
                         "direct",
                         "group"
                       ],
-                      "description": "Type de conversation associé à la mention",
+                      "description": "Type of conversation tied to the mention",
                       "example": "direct"
                     },
                     "description": {
                       "type": "string",
                       "description": "Description de la mention",
-                      "example": "Mention d’un utilisateur dans un message"
+                      "example": "Mention of a user in a message"
                     }
                   },
                   "required": [
                     "id",
                     "name"
                   ],
-                  "description": "Représentation d’une mention"
+                  "description": "A mention"
                 },
-                "description": "Liste des mentions dans le message",
+                "description": "Mentions in the message",
                 "example": []
               },
               "citation": {
@@ -1728,7 +1728,7 @@
                         "type": "number"
                       }
                     ],
-                    "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                    "description": "Unique id, either a string or a number",
                     "example": "12345"
                   },
                   "authorId": {
@@ -1751,7 +1751,7 @@
                   "excerpt": {
                     "type": "string",
                     "description": "First 100 characters of the quoted message",
-                    "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                    "example": "Any news about the building permit?"
                   }
                 },
                 "required": [
@@ -1767,14 +1767,14 @@
               "content",
               "sentAt"
             ],
-            "description": "Message direct envoyé"
+            "description": "Sent direct message"
           }
         },
         "required": [
           "conversation",
           "message"
         ],
-        "description": "Réponse contenant les détails de la conversation directe créée et le message envoyé"
+        "description": "Response holding the details of the created direct conversation and the sent message"
       },
       "CreateGroupResponse": {
         "type": "object",
@@ -1791,7 +1791,7 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "name": {
@@ -1801,7 +1801,7 @@
               },
               "department": {
                 "type": "string",
-                "description": "Département associé à la conversation",
+                "description": "Department tied to the conversation",
                 "example": "Marketing"
               },
               "kind": {
@@ -1843,22 +1843,22 @@
                   "offline",
                   "away"
                 ],
-                "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                "description": "Presence of the user: online, offline or away",
                 "example": "online"
               },
               "lastMessage": {
                 "type": "string",
                 "description": "Dernier message de la conversation",
-                "example": "Bonjour à tous !"
+                "example": "Hello everyone!"
               },
               "lastMessageAt": {
                 "type": "string",
-                "description": "Date et heure du dernier message (format ISO)",
+                "description": "Date and time of the last message (ISO format)",
                 "example": "2026-06-23T12:32:00Z"
               },
               "unreadCount": {
                 "type": "integer",
-                "description": "Nombre de messages non lus dans la conversation",
+                "description": "Number of unread messages in the conversation",
                 "example": 5
               },
               "memberCount": {
@@ -1871,13 +1871,13 @@
               "id",
               "name"
             ],
-            "description": "Détails du groupe créé"
+            "description": "Details of the created group"
           }
         },
         "required": [
           "conversation"
         ],
-        "description": "Réponse contenant les détails du groupe créé"
+        "description": "Response holding the details of the created group"
       },
       "DeleteConversationResponse": {
         "type": "object",
@@ -1887,7 +1887,7 @@
             "enum": [
               true
             ],
-            "description": "Indique si la conversation a été supprimée avec succès",
+            "description": "Whether the conversation was deleted",
             "example": true
           },
           "conversationId": {
@@ -1899,14 +1899,14 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant de la conversation supprimée",
+            "description": "Id of the deleted conversation",
             "example": "12345"
           }
         },
         "required": [
           "deleted"
         ],
-        "description": "Réponse indiquant si la conversation a été supprimée avec succès"
+        "description": "Response telling whether the conversation was deleted"
       },
       "MarkConversationAsReadResponse": {
         "type": "object",
@@ -1920,12 +1920,12 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant de la conversation marquée comme lue",
+            "description": "Id of the conversation marked as read",
             "example": "12345"
           },
           "unreadCount": {
             "type": "integer",
-            "description": "Nombre de messages non lus restant dans la conversation après la mise à jour",
+            "description": "Number of unread messages left in the conversation after the update",
             "example": 0
           }
         },
@@ -1933,7 +1933,7 @@
           "conversationId",
           "unreadCount"
         ],
-        "description": "Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour"
+        "description": "Response holding the id of the conversation and the number of unread messages left after the update"
       },
       "UploadAttachmentResponse": {
         "type": "object",
@@ -1952,28 +1952,28 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom de la pièce jointe",
+                  "description": "Name of the attachment",
                   "example": "document.pdf"
                 },
                 "size": {
                   "type": "integer",
-                  "description": "Taille de la pièce jointe en octets",
+                  "description": "Size of the attachment in bytes",
                   "example": 102400
                 },
                 "type": {
                   "type": "string",
-                  "description": "Type MIME de la pièce jointe",
+                  "description": "MIME type of the attachment",
                   "example": "application/pdf"
                 },
                 "url": {
                   "type": "string",
                   "format": "uri",
-                  "description": "URL pour accéder à la pièce jointe",
+                  "description": "URL to reach the attachment",
                   "example": "https://example.com/document.pdf"
                 }
               },
@@ -1981,15 +1981,15 @@
                 "id",
                 "name"
               ],
-              "description": "Représentation d’une pièce jointe"
+              "description": "An attachment"
             },
-            "description": "Liste des pièces jointes téléchargées"
+            "description": "Uploaded attachments"
           }
         },
         "required": [
           "attachments"
         ],
-        "description": "Réponse contenant la liste des pièces jointes téléchargées"
+        "description": "Response holding the uploaded attachments"
       },
       "MessagingBootstrapResponse": {
         "type": "object",
@@ -2008,7 +2008,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
@@ -2024,7 +2024,7 @@
                 },
                 "department": {
                   "type": "string",
-                  "description": "Département associé au contact",
+                  "description": "Department of the contact",
                   "example": "Marketing"
                 },
                 "avatarUrl": {
@@ -2045,7 +2045,7 @@
                     "offline",
                     "away"
                   ],
-                  "description": "Présence du contact, en ligne, hors ligne ou absent",
+                  "description": "Presence of the contact: online, offline or away",
                   "example": "online"
                 }
               },
@@ -2053,7 +2053,7 @@
                 "id",
                 "name"
               ],
-              "description": "Représentation d’un contact"
+              "description": "A contact"
             }
           },
           "currentUser": {
@@ -2068,13 +2068,13 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "name": {
                 "type": "string",
                 "maxLength": 100,
-                "description": "Nom complet de l’utilisateur actuel",
+                "description": "Full name of the current user",
                 "example": "Alice Dupont"
               },
               "email": {
@@ -2111,7 +2111,7 @@
               "id",
               "name"
             ],
-            "description": "Utilisateur actuellement connecté"
+            "description": "Currently signed-in user"
           },
           "conversations": {
             "type": "array",
@@ -2127,7 +2127,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "name": {
@@ -2137,7 +2137,7 @@
                 },
                 "department": {
                   "type": "string",
-                  "description": "Département associé à la conversation",
+                  "description": "Department tied to the conversation",
                   "example": "Marketing"
                 },
                 "kind": {
@@ -2179,22 +2179,22 @@
                     "offline",
                     "away"
                   ],
-                  "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                  "description": "Presence of the user: online, offline or away",
                   "example": "online"
                 },
                 "lastMessage": {
                   "type": "string",
                   "description": "Dernier message de la conversation",
-                  "example": "Bonjour à tous !"
+                  "example": "Hello everyone!"
                 },
                 "lastMessageAt": {
                   "type": "string",
-                  "description": "Date et heure du dernier message (format ISO)",
+                  "description": "Date and time of the last message (ISO format)",
                   "example": "2026-06-23T12:32:00Z"
                 },
                 "unreadCount": {
                   "type": "integer",
-                  "description": "Nombre de messages non lus dans la conversation",
+                  "description": "Number of unread messages in the conversation",
                   "example": 5
                 },
                 "memberCount": {
@@ -2207,7 +2207,7 @@
                 "id",
                 "name"
               ],
-              "description": "Représentation d’une conversation"
+              "description": "A conversation"
             }
           },
           "activeConversationId": {
@@ -2219,7 +2219,7 @@
                 "type": "number"
               }
             ],
-            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+            "description": "Unique id, either a string or a number",
             "example": "12345"
           },
           "messages": {
@@ -2236,7 +2236,7 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "conversationId": {
@@ -2248,17 +2248,17 @@
                       "type": "number"
                     }
                   ],
-                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                  "description": "Unique id, either a string or a number",
                   "example": "12345"
                 },
                 "content": {
                   "type": "string",
                   "description": "Contenu du message",
-                  "example": "Bonjour à tous !"
+                  "example": "Hello everyone!"
                 },
                 "sentAt": {
                   "type": "string",
-                  "description": "Date et heure d’envoi du message (format ISO)",
+                  "description": "Date and time the message was sent (ISO format)",
                   "example": "2026-06-23T12:32:00Z"
                 },
                 "authorId": {
@@ -2284,7 +2284,7 @@
                     "incoming",
                     "outgoing"
                   ],
-                  "description": "Direction du message, entrant ou sortant",
+                  "description": "Direction of the message, incoming or outgoing",
                   "example": "incoming"
                 },
                 "attachments": {
@@ -2301,28 +2301,28 @@
                             "type": "number"
                           }
                         ],
-                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "description": "Unique id, either a string or a number",
                         "example": "12345"
                       },
                       "name": {
                         "type": "string",
-                        "description": "Nom de la pièce jointe",
+                        "description": "Name of the attachment",
                         "example": "document.pdf"
                       },
                       "size": {
                         "type": "integer",
-                        "description": "Taille de la pièce jointe en octets",
+                        "description": "Size of the attachment in bytes",
                         "example": 102400
                       },
                       "type": {
                         "type": "string",
-                        "description": "Type MIME de la pièce jointe",
+                        "description": "MIME type of the attachment",
                         "example": "application/pdf"
                       },
                       "url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "URL pour accéder à la pièce jointe",
+                        "description": "URL to reach the attachment",
                         "example": "https://example.com/document.pdf"
                       }
                     },
@@ -2330,9 +2330,9 @@
                       "id",
                       "name"
                     ],
-                    "description": "Représentation d’une pièce jointe"
+                    "description": "An attachment"
                   },
-                  "description": "Liste des pièces jointes du message",
+                  "description": "Attachments of the message",
                   "example": []
                 },
                 "mentions": {
@@ -2349,7 +2349,7 @@
                             "type": "number"
                           }
                         ],
-                        "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                        "description": "Unique id, either a string or a number",
                         "example": "12345"
                       },
                       "name": {
@@ -2363,22 +2363,22 @@
                           "direct",
                           "group"
                         ],
-                        "description": "Type de conversation associé à la mention",
+                        "description": "Type of conversation tied to the mention",
                         "example": "direct"
                       },
                       "description": {
                         "type": "string",
                         "description": "Description de la mention",
-                        "example": "Mention d’un utilisateur dans un message"
+                        "example": "Mention of a user in a message"
                       }
                     },
                     "required": [
                       "id",
                       "name"
                     ],
-                    "description": "Représentation d’une mention"
+                    "description": "A mention"
                   },
-                  "description": "Liste des mentions dans le message",
+                  "description": "Mentions in the message",
                   "example": []
                 },
                 "citation": {
@@ -2405,7 +2405,7 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "authorId": {
@@ -2428,7 +2428,7 @@
                     "excerpt": {
                       "type": "string",
                       "description": "First 100 characters of the quoted message",
-                      "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                      "example": "Any news about the building permit?"
                     }
                   },
                   "required": [
@@ -2444,7 +2444,7 @@
                 "content",
                 "sentAt"
               ],
-              "description": "Représentation d’un message"
+              "description": "A message"
             }
           }
         },
@@ -2454,7 +2454,7 @@
           "conversations",
           "messages"
         ],
-        "description": "Réponse contenant les données de base pour le démarrage de la messagerie"
+        "description": "Response holding the base data to start the messaging module"
       },
       "CurrentUserResponse": {
         "type": "object",
@@ -2471,13 +2471,13 @@
                     "type": "number"
                   }
                 ],
-                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                "description": "Unique id, either a string or a number",
                 "example": "12345"
               },
               "name": {
                 "type": "string",
                 "maxLength": 100,
-                "description": "Nom complet de l’utilisateur actuel",
+                "description": "Full name of the current user",
                 "example": "Alice Dupont"
               },
               "email": {
@@ -2514,13 +2514,13 @@
               "id",
               "name"
             ],
-            "description": "Utilisateur actuellement connecté"
+            "description": "Currently signed-in user"
           }
         },
         "required": [
           "currentUser"
         ],
-        "description": "Réponse contenant l’utilisateur actuel"
+        "description": "Response holding the current user"
       },
       "SendMessageBody": {
         "type": "object",
@@ -2530,8 +2530,8 @@
             "minLength": 1,
             "maxLength": 5000,
             "pattern": "^[^<>]*$",
-            "description": "Contenu du message à envoyer",
-            "example": "Bonjour à tous !"
+            "description": "Content of the message to send",
+            "example": "Hello everyone!"
           },
           "attachmentIds": {
             "type": "array",
@@ -2546,7 +2546,7 @@
                   "pattern": "^(?:attachment-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (attachment-<id> ou entier)",
+              "description": "Id (attachment-<id> or integer)",
               "example": 1
             },
             "maxItems": 0,
@@ -2565,17 +2565,17 @@
                   "pattern": "^(?:user-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (user-<id> ou entier)",
+              "description": "Id (user-<id> or integer)",
               "example": 3
             },
             "maxItems": 100,
-            "description": "Liste des identifiants des mentions dans le message"
+            "description": "Ids of the mentions in the message"
           }
         },
         "required": [
           "content"
         ],
-        "description": "Corps de la requête pour envoyer un message"
+        "description": "Request body to send a message"
       },
       "NewDirectMessageBody": {
         "type": "object",
@@ -2591,7 +2591,7 @@
                 "pattern": "^(?:user-)?\\d+$"
               }
             ],
-            "description": "Identifiant (user-<id> ou entier)",
+            "description": "Id (user-<id> or integer)",
             "example": 3
           },
           "message": {
@@ -2599,15 +2599,15 @@
             "minLength": 1,
             "maxLength": 5000,
             "pattern": "^[^<>]*$",
-            "description": "Contenu du message direct à envoyer",
-            "example": "Salut ! Comment ça va ?"
+            "description": "Content of the direct message to send",
+            "example": "Hi! How are you?"
           }
         },
         "required": [
           "recipientId",
           "message"
         ],
-        "description": "Corps de la requête pour créer un nouveau message direct"
+        "description": "Request body to create a new direct message"
       },
       "CreateGroupBody": {
         "type": "object",
@@ -2617,14 +2617,14 @@
             "minLength": 1,
             "maxLength": 100,
             "pattern": "^[^<>]*$",
-            "description": "Nom du groupe à créer",
+            "description": "Name of the group to create",
             "example": "Marketing team"
           },
           "description": {
             "type": "string",
             "maxLength": 500,
             "pattern": "^[^<>]*$",
-            "description": "Description du groupe à créer",
+            "description": "Description of the group to create",
             "example": "Group of the marketing team"
           },
           "memberIds": {
@@ -2640,18 +2640,18 @@
                   "pattern": "^(?:user-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (user-<id> ou entier)",
+              "description": "Id (user-<id> or integer)",
               "example": 3
             },
             "maxItems": 100,
-            "description": "Liste des identifiants des membres à ajouter au groupe"
+            "description": "Ids of the members to add to the group"
           }
         },
         "required": [
           "name",
           "memberIds"
         ],
-        "description": "Corps de la requête pour créer un nouveau groupe"
+        "description": "Request body to create a new group"
       },
       "MarkConversationAsReadBody": {
         "type": "object",
@@ -2685,7 +2685,7 @@
         "required": [
           "files"
         ],
-        "description": "Corps de la requête pour télécharger une pièce jointe"
+        "description": "Request body to upload an attachment"
       },
       "ConversationsQuery": {
         "type": "object",
@@ -2710,7 +2710,7 @@
             "example": "20"
           }
         },
-        "description": "Paramètres de requête pour filtrer et paginer les conversations"
+        "description": "Query parameters to filter and page the conversations"
       },
       "MessagesQuery": {
         "type": "object",
@@ -2730,7 +2730,7 @@
             "example": 117
           }
         },
-        "description": "Paramètres de requête pour paginer les messages"
+        "description": "Query parameters to page the messages"
       },
       "ContactsQuery": {
         "type": "object",
@@ -2745,11 +2745,11 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100,
-            "description": "Nombre maximum de contacts à retourner",
+            "description": "Maximum number of contacts to return",
             "example": 10
           }
         },
-        "description": "Paramètres de requête pour filtrer les contacts"
+        "description": "Query parameters to filter the contacts"
       },
       "ConversationIdParams": {
         "type": "object",
@@ -2765,14 +2765,14 @@
                 "pattern": "^(?:conversation-)?\\d+$"
               }
             ],
-            "description": "Identifiant (conversation-<id> ou entier)",
+            "description": "Id (conversation-<id> or integer)",
             "example": 101
           }
         },
         "required": [
           "conversationId"
         ],
-        "description": "Paramètres pour identifier une conversation"
+        "description": "Parameters identifying a conversation"
       },
       "CheckApisResponse": {
         "type": "object",
@@ -2896,7 +2896,7 @@
         "tags": [
           "Connectivity"
         ],
-        "summary": "Vérifie la santé du BFF",
+        "summary": "Check the health of the BFF",
         "responses": {
           "200": {
             "description": "OK"
@@ -2995,7 +2995,7 @@
                 "required": [
                   "files"
                 ],
-                "description": "Corps de la requête pour télécharger une pièce jointe"
+                "description": "Request body to upload an attachment"
               }
             }
           }
@@ -3049,10 +3049,10 @@
         "tags": [
           "Messaging"
         ],
-        "summary": "Récupère les informations de démarrage pour l’utilisateur actuel",
+        "summary": "Get the startup data of the current user",
         "responses": {
           "200": {
-            "description": "Informations de démarrage pour l’utilisateur actuel",
+            "description": "Startup data of the current user",
             "content": {
               "application/json": {
                 "schema": {
@@ -3072,7 +3072,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "name": {
@@ -3088,7 +3088,7 @@
                           },
                           "department": {
                             "type": "string",
-                            "description": "Département associé au contact",
+                            "description": "Department of the contact",
                             "example": "Marketing"
                           },
                           "avatarUrl": {
@@ -3109,7 +3109,7 @@
                               "offline",
                               "away"
                             ],
-                            "description": "Présence du contact, en ligne, hors ligne ou absent",
+                            "description": "Presence of the contact: online, offline or away",
                             "example": "online"
                           }
                         },
@@ -3117,7 +3117,7 @@
                           "id",
                           "name"
                         ],
-                        "description": "Représentation d’un contact"
+                        "description": "A contact"
                       }
                     },
                     "currentUser": {
@@ -3132,13 +3132,13 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
                           "type": "string",
                           "maxLength": 100,
-                          "description": "Nom complet de l’utilisateur actuel",
+                          "description": "Full name of the current user",
                           "example": "Alice Dupont"
                         },
                         "email": {
@@ -3175,7 +3175,7 @@
                         "id",
                         "name"
                       ],
-                      "description": "Utilisateur actuellement connecté"
+                      "description": "Currently signed-in user"
                     },
                     "conversations": {
                       "type": "array",
@@ -3191,7 +3191,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "name": {
@@ -3201,7 +3201,7 @@
                           },
                           "department": {
                             "type": "string",
-                            "description": "Département associé à la conversation",
+                            "description": "Department tied to the conversation",
                             "example": "Marketing"
                           },
                           "kind": {
@@ -3243,22 +3243,22 @@
                               "offline",
                               "away"
                             ],
-                            "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                            "description": "Presence of the user: online, offline or away",
                             "example": "online"
                           },
                           "lastMessage": {
                             "type": "string",
                             "description": "Dernier message de la conversation",
-                            "example": "Bonjour à tous !"
+                            "example": "Hello everyone!"
                           },
                           "lastMessageAt": {
                             "type": "string",
-                            "description": "Date et heure du dernier message (format ISO)",
+                            "description": "Date and time of the last message (ISO format)",
                             "example": "2026-06-23T12:32:00Z"
                           },
                           "unreadCount": {
                             "type": "integer",
-                            "description": "Nombre de messages non lus dans la conversation",
+                            "description": "Number of unread messages in the conversation",
                             "example": 5
                           },
                           "memberCount": {
@@ -3271,7 +3271,7 @@
                           "id",
                           "name"
                         ],
-                        "description": "Représentation d’une conversation"
+                        "description": "A conversation"
                       }
                     },
                     "activeConversationId": {
@@ -3283,7 +3283,7 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                      "description": "Unique id, either a string or a number",
                       "example": "12345"
                     },
                     "messages": {
@@ -3300,7 +3300,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "conversationId": {
@@ -3312,17 +3312,17 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "content": {
                             "type": "string",
                             "description": "Contenu du message",
-                            "example": "Bonjour à tous !"
+                            "example": "Hello everyone!"
                           },
                           "sentAt": {
                             "type": "string",
-                            "description": "Date et heure d’envoi du message (format ISO)",
+                            "description": "Date and time the message was sent (ISO format)",
                             "example": "2026-06-23T12:32:00Z"
                           },
                           "authorId": {
@@ -3348,7 +3348,7 @@
                               "incoming",
                               "outgoing"
                             ],
-                            "description": "Direction du message, entrant ou sortant",
+                            "description": "Direction of the message, incoming or outgoing",
                             "example": "incoming"
                           },
                           "attachments": {
@@ -3365,28 +3365,28 @@
                                       "type": "number"
                                     }
                                   ],
-                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "description": "Unique id, either a string or a number",
                                   "example": "12345"
                                 },
                                 "name": {
                                   "type": "string",
-                                  "description": "Nom de la pièce jointe",
+                                  "description": "Name of the attachment",
                                   "example": "document.pdf"
                                 },
                                 "size": {
                                   "type": "integer",
-                                  "description": "Taille de la pièce jointe en octets",
+                                  "description": "Size of the attachment in bytes",
                                   "example": 102400
                                 },
                                 "type": {
                                   "type": "string",
-                                  "description": "Type MIME de la pièce jointe",
+                                  "description": "MIME type of the attachment",
                                   "example": "application/pdf"
                                 },
                                 "url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "URL pour accéder à la pièce jointe",
+                                  "description": "URL to reach the attachment",
                                   "example": "https://example.com/document.pdf"
                                 }
                               },
@@ -3394,9 +3394,9 @@
                                 "id",
                                 "name"
                               ],
-                              "description": "Représentation d’une pièce jointe"
+                              "description": "An attachment"
                             },
-                            "description": "Liste des pièces jointes du message",
+                            "description": "Attachments of the message",
                             "example": []
                           },
                           "mentions": {
@@ -3413,7 +3413,7 @@
                                       "type": "number"
                                     }
                                   ],
-                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "description": "Unique id, either a string or a number",
                                   "example": "12345"
                                 },
                                 "name": {
@@ -3427,22 +3427,22 @@
                                     "direct",
                                     "group"
                                   ],
-                                  "description": "Type de conversation associé à la mention",
+                                  "description": "Type of conversation tied to the mention",
                                   "example": "direct"
                                 },
                                 "description": {
                                   "type": "string",
                                   "description": "Description de la mention",
-                                  "example": "Mention d’un utilisateur dans un message"
+                                  "example": "Mention of a user in a message"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name"
                               ],
-                              "description": "Représentation d’une mention"
+                              "description": "A mention"
                             },
-                            "description": "Liste des mentions dans le message",
+                            "description": "Mentions in the message",
                             "example": []
                           },
                           "citation": {
@@ -3469,7 +3469,7 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "authorId": {
@@ -3492,7 +3492,7 @@
                               "excerpt": {
                                 "type": "string",
                                 "description": "First 100 characters of the quoted message",
-                                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                                "example": "Any news about the building permit?"
                               }
                             },
                             "required": [
@@ -3508,7 +3508,7 @@
                           "content",
                           "sentAt"
                         ],
-                        "description": "Représentation d’un message"
+                        "description": "A message"
                       }
                     }
                   },
@@ -3518,7 +3518,7 @@
                     "conversations",
                     "messages"
                   ],
-                  "description": "Réponse contenant les données de base pour le démarrage de la messagerie"
+                  "description": "Response holding the base data to start the messaging module"
                 }
               }
             }
@@ -3571,7 +3571,7 @@
         "tags": [
           "Contacts"
         ],
-        "summary": "Récupère la liste des contacts",
+        "summary": "List the contacts",
         "parameters": [
           {
             "schema": {
@@ -3590,18 +3590,18 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "description": "Nombre maximum de contacts à retourner",
+              "description": "Maximum number of contacts to return",
               "example": 10
             },
             "required": false,
-            "description": "Nombre maximum de contacts à retourner",
+            "description": "Maximum number of contacts to return",
             "name": "limit",
             "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "Liste des contacts",
+            "description": "Contacts",
             "content": {
               "application/json": {
                 "schema": {
@@ -3621,7 +3621,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "name": {
@@ -3637,7 +3637,7 @@
                           },
                           "department": {
                             "type": "string",
-                            "description": "Département associé au contact",
+                            "description": "Department of the contact",
                             "example": "Marketing"
                           },
                           "avatarUrl": {
@@ -3658,7 +3658,7 @@
                               "offline",
                               "away"
                             ],
-                            "description": "Présence du contact, en ligne, hors ligne ou absent",
+                            "description": "Presence of the contact: online, offline or away",
                             "example": "online"
                           }
                         },
@@ -3666,15 +3666,15 @@
                           "id",
                           "name"
                         ],
-                        "description": "Représentation d’un contact"
+                        "description": "A contact"
                       },
-                      "description": "Liste des contacts"
+                      "description": "Contacts"
                     }
                   },
                   "required": [
                     "contacts"
                   ],
-                  "description": "Réponse contenant la liste des contacts"
+                  "description": "Response holding the contacts"
                 }
               }
             }
@@ -3737,7 +3737,7 @@
         "tags": [
           "Conversations"
         ],
-        "summary": "Récupère la liste des conversations de l’utilisateur actuel",
+        "summary": "List the conversations of the current user",
         "description": "One page of the caller's conversations, newest first (`limit` 1 to 30, default 20; pass `nextCursor` as `cursor` for the next page), read with ONE Message API call. Each conversation carries what the list displays: its name (the other participant's name for a direct conversation), kind, contact id, member count and unread counter. The members and their names come with `GET /conversations/{conversationId}`. `search` keeps the conversations whose name contains the text, or in which another member's name does (\"autoroute\" finds \"Projet autoroute\", \"Xavier Bertrand\" finds the direct conversation with him and the groups he belongs to); the pagination applies to the filtered list.",
         "parameters": [
           {
@@ -3780,7 +3780,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Liste des conversations de l’utilisateur actuel",
+            "description": "Conversations of the current user",
             "content": {
               "application/json": {
                 "schema": {
@@ -3800,7 +3800,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "name": {
@@ -3810,7 +3810,7 @@
                           },
                           "department": {
                             "type": "string",
-                            "description": "Département associé à la conversation",
+                            "description": "Department tied to the conversation",
                             "example": "Marketing"
                           },
                           "kind": {
@@ -3852,22 +3852,22 @@
                               "offline",
                               "away"
                             ],
-                            "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                            "description": "Presence of the user: online, offline or away",
                             "example": "online"
                           },
                           "lastMessage": {
                             "type": "string",
                             "description": "Dernier message de la conversation",
-                            "example": "Bonjour à tous !"
+                            "example": "Hello everyone!"
                           },
                           "lastMessageAt": {
                             "type": "string",
-                            "description": "Date et heure du dernier message (format ISO)",
+                            "description": "Date and time of the last message (ISO format)",
                             "example": "2026-06-23T12:32:00Z"
                           },
                           "unreadCount": {
                             "type": "integer",
-                            "description": "Nombre de messages non lus dans la conversation",
+                            "description": "Number of unread messages in the conversation",
                             "example": 5
                           },
                           "memberCount": {
@@ -3880,9 +3880,9 @@
                           "id",
                           "name"
                         ],
-                        "description": "Représentation d’une conversation"
+                        "description": "A conversation"
                       },
-                      "description": "Liste des conversations"
+                      "description": "Conversations"
                     },
                     "nextCursor": {
                       "type": "string",
@@ -3893,7 +3893,7 @@
                   "required": [
                     "conversations"
                   ],
-                  "description": "Réponse contenant la liste des conversations et un curseur pour la pagination"
+                  "description": "Response holding the conversations and a pagination cursor"
                 }
               }
             }
@@ -3971,11 +3971,11 @@
                   "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (conversation-<id> ou entier)",
+              "description": "Id (conversation-<id> or integer)",
               "example": "conversation-101"
             },
             "required": true,
-            "description": "Identifiant (conversation-<id> ou entier)",
+            "description": "Id (conversation-<id> or integer)",
             "name": "conversationId",
             "in": "path"
           },
@@ -4026,7 +4026,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
@@ -4036,7 +4036,7 @@
                         },
                         "department": {
                           "type": "string",
-                          "description": "Département associé à la conversation",
+                          "description": "Department tied to the conversation",
                           "example": "Marketing"
                         },
                         "kind": {
@@ -4078,22 +4078,22 @@
                             "offline",
                             "away"
                           ],
-                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "description": "Presence of the user: online, offline or away",
                           "example": "online"
                         },
                         "lastMessage": {
                           "type": "string",
                           "description": "Dernier message de la conversation",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
                           "type": "string",
-                          "description": "Date et heure du dernier message (format ISO)",
+                          "description": "Date and time of the last message (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "unreadCount": {
                           "type": "integer",
-                          "description": "Nombre de messages non lus dans la conversation",
+                          "description": "Number of unread messages in the conversation",
                           "example": 5
                         },
                         "memberCount": {
@@ -4122,7 +4122,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "name": {
@@ -4138,7 +4138,7 @@
                           },
                           "department": {
                             "type": "string",
-                            "description": "Département associé au contact",
+                            "description": "Department of the contact",
                             "example": "Marketing"
                           },
                           "avatarUrl": {
@@ -4159,7 +4159,7 @@
                               "offline",
                               "away"
                             ],
-                            "description": "Présence du contact, en ligne, hors ligne ou absent",
+                            "description": "Presence of the contact: online, offline or away",
                             "example": "online"
                           }
                         },
@@ -4167,7 +4167,7 @@
                           "id",
                           "name"
                         ],
-                        "description": "Représentation d’un contact"
+                        "description": "A contact"
                       },
                       "description": "The members of the conversation, the caller included, with their names"
                     },
@@ -4185,7 +4185,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "conversationId": {
@@ -4197,17 +4197,17 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "content": {
                             "type": "string",
                             "description": "Contenu du message",
-                            "example": "Bonjour à tous !"
+                            "example": "Hello everyone!"
                           },
                           "sentAt": {
                             "type": "string",
-                            "description": "Date et heure d’envoi du message (format ISO)",
+                            "description": "Date and time the message was sent (ISO format)",
                             "example": "2026-06-23T12:32:00Z"
                           },
                           "authorId": {
@@ -4233,7 +4233,7 @@
                               "incoming",
                               "outgoing"
                             ],
-                            "description": "Direction du message, entrant ou sortant",
+                            "description": "Direction of the message, incoming or outgoing",
                             "example": "incoming"
                           },
                           "attachments": {
@@ -4250,28 +4250,28 @@
                                       "type": "number"
                                     }
                                   ],
-                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "description": "Unique id, either a string or a number",
                                   "example": "12345"
                                 },
                                 "name": {
                                   "type": "string",
-                                  "description": "Nom de la pièce jointe",
+                                  "description": "Name of the attachment",
                                   "example": "document.pdf"
                                 },
                                 "size": {
                                   "type": "integer",
-                                  "description": "Taille de la pièce jointe en octets",
+                                  "description": "Size of the attachment in bytes",
                                   "example": 102400
                                 },
                                 "type": {
                                   "type": "string",
-                                  "description": "Type MIME de la pièce jointe",
+                                  "description": "MIME type of the attachment",
                                   "example": "application/pdf"
                                 },
                                 "url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "URL pour accéder à la pièce jointe",
+                                  "description": "URL to reach the attachment",
                                   "example": "https://example.com/document.pdf"
                                 }
                               },
@@ -4279,9 +4279,9 @@
                                 "id",
                                 "name"
                               ],
-                              "description": "Représentation d’une pièce jointe"
+                              "description": "An attachment"
                             },
-                            "description": "Liste des pièces jointes du message",
+                            "description": "Attachments of the message",
                             "example": []
                           },
                           "mentions": {
@@ -4298,7 +4298,7 @@
                                       "type": "number"
                                     }
                                   ],
-                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "description": "Unique id, either a string or a number",
                                   "example": "12345"
                                 },
                                 "name": {
@@ -4312,22 +4312,22 @@
                                     "direct",
                                     "group"
                                   ],
-                                  "description": "Type de conversation associé à la mention",
+                                  "description": "Type of conversation tied to the mention",
                                   "example": "direct"
                                 },
                                 "description": {
                                   "type": "string",
                                   "description": "Description de la mention",
-                                  "example": "Mention d’un utilisateur dans un message"
+                                  "example": "Mention of a user in a message"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name"
                               ],
-                              "description": "Représentation d’une mention"
+                              "description": "A mention"
                             },
-                            "description": "Liste des mentions dans le message",
+                            "description": "Mentions in the message",
                             "example": []
                           },
                           "citation": {
@@ -4354,7 +4354,7 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "authorId": {
@@ -4377,7 +4377,7 @@
                               "excerpt": {
                                 "type": "string",
                                 "description": "First 100 characters of the quoted message",
-                                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                                "example": "Any news about the building permit?"
                               }
                             },
                             "required": [
@@ -4393,7 +4393,7 @@
                           "content",
                           "sentAt"
                         ],
-                        "description": "Représentation d’un message"
+                        "description": "A message"
                       },
                       "description": "One page of messages, oldest first, with the sender id and the quoted message"
                     },
@@ -4485,7 +4485,7 @@
         "tags": [
           "Conversations"
         ],
-        "summary": "Supprime une conversation",
+        "summary": "Delete a conversation",
         "parameters": [
           {
             "schema": {
@@ -4499,18 +4499,18 @@
                   "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (conversation-<id> ou entier)",
+              "description": "Id (conversation-<id> or integer)",
               "example": 102
             },
             "required": true,
-            "description": "Identifiant (conversation-<id> ou entier)",
+            "description": "Id (conversation-<id> or integer)",
             "name": "conversationId",
             "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Conversation supprimée avec succès",
+            "description": "Conversation deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -4521,7 +4521,7 @@
                       "enum": [
                         true
                       ],
-                      "description": "Indique si la conversation a été supprimée avec succès",
+                      "description": "Whether the conversation was deleted",
                       "example": true
                     },
                     "conversationId": {
@@ -4533,14 +4533,14 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant de la conversation supprimée",
+                      "description": "Id of the deleted conversation",
                       "example": "12345"
                     }
                   },
                   "required": [
                     "deleted"
                   ],
-                  "description": "Réponse indiquant si la conversation a été supprimée avec succès"
+                  "description": "Response telling whether the conversation was deleted"
                 }
               }
             }
@@ -4638,11 +4638,11 @@
                   "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (conversation-<id> ou entier)",
+              "description": "Id (conversation-<id> or integer)",
               "example": 101
             },
             "required": true,
-            "description": "Identifiant (conversation-<id> ou entier)",
+            "description": "Id (conversation-<id> or integer)",
             "name": "conversationId",
             "in": "path"
           }
@@ -4691,12 +4691,12 @@
                           "type": "number"
                         }
                       ],
-                      "description": "Identifiant de la conversation marquée comme lue",
+                      "description": "Id of the conversation marked as read",
                       "example": "12345"
                     },
                     "unreadCount": {
                       "type": "integer",
-                      "description": "Nombre de messages non lus restant dans la conversation après la mise à jour",
+                      "description": "Number of unread messages left in the conversation after the update",
                       "example": 0
                     }
                   },
@@ -4704,7 +4704,7 @@
                     "conversationId",
                     "unreadCount"
                   ],
-                  "description": "Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour"
+                  "description": "Response holding the id of the conversation and the number of unread messages left after the update"
                 }
               }
             }
@@ -4787,7 +4787,7 @@
         "tags": [
           "Groups"
         ],
-        "summary": "Crée un nouveau groupe",
+        "summary": "Create a new group",
         "requestBody": {
           "required": true,
           "content": {
@@ -4800,14 +4800,14 @@
                     "minLength": 1,
                     "maxLength": 100,
                     "pattern": "^[^<>]*$",
-                    "description": "Nom du groupe à créer",
+                    "description": "Name of the group to create",
                     "example": "Marketing team"
                   },
                   "description": {
                     "type": "string",
                     "maxLength": 500,
                     "pattern": "^[^<>]*$",
-                    "description": "Description du groupe à créer",
+                    "description": "Description of the group to create",
                     "example": "Group of the marketing team"
                   },
                   "memberIds": {
@@ -4823,25 +4823,25 @@
                           "pattern": "^(?:user-)?\\d+$"
                         }
                       ],
-                      "description": "Identifiant (user-<id> ou entier)",
+                      "description": "Id (user-<id> or integer)",
                       "example": 3
                     },
                     "maxItems": 100,
-                    "description": "Liste des identifiants des membres à ajouter au groupe"
+                    "description": "Ids of the members to add to the group"
                   }
                 },
                 "required": [
                   "name",
                   "memberIds"
                 ],
-                "description": "Corps de la requête pour créer un nouveau groupe"
+                "description": "Request body to create a new group"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Groupe créé avec succès",
+            "description": "Group created",
             "content": {
               "application/json": {
                 "schema": {
@@ -4859,7 +4859,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
@@ -4869,7 +4869,7 @@
                         },
                         "department": {
                           "type": "string",
-                          "description": "Département associé à la conversation",
+                          "description": "Department tied to the conversation",
                           "example": "Marketing"
                         },
                         "kind": {
@@ -4911,22 +4911,22 @@
                             "offline",
                             "away"
                           ],
-                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "description": "Presence of the user: online, offline or away",
                           "example": "online"
                         },
                         "lastMessage": {
                           "type": "string",
                           "description": "Dernier message de la conversation",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
                           "type": "string",
-                          "description": "Date et heure du dernier message (format ISO)",
+                          "description": "Date and time of the last message (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "unreadCount": {
                           "type": "integer",
-                          "description": "Nombre de messages non lus dans la conversation",
+                          "description": "Number of unread messages in the conversation",
                           "example": 5
                         },
                         "memberCount": {
@@ -4939,13 +4939,13 @@
                         "id",
                         "name"
                       ],
-                      "description": "Détails du groupe créé"
+                      "description": "Details of the created group"
                     }
                   },
                   "required": [
                     "conversation"
                   ],
-                  "description": "Réponse contenant les détails du groupe créé"
+                  "description": "Response holding the details of the created group"
                 }
               }
             }
@@ -5008,10 +5008,10 @@
         "tags": [
           "Profile"
         ],
-        "summary": "Récupère le profil de l’utilisateur actuel",
+        "summary": "Get the profile of the current user",
         "responses": {
           "200": {
-            "description": "Profil utilisateur actuel",
+            "description": "Profile of the current user",
             "content": {
               "application/json": {
                 "schema": {
@@ -5029,13 +5029,13 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
                           "type": "string",
                           "maxLength": 100,
-                          "description": "Nom complet de l’utilisateur actuel",
+                          "description": "Full name of the current user",
                           "example": "Alice Dupont"
                         },
                         "email": {
@@ -5072,13 +5072,13 @@
                         "id",
                         "name"
                       ],
-                      "description": "Utilisateur actuellement connecté"
+                      "description": "Currently signed-in user"
                     }
                   },
                   "required": [
                     "currentUser"
                   ],
-                  "description": "Réponse contenant l’utilisateur actuel"
+                  "description": "Response holding the current user"
                 }
               }
             }
@@ -5131,7 +5131,7 @@
         "tags": [
           "Messages"
         ],
-        "summary": "Récupère la liste des messages d’une conversation",
+        "summary": "List the messages of a conversation",
         "description": "One page of messages, oldest first (`limit` 1 to 100, default 30), with the conversation: `nextCursor` goes in `before` for the older page. The whole history is never read. The author names come from the members of the conversation (one Message API call, no Core API call); `GET /conversations/{conversationId}` returns them with the first page.",
         "parameters": [
           {
@@ -5146,11 +5146,11 @@
                   "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (conversation-<id> ou entier)",
+              "description": "Id (conversation-<id> or integer)",
               "example": 101
             },
             "required": true,
-            "description": "Identifiant (conversation-<id> ou entier)",
+            "description": "Id (conversation-<id> or integer)",
             "name": "conversationId",
             "in": "path"
           },
@@ -5183,7 +5183,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Liste des messages de la conversation",
+            "description": "Messages of the conversation",
             "content": {
               "application/json": {
                 "schema": {
@@ -5201,7 +5201,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
@@ -5211,7 +5211,7 @@
                         },
                         "department": {
                           "type": "string",
-                          "description": "Département associé à la conversation",
+                          "description": "Department tied to the conversation",
                           "example": "Marketing"
                         },
                         "kind": {
@@ -5253,22 +5253,22 @@
                             "offline",
                             "away"
                           ],
-                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "description": "Presence of the user: online, offline or away",
                           "example": "online"
                         },
                         "lastMessage": {
                           "type": "string",
                           "description": "Dernier message de la conversation",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
                           "type": "string",
-                          "description": "Date et heure du dernier message (format ISO)",
+                          "description": "Date and time of the last message (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "unreadCount": {
                           "type": "integer",
-                          "description": "Nombre de messages non lus dans la conversation",
+                          "description": "Number of unread messages in the conversation",
                           "example": 5
                         },
                         "memberCount": {
@@ -5281,7 +5281,7 @@
                         "id",
                         "name"
                       ],
-                      "description": "Détails de la conversation associée aux messages"
+                      "description": "Details of the conversation of the messages"
                     },
                     "messages": {
                       "type": "array",
@@ -5297,7 +5297,7 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "conversationId": {
@@ -5309,17 +5309,17 @@
                                 "type": "number"
                               }
                             ],
-                            "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                            "description": "Unique id, either a string or a number",
                             "example": "12345"
                           },
                           "content": {
                             "type": "string",
                             "description": "Contenu du message",
-                            "example": "Bonjour à tous !"
+                            "example": "Hello everyone!"
                           },
                           "sentAt": {
                             "type": "string",
-                            "description": "Date et heure d’envoi du message (format ISO)",
+                            "description": "Date and time the message was sent (ISO format)",
                             "example": "2026-06-23T12:32:00Z"
                           },
                           "authorId": {
@@ -5345,7 +5345,7 @@
                               "incoming",
                               "outgoing"
                             ],
-                            "description": "Direction du message, entrant ou sortant",
+                            "description": "Direction of the message, incoming or outgoing",
                             "example": "incoming"
                           },
                           "attachments": {
@@ -5362,28 +5362,28 @@
                                       "type": "number"
                                     }
                                   ],
-                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "description": "Unique id, either a string or a number",
                                   "example": "12345"
                                 },
                                 "name": {
                                   "type": "string",
-                                  "description": "Nom de la pièce jointe",
+                                  "description": "Name of the attachment",
                                   "example": "document.pdf"
                                 },
                                 "size": {
                                   "type": "integer",
-                                  "description": "Taille de la pièce jointe en octets",
+                                  "description": "Size of the attachment in bytes",
                                   "example": 102400
                                 },
                                 "type": {
                                   "type": "string",
-                                  "description": "Type MIME de la pièce jointe",
+                                  "description": "MIME type of the attachment",
                                   "example": "application/pdf"
                                 },
                                 "url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "URL pour accéder à la pièce jointe",
+                                  "description": "URL to reach the attachment",
                                   "example": "https://example.com/document.pdf"
                                 }
                               },
@@ -5391,9 +5391,9 @@
                                 "id",
                                 "name"
                               ],
-                              "description": "Représentation d’une pièce jointe"
+                              "description": "An attachment"
                             },
-                            "description": "Liste des pièces jointes du message",
+                            "description": "Attachments of the message",
                             "example": []
                           },
                           "mentions": {
@@ -5410,7 +5410,7 @@
                                       "type": "number"
                                     }
                                   ],
-                                  "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                  "description": "Unique id, either a string or a number",
                                   "example": "12345"
                                 },
                                 "name": {
@@ -5424,22 +5424,22 @@
                                     "direct",
                                     "group"
                                   ],
-                                  "description": "Type de conversation associé à la mention",
+                                  "description": "Type of conversation tied to the mention",
                                   "example": "direct"
                                 },
                                 "description": {
                                   "type": "string",
                                   "description": "Description de la mention",
-                                  "example": "Mention d’un utilisateur dans un message"
+                                  "example": "Mention of a user in a message"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name"
                               ],
-                              "description": "Représentation d’une mention"
+                              "description": "A mention"
                             },
-                            "description": "Liste des mentions dans le message",
+                            "description": "Mentions in the message",
                             "example": []
                           },
                           "citation": {
@@ -5466,7 +5466,7 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "authorId": {
@@ -5489,7 +5489,7 @@
                               "excerpt": {
                                 "type": "string",
                                 "description": "First 100 characters of the quoted message",
-                                "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                                "example": "Any news about the building permit?"
                               }
                             },
                             "required": [
@@ -5505,9 +5505,9 @@
                           "content",
                           "sentAt"
                         ],
-                        "description": "Représentation d’un message"
+                        "description": "A message"
                       },
-                      "description": "Liste des messages"
+                      "description": "Messages"
                     },
                     "hasMore": {
                       "type": "boolean",
@@ -5524,7 +5524,7 @@
                     "conversation",
                     "messages"
                   ],
-                  "description": "Réponse contenant la liste des messages et un curseur pour la pagination"
+                  "description": "Response holding the messages and a pagination cursor"
                 }
               }
             }
@@ -5595,7 +5595,7 @@
         "tags": [
           "Messages"
         ],
-        "summary": "Crée un nouveau message dans une conversation",
+        "summary": "Create a new message in a conversation",
         "parameters": [
           {
             "schema": {
@@ -5609,11 +5609,11 @@
                   "pattern": "^(?:conversation-)?\\d+$"
                 }
               ],
-              "description": "Identifiant (conversation-<id> ou entier)",
+              "description": "Id (conversation-<id> or integer)",
               "example": 201
             },
             "required": true,
-            "description": "Identifiant (conversation-<id> ou entier)",
+            "description": "Id (conversation-<id> or integer)",
             "name": "conversationId",
             "in": "path"
           }
@@ -5630,8 +5630,8 @@
                     "minLength": 1,
                     "maxLength": 5000,
                     "pattern": "^[^<>]*$",
-                    "description": "Contenu du message à envoyer",
-                    "example": "Bonjour à tous !"
+                    "description": "Content of the message to send",
+                    "example": "Hello everyone!"
                   },
                   "attachmentIds": {
                     "type": "array",
@@ -5646,7 +5646,7 @@
                           "pattern": "^(?:attachment-)?\\d+$"
                         }
                       ],
-                      "description": "Identifiant (attachment-<id> ou entier)",
+                      "description": "Id (attachment-<id> or integer)",
                       "example": 1
                     },
                     "maxItems": 0,
@@ -5665,24 +5665,24 @@
                           "pattern": "^(?:user-)?\\d+$"
                         }
                       ],
-                      "description": "Identifiant (user-<id> ou entier)",
+                      "description": "Id (user-<id> or integer)",
                       "example": 3
                     },
                     "maxItems": 100,
-                    "description": "Liste des identifiants des mentions dans le message"
+                    "description": "Ids of the mentions in the message"
                   }
                 },
                 "required": [
                   "content"
                 ],
-                "description": "Corps de la requête pour envoyer un message"
+                "description": "Request body to send a message"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Message créé avec succès",
+            "description": "Message created",
             "content": {
               "application/json": {
                 "schema": {
@@ -5700,7 +5700,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "conversationId": {
@@ -5712,17 +5712,17 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "content": {
                           "type": "string",
                           "description": "Contenu du message",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "sentAt": {
                           "type": "string",
-                          "description": "Date et heure d’envoi du message (format ISO)",
+                          "description": "Date and time the message was sent (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "authorId": {
@@ -5748,7 +5748,7 @@
                             "incoming",
                             "outgoing"
                           ],
-                          "description": "Direction du message, entrant ou sortant",
+                          "description": "Direction of the message, incoming or outgoing",
                           "example": "incoming"
                         },
                         "attachments": {
@@ -5765,28 +5765,28 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "name": {
                                 "type": "string",
-                                "description": "Nom de la pièce jointe",
+                                "description": "Name of the attachment",
                                 "example": "document.pdf"
                               },
                               "size": {
                                 "type": "integer",
-                                "description": "Taille de la pièce jointe en octets",
+                                "description": "Size of the attachment in bytes",
                                 "example": 102400
                               },
                               "type": {
                                 "type": "string",
-                                "description": "Type MIME de la pièce jointe",
+                                "description": "MIME type of the attachment",
                                 "example": "application/pdf"
                               },
                               "url": {
                                 "type": "string",
                                 "format": "uri",
-                                "description": "URL pour accéder à la pièce jointe",
+                                "description": "URL to reach the attachment",
                                 "example": "https://example.com/document.pdf"
                               }
                             },
@@ -5794,9 +5794,9 @@
                               "id",
                               "name"
                             ],
-                            "description": "Représentation d’une pièce jointe"
+                            "description": "An attachment"
                           },
-                          "description": "Liste des pièces jointes du message",
+                          "description": "Attachments of the message",
                           "example": []
                         },
                         "mentions": {
@@ -5813,7 +5813,7 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "name": {
@@ -5827,22 +5827,22 @@
                                   "direct",
                                   "group"
                                 ],
-                                "description": "Type de conversation associé à la mention",
+                                "description": "Type of conversation tied to the mention",
                                 "example": "direct"
                               },
                               "description": {
                                 "type": "string",
                                 "description": "Description de la mention",
-                                "example": "Mention d’un utilisateur dans un message"
+                                "example": "Mention of a user in a message"
                               }
                             },
                             "required": [
                               "id",
                               "name"
                             ],
-                            "description": "Représentation d’une mention"
+                            "description": "A mention"
                           },
-                          "description": "Liste des mentions dans le message",
+                          "description": "Mentions in the message",
                           "example": []
                         },
                         "citation": {
@@ -5869,7 +5869,7 @@
                                   "type": "number"
                                 }
                               ],
-                              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                              "description": "Unique id, either a string or a number",
                               "example": "12345"
                             },
                             "authorId": {
@@ -5892,7 +5892,7 @@
                             "excerpt": {
                               "type": "string",
                               "description": "First 100 characters of the quoted message",
-                              "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                              "example": "Any news about the building permit?"
                             }
                           },
                           "required": [
@@ -5908,7 +5908,7 @@
                         "content",
                         "sentAt"
                       ],
-                      "description": "Message envoyé"
+                      "description": "Sent message"
                     },
                     "conversation": {
                       "type": "object",
@@ -5922,7 +5922,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
@@ -5932,7 +5932,7 @@
                         },
                         "department": {
                           "type": "string",
-                          "description": "Département associé à la conversation",
+                          "description": "Department tied to the conversation",
                           "example": "Marketing"
                         },
                         "kind": {
@@ -5974,22 +5974,22 @@
                             "offline",
                             "away"
                           ],
-                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "description": "Presence of the user: online, offline or away",
                           "example": "online"
                         },
                         "lastMessage": {
                           "type": "string",
                           "description": "Dernier message de la conversation",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
                           "type": "string",
-                          "description": "Date et heure du dernier message (format ISO)",
+                          "description": "Date and time of the last message (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "unreadCount": {
                           "type": "integer",
-                          "description": "Nombre de messages non lus dans la conversation",
+                          "description": "Number of unread messages in the conversation",
                           "example": 5
                         },
                         "memberCount": {
@@ -6002,13 +6002,13 @@
                         "id",
                         "name"
                       ],
-                      "description": "Détails de la conversation associée au message envoyé"
+                      "description": "Details of the conversation of the sent message"
                     }
                   },
                   "required": [
                     "message"
                   ],
-                  "description": "Réponse contenant le message envoyé et les détails de la conversation associée"
+                  "description": "Response holding the sent message and the details of its conversation"
                 }
               }
             }
@@ -6081,7 +6081,7 @@
         "tags": [
           "Messages"
         ],
-        "summary": "Crée un nouveau message direct",
+        "summary": "Create a new direct message",
         "requestBody": {
           "required": true,
           "content": {
@@ -6100,7 +6100,7 @@
                         "pattern": "^(?:user-)?\\d+$"
                       }
                     ],
-                    "description": "Identifiant (user-<id> ou entier)",
+                    "description": "Id (user-<id> or integer)",
                     "example": 3
                   },
                   "message": {
@@ -6108,22 +6108,22 @@
                     "minLength": 1,
                     "maxLength": 5000,
                     "pattern": "^[^<>]*$",
-                    "description": "Contenu du message direct à envoyer",
-                    "example": "Salut ! Comment ça va ?"
+                    "description": "Content of the direct message to send",
+                    "example": "Hi! How are you?"
                   }
                 },
                 "required": [
                   "recipientId",
                   "message"
                 ],
-                "description": "Corps de la requête pour créer un nouveau message direct"
+                "description": "Request body to create a new direct message"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Message direct créé avec succès",
+            "description": "Direct message created",
             "content": {
               "application/json": {
                 "schema": {
@@ -6141,7 +6141,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "name": {
@@ -6151,7 +6151,7 @@
                         },
                         "department": {
                           "type": "string",
-                          "description": "Département associé à la conversation",
+                          "description": "Department tied to the conversation",
                           "example": "Marketing"
                         },
                         "kind": {
@@ -6193,22 +6193,22 @@
                             "offline",
                             "away"
                           ],
-                          "description": "Présence de l’utilisateur, en ligne, hors ligne ou absent",
+                          "description": "Presence of the user: online, offline or away",
                           "example": "online"
                         },
                         "lastMessage": {
                           "type": "string",
                           "description": "Dernier message de la conversation",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
                           "type": "string",
-                          "description": "Date et heure du dernier message (format ISO)",
+                          "description": "Date and time of the last message (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "unreadCount": {
                           "type": "integer",
-                          "description": "Nombre de messages non lus dans la conversation",
+                          "description": "Number of unread messages in the conversation",
                           "example": 5
                         },
                         "memberCount": {
@@ -6221,7 +6221,7 @@
                         "id",
                         "name"
                       ],
-                      "description": "Détails de la conversation directe créée"
+                      "description": "Details of the created direct conversation"
                     },
                     "message": {
                       "type": "object",
@@ -6235,7 +6235,7 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "conversationId": {
@@ -6247,17 +6247,17 @@
                               "type": "number"
                             }
                           ],
-                          "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                          "description": "Unique id, either a string or a number",
                           "example": "12345"
                         },
                         "content": {
                           "type": "string",
                           "description": "Contenu du message",
-                          "example": "Bonjour à tous !"
+                          "example": "Hello everyone!"
                         },
                         "sentAt": {
                           "type": "string",
-                          "description": "Date et heure d’envoi du message (format ISO)",
+                          "description": "Date and time the message was sent (ISO format)",
                           "example": "2026-06-23T12:32:00Z"
                         },
                         "authorId": {
@@ -6283,7 +6283,7 @@
                             "incoming",
                             "outgoing"
                           ],
-                          "description": "Direction du message, entrant ou sortant",
+                          "description": "Direction of the message, incoming or outgoing",
                           "example": "incoming"
                         },
                         "attachments": {
@@ -6300,28 +6300,28 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "name": {
                                 "type": "string",
-                                "description": "Nom de la pièce jointe",
+                                "description": "Name of the attachment",
                                 "example": "document.pdf"
                               },
                               "size": {
                                 "type": "integer",
-                                "description": "Taille de la pièce jointe en octets",
+                                "description": "Size of the attachment in bytes",
                                 "example": 102400
                               },
                               "type": {
                                 "type": "string",
-                                "description": "Type MIME de la pièce jointe",
+                                "description": "MIME type of the attachment",
                                 "example": "application/pdf"
                               },
                               "url": {
                                 "type": "string",
                                 "format": "uri",
-                                "description": "URL pour accéder à la pièce jointe",
+                                "description": "URL to reach the attachment",
                                 "example": "https://example.com/document.pdf"
                               }
                             },
@@ -6329,9 +6329,9 @@
                               "id",
                               "name"
                             ],
-                            "description": "Représentation d’une pièce jointe"
+                            "description": "An attachment"
                           },
-                          "description": "Liste des pièces jointes du message",
+                          "description": "Attachments of the message",
                           "example": []
                         },
                         "mentions": {
@@ -6348,7 +6348,7 @@
                                     "type": "number"
                                   }
                                 ],
-                                "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                                "description": "Unique id, either a string or a number",
                                 "example": "12345"
                               },
                               "name": {
@@ -6362,22 +6362,22 @@
                                   "direct",
                                   "group"
                                 ],
-                                "description": "Type de conversation associé à la mention",
+                                "description": "Type of conversation tied to the mention",
                                 "example": "direct"
                               },
                               "description": {
                                 "type": "string",
                                 "description": "Description de la mention",
-                                "example": "Mention d’un utilisateur dans un message"
+                                "example": "Mention of a user in a message"
                               }
                             },
                             "required": [
                               "id",
                               "name"
                             ],
-                            "description": "Représentation d’une mention"
+                            "description": "A mention"
                           },
-                          "description": "Liste des mentions dans le message",
+                          "description": "Mentions in the message",
                           "example": []
                         },
                         "citation": {
@@ -6404,7 +6404,7 @@
                                   "type": "number"
                                 }
                               ],
-                              "description": "Identifiant unique, peut être une chaîne ou un nombre",
+                              "description": "Unique id, either a string or a number",
                               "example": "12345"
                             },
                             "authorId": {
@@ -6427,7 +6427,7 @@
                             "excerpt": {
                               "type": "string",
                               "description": "First 100 characters of the quoted message",
-                              "example": "Quelqu’un a des nouvelles du permis de construire ?"
+                              "example": "Any news about the building permit?"
                             }
                           },
                           "required": [
@@ -6443,14 +6443,14 @@
                         "content",
                         "sentAt"
                       ],
-                      "description": "Message direct envoyé"
+                      "description": "Sent direct message"
                     }
                   },
                   "required": [
                     "conversation",
                     "message"
                   ],
-                  "description": "Réponse contenant les détails de la conversation directe créée et le message envoyé"
+                  "description": "Response holding the details of the created direct conversation and the sent message"
                 }
               }
             }

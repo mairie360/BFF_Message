@@ -28,7 +28,7 @@ registry.registerPath({
     method: 'get',
     path: '/conversations',
     tags: ['Conversations'],
-    summary: 'Récupère la liste des conversations de l’utilisateur actuel',
+    summary: 'List the conversations of the current user',
     description: 'One page of the caller\'s conversations, newest first (`limit` 1 to 30, default 20; pass `nextCursor` as '
         + '`cursor` for the next page), read with ONE Message API call. Each conversation carries what the list displays: '
         + 'its name (the other participant\'s name for a direct conversation), kind, contact id, member count and unread '
@@ -41,7 +41,7 @@ registry.registerPath({
     },
     responses: {
         200: {
-            description: 'Liste des conversations de l’utilisateur actuel',
+            description: 'Conversations of the current user',
             content: {
                 'application/json': {
                     schema: ConversationsResponse,
@@ -95,13 +95,13 @@ registry.registerPath({
     method: 'delete',
     path: '/conversations/{conversationId}',
     tags: ['Conversations'],
-    summary: 'Supprime une conversation',
+    summary: 'Delete a conversation',
     request: {
         params: DeletedConversationIdParams,
     },
     responses: {
         200: {
-            description: 'Conversation supprimée avec succès',
+            description: 'Conversation deleted',
             content: {
                 'application/json': {
                     schema: DeleteConversationResponse,

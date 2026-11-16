@@ -24,7 +24,7 @@ registry.registerPath({
     method: 'get',
     path: '/conversations/{conversationId}/messages',
     tags: ['Messages'],
-    summary: 'Récupère la liste des messages d’une conversation',
+    summary: 'List the messages of a conversation',
     description: 'One page of messages, oldest first (`limit` 1 to 100, default 30), with the conversation: `nextCursor` goes in '
         + '`before` for the older page. The whole history is never read. The author names come from the members of the '
         + 'conversation (one Message API call, no Core API call); `GET /conversations/{conversationId}` returns them with the first page.',
@@ -34,7 +34,7 @@ registry.registerPath({
     },
     responses: {
         200: {
-            description: 'Liste des messages de la conversation',
+            description: 'Messages of the conversation',
             content: {
                 'application/json': {
                     schema: MessagesResponse,
@@ -55,7 +55,7 @@ registry.registerPath({
     method: 'post',
     path: '/conversations/{conversationId}/messages',
     tags: ['Messages'],
-    summary: 'Crée un nouveau message dans une conversation',
+    summary: 'Create a new message in a conversation',
     request: {
         params: WrittenConversationIdParams,
         body: {
@@ -69,7 +69,7 @@ registry.registerPath({
     },
     responses: {
         201: {
-            description: 'Message créé avec succès',
+            description: 'Message created',
             content: {
                 'application/json': {
                     schema: SendMessageResponse,
@@ -90,7 +90,7 @@ registry.registerPath({
     method: 'post',
     path: '/direct-messages',
     tags: ['Messages'],
-    summary: 'Crée un nouveau message direct',
+    summary: 'Create a new direct message',
     request: {
         body: {
             required: true,
@@ -103,7 +103,7 @@ registry.registerPath({
     },
     responses: {
         201: {
-            description: 'Message direct créé avec succès',
+            description: 'Direct message created',
             content: {
                 'application/json': {
                     schema: NewDirectMessageResponse,

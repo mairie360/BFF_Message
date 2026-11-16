@@ -14,13 +14,13 @@ registry.registerPath({
     method: 'get',
     path: '/contacts',
     tags: ['Contacts'],
-    summary: 'Récupère la liste des contacts',
+    summary: 'List the contacts',
     request: {
         query: ContactsQuery,
     },
     responses: {
         200: {
-            description: 'Liste des contacts',
+            description: 'Contacts',
             content: {
                 'application/json': {
                     schema: ContactsResponse,
