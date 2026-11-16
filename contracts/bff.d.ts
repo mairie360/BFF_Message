@@ -93,6 +93,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List the projects, tasks and events a message can refer to */
         get: {
             parameters: {
                 query?: never;

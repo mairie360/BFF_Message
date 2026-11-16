@@ -2938,6 +2938,7 @@
     },
     "/business-references": {
       "get": {
+        "summary": "List the projects, tasks and events a message can refer to",
         "responses": {
           "200": {
             "description": "References read from Project API and Calendar API (never another BFF)",
