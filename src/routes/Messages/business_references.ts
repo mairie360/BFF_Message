@@ -12,7 +12,7 @@ export const BusinessReferencesSchema = registry.register('BusinessReferencesRes
   references: z.array(z.object({ id: z.string(), title: z.string(), kind: z.enum(['project', 'task', 'event']), description: z.string().optional() })),
   sources: z.object({ projects: z.enum(['available', 'unavailable']), calendar: z.enum(['available', 'unavailable']) }),
 }));
-registry.registerPath({ method: 'get', path: '/business-references', responses: {
+registry.registerPath({ method: 'get', path: '/business-references', summary: 'List the projects, tasks and events a message can refer to', responses: {
   200: { description: 'References read from Project API and Calendar API (never another BFF)', content: { 'application/json': { schema: BusinessReferencesSchema } } },
   ...errorResponses({
     401: 'Missing session',

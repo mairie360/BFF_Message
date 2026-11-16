@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Vérifie la santé du BFF */
+        /** Check the health of the BFF */
         get: {
             parameters: {
                 query?: never;
@@ -93,6 +93,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List the projects, tasks and events a message can refer to */
         get: {
             parameters: {
                 query?: never;
@@ -222,7 +223,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Récupère les informations de démarrage pour l’utilisateur actuel */
+        /** Get the startup data of the current user */
         get: {
             parameters: {
                 query?: never;
@@ -232,7 +233,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Informations de démarrage pour l’utilisateur actuel */
+                /** @description Startup data of the current user */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -241,53 +242,53 @@ export interface paths {
                         "application/json": {
                             contacts: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom du contact
+                                 * @description Name of the contact
                                  * @example Alice Dupont
                                  */
                                 name: string;
                                 /**
                                  * Format: email
-                                 * @description Adresse email du contact
+                                 * @description Email address of the contact
                                  * @example alice.dupont@mairie360.fr
                                  */
                                 email?: string;
                                 /**
-                                 * @description Département associé au contact
+                                 * @description Department of the contact
                                  * @example Marketing
                                  */
                                 department?: string;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar du contact
+                                 * @description Avatar URL of the contact
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales du contact
+                                 * @description Initials of the contact
                                  * @example AD
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence du contact, en ligne, hors ligne ou absent
+                                 * @description Presence of the contact: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                             }[];
-                            /** @description Utilisateur actuellement connecté */
+                            /** @description Currently signed-in user */
                             currentUser: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom complet de l’utilisateur actuel
+                                 * @description Full name of the current user
                                  * @example Alice Dupont
                                  */
                                 name: string;
@@ -305,17 +306,17 @@ export interface paths {
                             };
                             conversations: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -332,33 +333,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -369,28 +370,28 @@ export interface paths {
                                 memberCount?: number;
                             }[];
                             /**
-                             * @description Identifiant unique, peut être une chaîne ou un nombre
+                             * @description Unique id, either a string or a number
                              * @example 12345
                              */
                             activeConversationId?: string | number;
                             messages: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
-                                 * @example Bonjour à tous !
+                                 * @description Content of the message
+                                 * @example Hello everyone!
                                  */
                                 content: string;
                                 /**
-                                 * @description Date et heure d’envoi du message (format ISO)
+                                 * @description Date and time the message was sent (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 sentAt: string;
@@ -400,72 +401,72 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
                                 /**
-                                 * @description Direction du message, entrant ou sortant
+                                 * @description Direction of the message, incoming or outgoing
                                  * @example incoming
                                  * @enum {string}
                                  */
                                 direction?: "incoming" | "outgoing";
                                 /**
-                                 * @description Liste des pièces jointes du message
+                                 * @description Attachments of the message
                                  * @example []
                                  */
                                 attachments?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la pièce jointe
+                                     * @description Name of the attachment
                                      * @example document.pdf
                                      */
                                     name: string;
                                     /**
-                                     * @description Taille de la pièce jointe en octets
+                                     * @description Size of the attachment in bytes
                                      * @example 102400
                                      */
                                     size?: number;
                                     /**
-                                     * @description Type MIME de la pièce jointe
+                                     * @description MIME type of the attachment
                                      * @example application/pdf
                                      */
                                     type?: string;
                                     /**
                                      * Format: uri
-                                     * @description URL pour accéder à la pièce jointe
+                                     * @description URL to reach the attachment
                                      * @example https://example.com/document.pdf
                                      */
                                     url?: string;
                                 }[];
                                 /**
-                                 * @description Liste des mentions dans le message
+                                 * @description Mentions in the message
                                  * @example []
                                  */
                                 mentions?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
                                     /**
-                                     * @description Type de conversation associé à la mention
+                                     * @description Type of conversation tied to the mention
                                      * @example direct
                                      * @enum {string}
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
-                                     * @example Mention d’un utilisateur dans un message
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
                                      */
                                     description?: string;
                                 }[];
@@ -477,7 +478,7 @@ export interface paths {
                                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                                 quoted?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
@@ -493,7 +494,7 @@ export interface paths {
                                     authorName?: string;
                                     /**
                                      * @description First 100 characters of the quoted message
-                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     * @example Any news about the building permit?
                                      */
                                     excerpt: string;
                                 };
@@ -554,13 +555,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Récupère la liste des contacts */
+        /** List the contacts */
         get: {
             parameters: {
                 query?: {
                     /** @description Search term filtering the contacts (no control characters) */
                     search?: string;
-                    /** @description Nombre maximum de contacts à retourner */
+                    /** @description Maximum number of contacts to return */
                     limit?: number;
                 };
                 header?: never;
@@ -569,49 +570,49 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Liste des contacts */
+                /** @description Contacts */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Liste des contacts */
+                            /** @description Contacts */
                             contacts: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom du contact
+                                 * @description Name of the contact
                                  * @example Alice Dupont
                                  */
                                 name: string;
                                 /**
                                  * Format: email
-                                 * @description Adresse email du contact
+                                 * @description Email address of the contact
                                  * @example alice.dupont@mairie360.fr
                                  */
                                 email?: string;
                                 /**
-                                 * @description Département associé au contact
+                                 * @description Department of the contact
                                  * @example Marketing
                                  */
                                 department?: string;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar du contact
+                                 * @description Avatar URL of the contact
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales du contact
+                                 * @description Initials of the contact
                                  * @example AD
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence du contact, en ligne, hors ligne ou absent
+                                 * @description Presence of the contact: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
@@ -683,7 +684,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Récupère la liste des conversations de l’utilisateur actuel
+         * List the conversations of the current user
          * @description One page of the caller's conversations, newest first (`limit` 1 to 30, default 20; pass `nextCursor` as `cursor` for the next page), read with ONE Message API call. Each conversation carries what the list displays: its name (the other participant's name for a direct conversation), kind, contact id, member count and unread counter. The members and their names come with `GET /conversations/{conversationId}`. `search` keeps the conversations whose name contains the text, or in which another member's name does ("autoroute" finds "Projet autoroute", "Xavier Bertrand" finds the direct conversation with him and the groups he belongs to); the pagination applies to the filtered list.
          */
         get: {
@@ -702,27 +703,27 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Liste des conversations de l’utilisateur actuel */
+                /** @description Conversations of the current user */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Liste des conversations */
+                            /** @description Conversations */
                             conversations: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -739,33 +740,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -859,7 +860,7 @@ export interface paths {
                 };
                 header?: never;
                 path: {
-                    /** @description Identifiant (conversation-<id> ou entier) */
+                    /** @description Id (conversation-<id> or integer) */
                     conversationId: number | string;
                 };
                 cookie?: never;
@@ -876,17 +877,17 @@ export interface paths {
                             /** @description The conversation: name to display, kind, contact, member count, unread counter */
                             conversation: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -903,33 +904,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -942,39 +943,39 @@ export interface paths {
                             /** @description The members of the conversation, the caller included, with their names */
                             participants: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom du contact
+                                 * @description Name of the contact
                                  * @example Alice Dupont
                                  */
                                 name: string;
                                 /**
                                  * Format: email
-                                 * @description Adresse email du contact
+                                 * @description Email address of the contact
                                  * @example alice.dupont@mairie360.fr
                                  */
                                 email?: string;
                                 /**
-                                 * @description Département associé au contact
+                                 * @description Department of the contact
                                  * @example Marketing
                                  */
                                 department?: string;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar du contact
+                                 * @description Avatar URL of the contact
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales du contact
+                                 * @description Initials of the contact
                                  * @example AD
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence du contact, en ligne, hors ligne ou absent
+                                 * @description Presence of the contact: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
@@ -983,22 +984,22 @@ export interface paths {
                             /** @description One page of messages, oldest first, with the sender id and the quoted message */
                             messages: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
-                                 * @example Bonjour à tous !
+                                 * @description Content of the message
+                                 * @example Hello everyone!
                                  */
                                 content: string;
                                 /**
-                                 * @description Date et heure d’envoi du message (format ISO)
+                                 * @description Date and time the message was sent (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 sentAt: string;
@@ -1008,72 +1009,72 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
                                 /**
-                                 * @description Direction du message, entrant ou sortant
+                                 * @description Direction of the message, incoming or outgoing
                                  * @example incoming
                                  * @enum {string}
                                  */
                                 direction?: "incoming" | "outgoing";
                                 /**
-                                 * @description Liste des pièces jointes du message
+                                 * @description Attachments of the message
                                  * @example []
                                  */
                                 attachments?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la pièce jointe
+                                     * @description Name of the attachment
                                      * @example document.pdf
                                      */
                                     name: string;
                                     /**
-                                     * @description Taille de la pièce jointe en octets
+                                     * @description Size of the attachment in bytes
                                      * @example 102400
                                      */
                                     size?: number;
                                     /**
-                                     * @description Type MIME de la pièce jointe
+                                     * @description MIME type of the attachment
                                      * @example application/pdf
                                      */
                                     type?: string;
                                     /**
                                      * Format: uri
-                                     * @description URL pour accéder à la pièce jointe
+                                     * @description URL to reach the attachment
                                      * @example https://example.com/document.pdf
                                      */
                                     url?: string;
                                 }[];
                                 /**
-                                 * @description Liste des mentions dans le message
+                                 * @description Mentions in the message
                                  * @example []
                                  */
                                 mentions?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
                                     /**
-                                     * @description Type de conversation associé à la mention
+                                     * @description Type of conversation tied to the mention
                                      * @example direct
                                      * @enum {string}
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
-                                     * @example Mention d’un utilisateur dans un message
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
                                      */
                                     description?: string;
                                 }[];
@@ -1085,7 +1086,7 @@ export interface paths {
                                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                                 quoted?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
@@ -1101,7 +1102,7 @@ export interface paths {
                                     authorName?: string;
                                     /**
                                      * @description First 100 characters of the quoted message
-                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     * @example Any news about the building permit?
                                      */
                                     excerpt: string;
                                 };
@@ -1177,20 +1178,20 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /** Supprime une conversation */
+        /** Delete a conversation */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Identifiant (conversation-<id> ou entier) */
+                    /** @description Id (conversation-<id> or integer) */
                     conversationId: number | string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Conversation supprimée avec succès */
+                /** @description Conversation deleted */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1198,13 +1199,13 @@ export interface paths {
                     content: {
                         "application/json": {
                             /**
-                             * @description Indique si la conversation a été supprimée avec succès
+                             * @description Whether the conversation was deleted
                              * @example true
                              * @enum {boolean}
                              */
                             deleted: true;
                             /**
-                             * @description Identifiant de la conversation supprimée
+                             * @description Id of the deleted conversation
                              * @example 12345
                              */
                             conversationId?: string | number;
@@ -1299,7 +1300,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Identifiant (conversation-<id> ou entier) */
+                    /** @description Id (conversation-<id> or integer) */
                     conversationId: number | string;
                 };
                 cookie?: never;
@@ -1324,12 +1325,12 @@ export interface paths {
                     content: {
                         "application/json": {
                             /**
-                             * @description Identifiant de la conversation marquée comme lue
+                             * @description Id of the conversation marked as read
                              * @example 12345
                              */
                             conversationId: string | number;
                             /**
-                             * @description Nombre de messages non lus restant dans la conversation après la mise à jour
+                             * @description Number of unread messages left in the conversation after the update
                              * @example 0
                              */
                             unreadCount: number;
@@ -1416,7 +1417,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Crée un nouveau groupe */
+        /** Create a new group */
         post: {
             parameters: {
                 query?: never;
@@ -1428,42 +1429,42 @@ export interface paths {
                 content: {
                     "application/json": {
                         /**
-                         * @description Nom du groupe à créer
+                         * @description Name of the group to create
                          * @example Marketing team
                          */
                         name: string;
                         /**
-                         * @description Description du groupe à créer
+                         * @description Description of the group to create
                          * @example Group of the marketing team
                          */
                         description?: string;
-                        /** @description Liste des identifiants des membres à ajouter au groupe */
+                        /** @description Ids of the members to add to the group */
                         memberIds: (number | string)[];
                     };
                 };
             };
             responses: {
-                /** @description Groupe créé avec succès */
+                /** @description Group created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Détails du groupe créé */
+                            /** @description Details of the created group */
                             conversation: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -1480,33 +1481,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -1579,7 +1580,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Récupère le profil de l’utilisateur actuel */
+        /** Get the profile of the current user */
         get: {
             parameters: {
                 query?: never;
@@ -1589,22 +1590,22 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Profil utilisateur actuel */
+                /** @description Profile of the current user */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Utilisateur actuellement connecté */
+                            /** @description Currently signed-in user */
                             currentUser: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom complet de l’utilisateur actuel
+                                 * @description Full name of the current user
                                  * @example Alice Dupont
                                  */
                                 name: string;
@@ -1677,7 +1678,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Récupère la liste des messages d’une conversation
+         * List the messages of a conversation
          * @description One page of messages, oldest first (`limit` 1 to 100, default 30), with the conversation: `nextCursor` goes in `before` for the older page. The whole history is never read. The author names come from the members of the conversation (one Message API call, no Core API call); `GET /conversations/{conversationId}` returns them with the first page.
          */
         get: {
@@ -1690,34 +1691,34 @@ export interface paths {
                 };
                 header?: never;
                 path: {
-                    /** @description Identifiant (conversation-<id> ou entier) */
+                    /** @description Id (conversation-<id> or integer) */
                     conversationId: number | string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Liste des messages de la conversation */
+                /** @description Messages of the conversation */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Détails de la conversation associée aux messages */
+                            /** @description Details of the conversation of the messages */
                             conversation: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -1734,33 +1735,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -1770,25 +1771,25 @@ export interface paths {
                                  */
                                 memberCount?: number;
                             };
-                            /** @description Liste des messages */
+                            /** @description Messages */
                             messages: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
-                                 * @example Bonjour à tous !
+                                 * @description Content of the message
+                                 * @example Hello everyone!
                                  */
                                 content: string;
                                 /**
-                                 * @description Date et heure d’envoi du message (format ISO)
+                                 * @description Date and time the message was sent (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 sentAt: string;
@@ -1798,72 +1799,72 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
                                 /**
-                                 * @description Direction du message, entrant ou sortant
+                                 * @description Direction of the message, incoming or outgoing
                                  * @example incoming
                                  * @enum {string}
                                  */
                                 direction?: "incoming" | "outgoing";
                                 /**
-                                 * @description Liste des pièces jointes du message
+                                 * @description Attachments of the message
                                  * @example []
                                  */
                                 attachments?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la pièce jointe
+                                     * @description Name of the attachment
                                      * @example document.pdf
                                      */
                                     name: string;
                                     /**
-                                     * @description Taille de la pièce jointe en octets
+                                     * @description Size of the attachment in bytes
                                      * @example 102400
                                      */
                                     size?: number;
                                     /**
-                                     * @description Type MIME de la pièce jointe
+                                     * @description MIME type of the attachment
                                      * @example application/pdf
                                      */
                                     type?: string;
                                     /**
                                      * Format: uri
-                                     * @description URL pour accéder à la pièce jointe
+                                     * @description URL to reach the attachment
                                      * @example https://example.com/document.pdf
                                      */
                                     url?: string;
                                 }[];
                                 /**
-                                 * @description Liste des mentions dans le message
+                                 * @description Mentions in the message
                                  * @example []
                                  */
                                 mentions?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
                                     /**
-                                     * @description Type de conversation associé à la mention
+                                     * @description Type of conversation tied to the mention
                                      * @example direct
                                      * @enum {string}
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
-                                     * @example Mention d’un utilisateur dans un message
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
                                      */
                                     description?: string;
                                 }[];
@@ -1875,7 +1876,7 @@ export interface paths {
                                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                                 quoted?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
@@ -1891,7 +1892,7 @@ export interface paths {
                                     authorName?: string;
                                     /**
                                      * @description First 100 characters of the quoted message
-                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     * @example Any news about the building permit?
                                      */
                                     excerpt: string;
                                 };
@@ -1966,13 +1967,13 @@ export interface paths {
             };
         };
         put?: never;
-        /** Crée un nouveau message dans une conversation */
+        /** Create a new message in a conversation */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Identifiant (conversation-<id> ou entier) */
+                    /** @description Id (conversation-<id> or integer) */
                     conversationId: number | string;
                 };
                 cookie?: never;
@@ -1981,44 +1982,44 @@ export interface paths {
                 content: {
                     "application/json": {
                         /**
-                         * @description Contenu du message à envoyer
-                         * @example Bonjour à tous !
+                         * @description Content of the message to send
+                         * @example Hello everyone!
                          */
                         content: string;
                         /** @description Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped. */
                         attachmentIds?: (number | string)[];
-                        /** @description Liste des identifiants des mentions dans le message */
+                        /** @description Ids of the mentions in the message */
                         mentionIds?: (number | string)[];
                     };
                 };
             };
             responses: {
-                /** @description Message créé avec succès */
+                /** @description Message created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Message envoyé */
+                            /** @description Sent message */
                             message: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
-                                 * @example Bonjour à tous !
+                                 * @description Content of the message
+                                 * @example Hello everyone!
                                  */
                                 content: string;
                                 /**
-                                 * @description Date et heure d’envoi du message (format ISO)
+                                 * @description Date and time the message was sent (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 sentAt: string;
@@ -2028,72 +2029,72 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
                                 /**
-                                 * @description Direction du message, entrant ou sortant
+                                 * @description Direction of the message, incoming or outgoing
                                  * @example incoming
                                  * @enum {string}
                                  */
                                 direction?: "incoming" | "outgoing";
                                 /**
-                                 * @description Liste des pièces jointes du message
+                                 * @description Attachments of the message
                                  * @example []
                                  */
                                 attachments?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la pièce jointe
+                                     * @description Name of the attachment
                                      * @example document.pdf
                                      */
                                     name: string;
                                     /**
-                                     * @description Taille de la pièce jointe en octets
+                                     * @description Size of the attachment in bytes
                                      * @example 102400
                                      */
                                     size?: number;
                                     /**
-                                     * @description Type MIME de la pièce jointe
+                                     * @description MIME type of the attachment
                                      * @example application/pdf
                                      */
                                     type?: string;
                                     /**
                                      * Format: uri
-                                     * @description URL pour accéder à la pièce jointe
+                                     * @description URL to reach the attachment
                                      * @example https://example.com/document.pdf
                                      */
                                     url?: string;
                                 }[];
                                 /**
-                                 * @description Liste des mentions dans le message
+                                 * @description Mentions in the message
                                  * @example []
                                  */
                                 mentions?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
                                     /**
-                                     * @description Type de conversation associé à la mention
+                                     * @description Type of conversation tied to the mention
                                      * @example direct
                                      * @enum {string}
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
-                                     * @example Mention d’un utilisateur dans un message
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
                                      */
                                     description?: string;
                                 }[];
@@ -2105,7 +2106,7 @@ export interface paths {
                                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                                 quoted?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
@@ -2121,25 +2122,25 @@ export interface paths {
                                     authorName?: string;
                                     /**
                                      * @description First 100 characters of the quoted message
-                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     * @example Any news about the building permit?
                                      */
                                     excerpt: string;
                                 };
                             };
-                            /** @description Détails de la conversation associée au message envoyé */
+                            /** @description Details of the conversation of the sent message */
                             conversation?: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -2156,33 +2157,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -2266,7 +2267,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Crée un nouveau message direct */
+        /** Create a new direct message */
         post: {
             parameters: {
                 query?: never;
@@ -2278,40 +2279,40 @@ export interface paths {
                 content: {
                     "application/json": {
                         /**
-                         * @description Identifiant (user-<id> ou entier)
+                         * @description Id (user-<id> or integer)
                          * @example 3
                          */
                         recipientId: number | string;
                         /**
-                         * @description Contenu du message direct à envoyer
-                         * @example Salut ! Comment ça va ?
+                         * @description Content of the direct message to send
+                         * @example Hi! How are you?
                          */
                         message: string;
                     };
                 };
             };
             responses: {
-                /** @description Message direct créé avec succès */
+                /** @description Direct message created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            /** @description Détails de la conversation directe créée */
+                            /** @description Details of the created direct conversation */
                             conversation: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
                                 /**
-                                 * @description Département associé à la conversation
+                                 * @description Department tied to the conversation
                                  * @example Marketing
                                  */
                                 department?: string;
@@ -2328,33 +2329,33 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
                                 /**
-                                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                                 * @description Presence of the user: online, offline or away
                                  * @example online
                                  * @enum {string}
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
-                                 * @example Bonjour à tous !
+                                 * @description Last message of the conversation
+                                 * @example Hello everyone!
                                  */
                                 lastMessage?: string;
                                 /**
-                                 * @description Date et heure du dernier message (format ISO)
+                                 * @description Date and time of the last message (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 lastMessageAt?: string;
                                 /**
-                                 * @description Nombre de messages non lus dans la conversation
+                                 * @description Number of unread messages in the conversation
                                  * @example 5
                                  */
                                 unreadCount?: number;
@@ -2364,25 +2365,25 @@ export interface paths {
                                  */
                                 memberCount?: number;
                             };
-                            /** @description Message direct envoyé */
+                            /** @description Sent direct message */
                             message: {
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                                 * @description Unique id, either a string or a number
                                  * @example 12345
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
-                                 * @example Bonjour à tous !
+                                 * @description Content of the message
+                                 * @example Hello everyone!
                                  */
                                 content: string;
                                 /**
-                                 * @description Date et heure d’envoi du message (format ISO)
+                                 * @description Date and time the message was sent (ISO format)
                                  * @example 2026-06-23T12:32:00Z
                                  */
                                 sentAt: string;
@@ -2392,72 +2393,72 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
                                 /**
-                                 * @description Direction du message, entrant ou sortant
+                                 * @description Direction of the message, incoming or outgoing
                                  * @example incoming
                                  * @enum {string}
                                  */
                                 direction?: "incoming" | "outgoing";
                                 /**
-                                 * @description Liste des pièces jointes du message
+                                 * @description Attachments of the message
                                  * @example []
                                  */
                                 attachments?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la pièce jointe
+                                     * @description Name of the attachment
                                      * @example document.pdf
                                      */
                                     name: string;
                                     /**
-                                     * @description Taille de la pièce jointe en octets
+                                     * @description Size of the attachment in bytes
                                      * @example 102400
                                      */
                                     size?: number;
                                     /**
-                                     * @description Type MIME de la pièce jointe
+                                     * @description MIME type of the attachment
                                      * @example application/pdf
                                      */
                                     type?: string;
                                     /**
                                      * Format: uri
-                                     * @description URL pour accéder à la pièce jointe
+                                     * @description URL to reach the attachment
                                      * @example https://example.com/document.pdf
                                      */
                                     url?: string;
                                 }[];
                                 /**
-                                 * @description Liste des mentions dans le message
+                                 * @description Mentions in the message
                                  * @example []
                                  */
                                 mentions?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
                                     /**
-                                     * @description Type de conversation associé à la mention
+                                     * @description Type of conversation tied to the mention
                                      * @example direct
                                      * @enum {string}
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
-                                     * @example Mention d’un utilisateur dans un message
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
                                      */
                                     description?: string;
                                 }[];
@@ -2469,7 +2470,7 @@ export interface paths {
                                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                                 quoted?: {
                                     /**
-                                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                                     * @description Unique id, either a string or a number
                                      * @example 12345
                                      */
                                     id: string | number;
@@ -2485,7 +2486,7 @@ export interface paths {
                                     authorName?: string;
                                     /**
                                      * @description First 100 characters of the quoted message
-                                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                                     * @example Any news about the building permit?
                                      */
                                     excerpt: string;
                                 };
@@ -2619,19 +2620,19 @@ export interface components {
             };
         };
         /**
-         * @description Identifiant unique, peut être une chaîne ou un nombre
+         * @description Unique id, either a string or a number
          * @example 12345
          */
         IdSchema: string | number;
-        /** @description Utilisateur actuellement connecté */
+        /** @description Currently signed-in user */
         CurrentUserDtoSchema: {
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             id: string | number;
             /**
-             * @description Nom complet de l’utilisateur actuel
+             * @description Full name of the current user
              * @example Alice Dupont
              */
             name: string;
@@ -2647,61 +2648,61 @@ export interface components {
             city?: string;
             lastConnection?: string;
         };
-        /** @description Représentation d’un contact */
+        /** @description A contact */
         ContactDtoSchema: {
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             id: string | number;
             /**
-             * @description Nom du contact
+             * @description Name of the contact
              * @example Alice Dupont
              */
             name: string;
             /**
              * Format: email
-             * @description Adresse email du contact
+             * @description Email address of the contact
              * @example alice.dupont@mairie360.fr
              */
             email?: string;
             /**
-             * @description Département associé au contact
+             * @description Department of the contact
              * @example Marketing
              */
             department?: string;
             /**
              * Format: uri
-             * @description URL de l’avatar du contact
+             * @description Avatar URL of the contact
              * @example https://example.com/avatar.png
              */
             avatarUrl?: string;
             /**
-             * @description Initiales du contact
+             * @description Initials of the contact
              * @example AD
              */
             initials?: string;
             /**
-             * @description Présence du contact, en ligne, hors ligne ou absent
+             * @description Presence of the contact: online, offline or away
              * @example online
              * @enum {string}
              */
             presence?: "online" | "offline" | "away";
         };
-        /** @description Représentation d’une conversation */
+        /** @description A conversation */
         ConversationDtoSchema: {
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             id: string | number;
             /**
-             * @description Nom de la conversation
+             * @description Name of the conversation
              * @example Discussion de groupe
              */
             name: string;
             /**
-             * @description Département associé à la conversation
+             * @description Department tied to the conversation
              * @example Marketing
              */
             department?: string;
@@ -2718,33 +2719,33 @@ export interface components {
             contactId?: string | number;
             /**
              * Format: uri
-             * @description URL de l’avatar de la conversation
+             * @description Avatar URL of the conversation
              * @example https://example.com/avatar.png
              */
             avatarUrl?: string;
             /**
-             * @description Initiales de la conversation
+             * @description Initials of the conversation
              * @example DG
              */
             initials?: string;
             /**
-             * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+             * @description Presence of the user: online, offline or away
              * @example online
              * @enum {string}
              */
             presence?: "online" | "offline" | "away";
             /**
-             * @description Dernier message de la conversation
-             * @example Bonjour à tous !
+             * @description Last message of the conversation
+             * @example Hello everyone!
              */
             lastMessage?: string;
             /**
-             * @description Date et heure du dernier message (format ISO)
+             * @description Date and time of the last message (ISO format)
              * @example 2026-06-23T12:32:00Z
              */
             lastMessageAt?: string;
             /**
-             * @description Nombre de messages non lus dans la conversation
+             * @description Number of unread messages in the conversation
              * @example 5
              */
             unreadCount?: number;
@@ -2754,25 +2755,25 @@ export interface components {
              */
             memberCount?: number;
         };
-        /** @description Représentation d’un message */
+        /** @description A message */
         MessageDtoSchema: {
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             id: string | number;
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             conversationId: string | number;
             /**
-             * @description Contenu du message
-             * @example Bonjour à tous !
+             * @description Content of the message
+             * @example Hello everyone!
              */
             content: string;
             /**
-             * @description Date et heure d’envoi du message (format ISO)
+             * @description Date and time the message was sent (ISO format)
              * @example 2026-06-23T12:32:00Z
              */
             sentAt: string;
@@ -2782,72 +2783,72 @@ export interface components {
              */
             authorId?: string | number;
             /**
-             * @description Nom de l’auteur du message
+             * @description Name of the author of the message
              * @example Alice Dupont
              */
             authorName?: string;
             /**
-             * @description Direction du message, entrant ou sortant
+             * @description Direction of the message, incoming or outgoing
              * @example incoming
              * @enum {string}
              */
             direction?: "incoming" | "outgoing";
             /**
-             * @description Liste des pièces jointes du message
+             * @description Attachments of the message
              * @example []
              */
             attachments?: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la pièce jointe
+                 * @description Name of the attachment
                  * @example document.pdf
                  */
                 name: string;
                 /**
-                 * @description Taille de la pièce jointe en octets
+                 * @description Size of the attachment in bytes
                  * @example 102400
                  */
                 size?: number;
                 /**
-                 * @description Type MIME de la pièce jointe
+                 * @description MIME type of the attachment
                  * @example application/pdf
                  */
                 type?: string;
                 /**
                  * Format: uri
-                 * @description URL pour accéder à la pièce jointe
+                 * @description URL to reach the attachment
                  * @example https://example.com/document.pdf
                  */
                 url?: string;
             }[];
             /**
-             * @description Liste des mentions dans le message
+             * @description Mentions in the message
              * @example []
              */
             mentions?: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la mention
+                 * @description Name of the mention
                  * @example Alice Dupont
                  */
                 name: string;
                 /**
-                 * @description Type de conversation associé à la mention
+                 * @description Type of conversation tied to the mention
                  * @example direct
                  * @enum {string}
                  */
                 kind?: "direct" | "group";
                 /**
-                 * @description Description de la mention
-                 * @example Mention d’un utilisateur dans un message
+                 * @description Description of the mention
+                 * @example Mention of a user in a message
                  */
                 description?: string;
             }[];
@@ -2859,7 +2860,7 @@ export interface components {
             /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
             quoted?: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
@@ -2875,80 +2876,80 @@ export interface components {
                 authorName?: string;
                 /**
                  * @description First 100 characters of the quoted message
-                 * @example Quelqu’un a des nouvelles du permis de construire ?
+                 * @example Any news about the building permit?
                  */
                 excerpt: string;
             };
         };
-        /** @description Représentation d’une pièce jointe */
+        /** @description An attachment */
         AttachmentDtoSchema: {
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             id: string | number;
             /**
-             * @description Nom de la pièce jointe
+             * @description Name of the attachment
              * @example document.pdf
              */
             name: string;
             /**
-             * @description Taille de la pièce jointe en octets
+             * @description Size of the attachment in bytes
              * @example 102400
              */
             size?: number;
             /**
-             * @description Type MIME de la pièce jointe
+             * @description MIME type of the attachment
              * @example application/pdf
              */
             type?: string;
             /**
              * Format: uri
-             * @description URL pour accéder à la pièce jointe
+             * @description URL to reach the attachment
              * @example https://example.com/document.pdf
              */
             url?: string;
         };
-        /** @description Représentation d’une mention */
+        /** @description A mention */
         MentionDtoSchema: {
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             id: string | number;
             /**
-             * @description Nom de la mention
+             * @description Name of the mention
              * @example Alice Dupont
              */
             name: string;
             /**
-             * @description Type de conversation associé à la mention
+             * @description Type of conversation tied to the mention
              * @example direct
              * @enum {string}
              */
             kind?: "direct" | "group";
             /**
-             * @description Description de la mention
-             * @example Mention d’un utilisateur dans un message
+             * @description Description of the mention
+             * @example Mention of a user in a message
              */
             description?: string;
         };
-        /** @description Réponse contenant la liste des conversations et un curseur pour la pagination */
+        /** @description Response holding the conversations and a pagination cursor */
         ConversationsResponse: {
-            /** @description Liste des conversations */
+            /** @description Conversations */
             conversations: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
                 /**
-                 * @description Département associé à la conversation
+                 * @description Department tied to the conversation
                  * @example Marketing
                  */
                 department?: string;
@@ -2965,33 +2966,33 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
                 /**
-                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                 * @description Presence of the user: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
-                 * @example Bonjour à tous !
+                 * @description Last message of the conversation
+                 * @example Hello everyone!
                  */
                 lastMessage?: string;
                 /**
-                 * @description Date et heure du dernier message (format ISO)
+                 * @description Date and time of the last message (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 lastMessageAt?: string;
                 /**
-                 * @description Nombre de messages non lus dans la conversation
+                 * @description Number of unread messages in the conversation
                  * @example 5
                  */
                 unreadCount?: number;
@@ -3007,22 +3008,22 @@ export interface components {
              */
             nextCursor?: string;
         };
-        /** @description Réponse contenant la liste des messages et un curseur pour la pagination */
+        /** @description Response holding the messages and a pagination cursor */
         MessagesResponse: {
-            /** @description Détails de la conversation associée aux messages */
+            /** @description Details of the conversation of the messages */
             conversation: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
                 /**
-                 * @description Département associé à la conversation
+                 * @description Department tied to the conversation
                  * @example Marketing
                  */
                 department?: string;
@@ -3039,33 +3040,33 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
                 /**
-                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                 * @description Presence of the user: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
-                 * @example Bonjour à tous !
+                 * @description Last message of the conversation
+                 * @example Hello everyone!
                  */
                 lastMessage?: string;
                 /**
-                 * @description Date et heure du dernier message (format ISO)
+                 * @description Date and time of the last message (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 lastMessageAt?: string;
                 /**
-                 * @description Nombre de messages non lus dans la conversation
+                 * @description Number of unread messages in the conversation
                  * @example 5
                  */
                 unreadCount?: number;
@@ -3075,25 +3076,25 @@ export interface components {
                  */
                 memberCount?: number;
             };
-            /** @description Liste des messages */
+            /** @description Messages */
             messages: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
-                 * @example Bonjour à tous !
+                 * @description Content of the message
+                 * @example Hello everyone!
                  */
                 content: string;
                 /**
-                 * @description Date et heure d’envoi du message (format ISO)
+                 * @description Date and time the message was sent (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 sentAt: string;
@@ -3103,72 +3104,72 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
                 /**
-                 * @description Direction du message, entrant ou sortant
+                 * @description Direction of the message, incoming or outgoing
                  * @example incoming
                  * @enum {string}
                  */
                 direction?: "incoming" | "outgoing";
                 /**
-                 * @description Liste des pièces jointes du message
+                 * @description Attachments of the message
                  * @example []
                  */
                 attachments?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la pièce jointe
+                     * @description Name of the attachment
                      * @example document.pdf
                      */
                     name: string;
                     /**
-                     * @description Taille de la pièce jointe en octets
+                     * @description Size of the attachment in bytes
                      * @example 102400
                      */
                     size?: number;
                     /**
-                     * @description Type MIME de la pièce jointe
+                     * @description MIME type of the attachment
                      * @example application/pdf
                      */
                     type?: string;
                     /**
                      * Format: uri
-                     * @description URL pour accéder à la pièce jointe
+                     * @description URL to reach the attachment
                      * @example https://example.com/document.pdf
                      */
                     url?: string;
                 }[];
                 /**
-                 * @description Liste des mentions dans le message
+                 * @description Mentions in the message
                  * @example []
                  */
                 mentions?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
                     /**
-                     * @description Type de conversation associé à la mention
+                     * @description Type of conversation tied to the mention
                      * @example direct
                      * @enum {string}
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
-                     * @example Mention d’un utilisateur dans un message
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
                      */
                     description?: string;
                 }[];
@@ -3180,7 +3181,7 @@ export interface components {
                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                 quoted?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
@@ -3196,7 +3197,7 @@ export interface components {
                     authorName?: string;
                     /**
                      * @description First 100 characters of the quoted message
-                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     * @example Any news about the building permit?
                      */
                     excerpt: string;
                 };
@@ -3212,71 +3213,71 @@ export interface components {
              */
             nextCursor?: string;
         };
-        /** @description Réponse contenant la liste des contacts */
+        /** @description Response holding the contacts */
         ContactsResponse: {
-            /** @description Liste des contacts */
+            /** @description Contacts */
             contacts: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom du contact
+                 * @description Name of the contact
                  * @example Alice Dupont
                  */
                 name: string;
                 /**
                  * Format: email
-                 * @description Adresse email du contact
+                 * @description Email address of the contact
                  * @example alice.dupont@mairie360.fr
                  */
                 email?: string;
                 /**
-                 * @description Département associé au contact
+                 * @description Department of the contact
                  * @example Marketing
                  */
                 department?: string;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar du contact
+                 * @description Avatar URL of the contact
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales du contact
+                 * @description Initials of the contact
                  * @example AD
                  */
                 initials?: string;
                 /**
-                 * @description Présence du contact, en ligne, hors ligne ou absent
+                 * @description Presence of the contact: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
             }[];
         };
-        /** @description Réponse contenant le message envoyé et les détails de la conversation associée */
+        /** @description Response holding the sent message and the details of its conversation */
         SendMessageResponse: {
-            /** @description Message envoyé */
+            /** @description Sent message */
             message: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
-                 * @example Bonjour à tous !
+                 * @description Content of the message
+                 * @example Hello everyone!
                  */
                 content: string;
                 /**
-                 * @description Date et heure d’envoi du message (format ISO)
+                 * @description Date and time the message was sent (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 sentAt: string;
@@ -3286,72 +3287,72 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
                 /**
-                 * @description Direction du message, entrant ou sortant
+                 * @description Direction of the message, incoming or outgoing
                  * @example incoming
                  * @enum {string}
                  */
                 direction?: "incoming" | "outgoing";
                 /**
-                 * @description Liste des pièces jointes du message
+                 * @description Attachments of the message
                  * @example []
                  */
                 attachments?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la pièce jointe
+                     * @description Name of the attachment
                      * @example document.pdf
                      */
                     name: string;
                     /**
-                     * @description Taille de la pièce jointe en octets
+                     * @description Size of the attachment in bytes
                      * @example 102400
                      */
                     size?: number;
                     /**
-                     * @description Type MIME de la pièce jointe
+                     * @description MIME type of the attachment
                      * @example application/pdf
                      */
                     type?: string;
                     /**
                      * Format: uri
-                     * @description URL pour accéder à la pièce jointe
+                     * @description URL to reach the attachment
                      * @example https://example.com/document.pdf
                      */
                     url?: string;
                 }[];
                 /**
-                 * @description Liste des mentions dans le message
+                 * @description Mentions in the message
                  * @example []
                  */
                 mentions?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
                     /**
-                     * @description Type de conversation associé à la mention
+                     * @description Type of conversation tied to the mention
                      * @example direct
                      * @enum {string}
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
-                     * @example Mention d’un utilisateur dans un message
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
                      */
                     description?: string;
                 }[];
@@ -3363,7 +3364,7 @@ export interface components {
                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                 quoted?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
@@ -3379,25 +3380,25 @@ export interface components {
                     authorName?: string;
                     /**
                      * @description First 100 characters of the quoted message
-                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     * @example Any news about the building permit?
                      */
                     excerpt: string;
                 };
             };
-            /** @description Détails de la conversation associée au message envoyé */
+            /** @description Details of the conversation of the sent message */
             conversation?: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
                 /**
-                 * @description Département associé à la conversation
+                 * @description Department tied to the conversation
                  * @example Marketing
                  */
                 department?: string;
@@ -3414,33 +3415,33 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
                 /**
-                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                 * @description Presence of the user: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
-                 * @example Bonjour à tous !
+                 * @description Last message of the conversation
+                 * @example Hello everyone!
                  */
                 lastMessage?: string;
                 /**
-                 * @description Date et heure du dernier message (format ISO)
+                 * @description Date and time of the last message (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 lastMessageAt?: string;
                 /**
-                 * @description Nombre de messages non lus dans la conversation
+                 * @description Number of unread messages in the conversation
                  * @example 5
                  */
                 unreadCount?: number;
@@ -3451,22 +3452,22 @@ export interface components {
                 memberCount?: number;
             };
         };
-        /** @description Réponse contenant les détails de la conversation directe créée et le message envoyé */
+        /** @description Response holding the details of the created direct conversation and the sent message */
         NewDirectMessageResponse: {
-            /** @description Détails de la conversation directe créée */
+            /** @description Details of the created direct conversation */
             conversation: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
                 /**
-                 * @description Département associé à la conversation
+                 * @description Department tied to the conversation
                  * @example Marketing
                  */
                 department?: string;
@@ -3483,33 +3484,33 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
                 /**
-                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                 * @description Presence of the user: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
-                 * @example Bonjour à tous !
+                 * @description Last message of the conversation
+                 * @example Hello everyone!
                  */
                 lastMessage?: string;
                 /**
-                 * @description Date et heure du dernier message (format ISO)
+                 * @description Date and time of the last message (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 lastMessageAt?: string;
                 /**
-                 * @description Nombre de messages non lus dans la conversation
+                 * @description Number of unread messages in the conversation
                  * @example 5
                  */
                 unreadCount?: number;
@@ -3519,25 +3520,25 @@ export interface components {
                  */
                 memberCount?: number;
             };
-            /** @description Message direct envoyé */
+            /** @description Sent direct message */
             message: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
-                 * @example Bonjour à tous !
+                 * @description Content of the message
+                 * @example Hello everyone!
                  */
                 content: string;
                 /**
-                 * @description Date et heure d’envoi du message (format ISO)
+                 * @description Date and time the message was sent (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 sentAt: string;
@@ -3547,72 +3548,72 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
                 /**
-                 * @description Direction du message, entrant ou sortant
+                 * @description Direction of the message, incoming or outgoing
                  * @example incoming
                  * @enum {string}
                  */
                 direction?: "incoming" | "outgoing";
                 /**
-                 * @description Liste des pièces jointes du message
+                 * @description Attachments of the message
                  * @example []
                  */
                 attachments?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la pièce jointe
+                     * @description Name of the attachment
                      * @example document.pdf
                      */
                     name: string;
                     /**
-                     * @description Taille de la pièce jointe en octets
+                     * @description Size of the attachment in bytes
                      * @example 102400
                      */
                     size?: number;
                     /**
-                     * @description Type MIME de la pièce jointe
+                     * @description MIME type of the attachment
                      * @example application/pdf
                      */
                     type?: string;
                     /**
                      * Format: uri
-                     * @description URL pour accéder à la pièce jointe
+                     * @description URL to reach the attachment
                      * @example https://example.com/document.pdf
                      */
                     url?: string;
                 }[];
                 /**
-                 * @description Liste des mentions dans le message
+                 * @description Mentions in the message
                  * @example []
                  */
                 mentions?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
                     /**
-                     * @description Type de conversation associé à la mention
+                     * @description Type of conversation tied to the mention
                      * @example direct
                      * @enum {string}
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
-                     * @example Mention d’un utilisateur dans un message
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
                      */
                     description?: string;
                 }[];
@@ -3624,7 +3625,7 @@ export interface components {
                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                 quoted?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
@@ -3640,28 +3641,28 @@ export interface components {
                     authorName?: string;
                     /**
                      * @description First 100 characters of the quoted message
-                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     * @example Any news about the building permit?
                      */
                     excerpt: string;
                 };
             };
         };
-        /** @description Réponse contenant les détails du groupe créé */
+        /** @description Response holding the details of the created group */
         CreateGroupResponse: {
-            /** @description Détails du groupe créé */
+            /** @description Details of the created group */
             conversation: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
                 /**
-                 * @description Département associé à la conversation
+                 * @description Department tied to the conversation
                  * @example Marketing
                  */
                 department?: string;
@@ -3678,33 +3679,33 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
                 /**
-                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                 * @description Presence of the user: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
-                 * @example Bonjour à tous !
+                 * @description Last message of the conversation
+                 * @example Hello everyone!
                  */
                 lastMessage?: string;
                 /**
-                 * @description Date et heure du dernier message (format ISO)
+                 * @description Date and time of the last message (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 lastMessageAt?: string;
                 /**
-                 * @description Nombre de messages non lus dans la conversation
+                 * @description Number of unread messages in the conversation
                  * @example 5
                  */
                 unreadCount?: number;
@@ -3715,116 +3716,116 @@ export interface components {
                 memberCount?: number;
             };
         };
-        /** @description Réponse indiquant si la conversation a été supprimée avec succès */
+        /** @description Response telling whether the conversation was deleted */
         DeleteConversationResponse: {
             /**
-             * @description Indique si la conversation a été supprimée avec succès
+             * @description Whether the conversation was deleted
              * @example true
              * @enum {boolean}
              */
             deleted: true;
             /**
-             * @description Identifiant de la conversation supprimée
+             * @description Id of the deleted conversation
              * @example 12345
              */
             conversationId?: string | number;
         };
-        /** @description Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour */
+        /** @description Response holding the id of the conversation and the number of unread messages left after the update */
         MarkConversationAsReadResponse: {
             /**
-             * @description Identifiant de la conversation marquée comme lue
+             * @description Id of the conversation marked as read
              * @example 12345
              */
             conversationId: string | number;
             /**
-             * @description Nombre de messages non lus restant dans la conversation après la mise à jour
+             * @description Number of unread messages left in the conversation after the update
              * @example 0
              */
             unreadCount: number;
         };
-        /** @description Réponse contenant la liste des pièces jointes téléchargées */
+        /** @description Response holding the uploaded attachments */
         UploadAttachmentResponse: {
-            /** @description Liste des pièces jointes téléchargées */
+            /** @description Uploaded attachments */
             attachments: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la pièce jointe
+                 * @description Name of the attachment
                  * @example document.pdf
                  */
                 name: string;
                 /**
-                 * @description Taille de la pièce jointe en octets
+                 * @description Size of the attachment in bytes
                  * @example 102400
                  */
                 size?: number;
                 /**
-                 * @description Type MIME de la pièce jointe
+                 * @description MIME type of the attachment
                  * @example application/pdf
                  */
                 type?: string;
                 /**
                  * Format: uri
-                 * @description URL pour accéder à la pièce jointe
+                 * @description URL to reach the attachment
                  * @example https://example.com/document.pdf
                  */
                 url?: string;
             }[];
         };
-        /** @description Réponse contenant les données de base pour le démarrage de la messagerie */
+        /** @description Response holding the base data to start the messaging module */
         MessagingBootstrapResponse: {
             contacts: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom du contact
+                 * @description Name of the contact
                  * @example Alice Dupont
                  */
                 name: string;
                 /**
                  * Format: email
-                 * @description Adresse email du contact
+                 * @description Email address of the contact
                  * @example alice.dupont@mairie360.fr
                  */
                 email?: string;
                 /**
-                 * @description Département associé au contact
+                 * @description Department of the contact
                  * @example Marketing
                  */
                 department?: string;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar du contact
+                 * @description Avatar URL of the contact
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales du contact
+                 * @description Initials of the contact
                  * @example AD
                  */
                 initials?: string;
                 /**
-                 * @description Présence du contact, en ligne, hors ligne ou absent
+                 * @description Presence of the contact: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
             }[];
-            /** @description Utilisateur actuellement connecté */
+            /** @description Currently signed-in user */
             currentUser: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom complet de l’utilisateur actuel
+                 * @description Full name of the current user
                  * @example Alice Dupont
                  */
                 name: string;
@@ -3842,17 +3843,17 @@ export interface components {
             };
             conversations: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
                 /**
-                 * @description Département associé à la conversation
+                 * @description Department tied to the conversation
                  * @example Marketing
                  */
                 department?: string;
@@ -3869,33 +3870,33 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
                 /**
-                 * @description Présence de l’utilisateur, en ligne, hors ligne ou absent
+                 * @description Presence of the user: online, offline or away
                  * @example online
                  * @enum {string}
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
-                 * @example Bonjour à tous !
+                 * @description Last message of the conversation
+                 * @example Hello everyone!
                  */
                 lastMessage?: string;
                 /**
-                 * @description Date et heure du dernier message (format ISO)
+                 * @description Date and time of the last message (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 lastMessageAt?: string;
                 /**
-                 * @description Nombre de messages non lus dans la conversation
+                 * @description Number of unread messages in the conversation
                  * @example 5
                  */
                 unreadCount?: number;
@@ -3906,28 +3907,28 @@ export interface components {
                 memberCount?: number;
             }[];
             /**
-             * @description Identifiant unique, peut être une chaîne ou un nombre
+             * @description Unique id, either a string or a number
              * @example 12345
              */
             activeConversationId?: string | number;
             messages: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
-                 * @example Bonjour à tous !
+                 * @description Content of the message
+                 * @example Hello everyone!
                  */
                 content: string;
                 /**
-                 * @description Date et heure d’envoi du message (format ISO)
+                 * @description Date and time the message was sent (ISO format)
                  * @example 2026-06-23T12:32:00Z
                  */
                 sentAt: string;
@@ -3937,72 +3938,72 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
                 /**
-                 * @description Direction du message, entrant ou sortant
+                 * @description Direction of the message, incoming or outgoing
                  * @example incoming
                  * @enum {string}
                  */
                 direction?: "incoming" | "outgoing";
                 /**
-                 * @description Liste des pièces jointes du message
+                 * @description Attachments of the message
                  * @example []
                  */
                 attachments?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la pièce jointe
+                     * @description Name of the attachment
                      * @example document.pdf
                      */
                     name: string;
                     /**
-                     * @description Taille de la pièce jointe en octets
+                     * @description Size of the attachment in bytes
                      * @example 102400
                      */
                     size?: number;
                     /**
-                     * @description Type MIME de la pièce jointe
+                     * @description MIME type of the attachment
                      * @example application/pdf
                      */
                     type?: string;
                     /**
                      * Format: uri
-                     * @description URL pour accéder à la pièce jointe
+                     * @description URL to reach the attachment
                      * @example https://example.com/document.pdf
                      */
                     url?: string;
                 }[];
                 /**
-                 * @description Liste des mentions dans le message
+                 * @description Mentions in the message
                  * @example []
                  */
                 mentions?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
                     /**
-                     * @description Type de conversation associé à la mention
+                     * @description Type of conversation tied to the mention
                      * @example direct
                      * @enum {string}
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
-                     * @example Mention d’un utilisateur dans un message
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
                      */
                     description?: string;
                 }[];
@@ -4014,7 +4015,7 @@ export interface components {
                 /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
                 quoted?: {
                     /**
-                     * @description Identifiant unique, peut être une chaîne ou un nombre
+                     * @description Unique id, either a string or a number
                      * @example 12345
                      */
                     id: string | number;
@@ -4030,23 +4031,23 @@ export interface components {
                     authorName?: string;
                     /**
                      * @description First 100 characters of the quoted message
-                     * @example Quelqu’un a des nouvelles du permis de construire ?
+                     * @example Any news about the building permit?
                      */
                     excerpt: string;
                 };
             }[];
         };
-        /** @description Réponse contenant l’utilisateur actuel */
+        /** @description Response holding the current user */
         CurrentUserResponse: {
-            /** @description Utilisateur actuellement connecté */
+            /** @description Currently signed-in user */
             currentUser: {
                 /**
-                 * @description Identifiant unique, peut être une chaîne ou un nombre
+                 * @description Unique id, either a string or a number
                  * @example 12345
                  */
                 id: string | number;
                 /**
-                 * @description Nom complet de l’utilisateur actuel
+                 * @description Full name of the current user
                  * @example Alice Dupont
                  */
                 name: string;
@@ -4063,44 +4064,44 @@ export interface components {
                 lastConnection?: string;
             };
         };
-        /** @description Corps de la requête pour envoyer un message */
+        /** @description Request body to send a message */
         SendMessageBody: {
             /**
-             * @description Contenu du message à envoyer
-             * @example Bonjour à tous !
+             * @description Content of the message to send
+             * @example Hello everyone!
              */
             content: string;
             /** @description Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped. */
             attachmentIds?: (number | string)[];
-            /** @description Liste des identifiants des mentions dans le message */
+            /** @description Ids of the mentions in the message */
             mentionIds?: (number | string)[];
         };
-        /** @description Corps de la requête pour créer un nouveau message direct */
+        /** @description Request body to create a new direct message */
         NewDirectMessageBody: {
             /**
-             * @description Identifiant (user-<id> ou entier)
+             * @description Id (user-<id> or integer)
              * @example 3
              */
             recipientId: number | string;
             /**
-             * @description Contenu du message direct à envoyer
-             * @example Salut ! Comment ça va ?
+             * @description Content of the direct message to send
+             * @example Hi! How are you?
              */
             message: string;
         };
-        /** @description Corps de la requête pour créer un nouveau groupe */
+        /** @description Request body to create a new group */
         CreateGroupBody: {
             /**
-             * @description Nom du groupe à créer
+             * @description Name of the group to create
              * @example Marketing team
              */
             name: string;
             /**
-             * @description Description du groupe à créer
+             * @description Description of the group to create
              * @example Group of the marketing team
              */
             description?: string;
-            /** @description Liste des identifiants des membres à ajouter au groupe */
+            /** @description Ids of the members to add to the group */
             memberIds: (number | string)[];
         };
         /** @description Body of a read acknowledgement (optional) */
@@ -4111,7 +4112,7 @@ export interface components {
              */
             readUntilMessageId?: number | string;
         };
-        /** @description Corps de la requête pour télécharger une pièce jointe */
+        /** @description Request body to upload an attachment */
         UploadAttachmentBody: {
             /**
              * Format: binary
@@ -4119,7 +4120,7 @@ export interface components {
              */
             files: string;
         };
-        /** @description Paramètres de requête pour filtrer et paginer les conversations */
+        /** @description Query parameters to filter and page the conversations */
         ConversationsQuery: {
             /**
              * @description Keeps the conversations whose name contains this text, or in which another member has a first name, last name or full name containing it (a direct conversation is named after its contact). Case-insensitive; the pagination applies to the filtered list.
@@ -4137,7 +4138,7 @@ export interface components {
              */
             cursor?: string;
         };
-        /** @description Paramètres de requête pour paginer les messages */
+        /** @description Query parameters to page the messages */
         MessagesQuery: {
             /**
              * @description Number of messages per page, 1 to 100. Default 30.
@@ -4150,7 +4151,7 @@ export interface components {
              */
             before?: number;
         };
-        /** @description Paramètres de requête pour filtrer les contacts */
+        /** @description Query parameters to filter the contacts */
         ContactsQuery: {
             /**
              * @description Search term filtering the contacts (no control characters)
@@ -4158,15 +4159,15 @@ export interface components {
              */
             search?: string;
             /**
-             * @description Nombre maximum de contacts à retourner
+             * @description Maximum number of contacts to return
              * @example 10
              */
             limit?: number;
         };
-        /** @description Paramètres pour identifier une conversation */
+        /** @description Parameters identifying a conversation */
         ConversationIdParams: {
             /**
-             * @description Identifiant (conversation-<id> ou entier)
+             * @description Id (conversation-<id> or integer)
              * @example 101
              */
             conversationId: number | string;

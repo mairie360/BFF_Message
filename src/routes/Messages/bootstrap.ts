@@ -12,10 +12,10 @@ registry.registerPath({
     method: 'get',
     path: '/messaging/bootstrap',
     tags: ['Messaging'],
-    summary: 'Récupère les informations de démarrage pour l’utilisateur actuel',
+    summary: 'Get the startup data of the current user',
     responses: {
         200: {
-            description: 'Informations de démarrage pour l’utilisateur actuel',
+            description: 'Startup data of the current user',
             content: {
                 'application/json': {
                     schema: MessagingBootstrapResponse,

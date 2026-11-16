@@ -14,7 +14,7 @@ registry.registerPath({
     method: 'post',
     path: '/groups',
     tags: ['Groups'],
-    summary: 'Crée un nouveau groupe',
+    summary: 'Create a new group',
     request: {
         body: {
             required: true,
@@ -27,7 +27,7 @@ registry.registerPath({
     },
     responses: {
         201: {
-            description: 'Groupe créé avec succès',
+            description: 'Group created',
             content: {
                 'application/json': {
                     schema: CreateGroupResponse,

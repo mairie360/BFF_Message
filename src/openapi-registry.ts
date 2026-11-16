@@ -2,7 +2,7 @@ import { OpenAPIRegistry, extendZodWithOpenApi } from '@asteasolutions/zod-to-op
 import { ErrorResponseSchema } from '@mairie360/bffs-lib';
 import { z } from 'zod';
 
-// On ajoute les méthodes .openapi() à Zod
+// Adds the .openapi() methods to Zod
 extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
@@ -20,7 +20,7 @@ export const bearerAuth = registry.registerComponent('securitySchemes', 'bearerA
 
 
 export const IdSchema = z.union([z.string(), z.number()]).openapi({
-  description: 'Identifiant unique, peut être une chaîne ou un nombre',
+  description: 'Unique id, either a string or a number',
   example: '12345',
 });
 
@@ -32,7 +32,7 @@ function inputId(kind: string, example: number) {
   return z.union([
     z.number().int().positive(),
     z.string().regex(new RegExp(`^(?:${kind}-)?\\d+$`), `Expected a ${kind} identifier`),
-  ]).openapi({ description: `Identifiant (${kind}-<id> ou entier)`, example });
+  ]).openapi({ description: `Id (${kind}-<id> or integer)`, example });
 }
 
 // No control character (Core API and Message API answer 400 to them). A refinement, not a `.regex()`: the contract then
@@ -56,24 +56,24 @@ export const MAX_GROUP_MEMBERS = 100;
 const limitQuery = () => z.coerce.number().int().min(1).max(MAX_LIMIT);
 
 export const ConversationKindSchema = z.enum(['direct', 'group']).openapi({
-  description: 'Type de conversation, direct ou groupe',
+  description: 'Type of conversation, direct or group',
   example: 'direct',
 });
 
 export const PresenceSchema = z.enum(['online', 'offline', 'away']).openapi({
-  description: 'Présence de l’utilisateur, en ligne, hors ligne ou absent',
+  description: 'Presence of the user: online, offline or away',
   example: 'online',
 });
 
 export const MessageDirectionSchema = z.enum(['incoming', 'outgoing']).openapi({
-  description: 'Direction du message, entrant ou sortant',
+  description: 'Direction of the message, incoming or outgoing',
   example: 'incoming',
 });
 
 export const CurrentUserDtoSchema = z.object({
   id: IdSchema,
   name: z.string().max(100).openapi({
-    description: 'Nom complet de l’utilisateur actuel',
+    description: 'Full name of the current user',
     example: 'Alice Dupont',
   }),
   email: z.string().email().optional(),
@@ -86,18 +86,18 @@ export const CurrentUserDtoSchema = z.object({
   city: z.string().optional(),
   lastConnection: z.string().optional(),
 }).openapi({
-  description: 'Utilisateur actuellement connecté',
+  description: 'Currently signed-in user',
 });
 
 
 export const ConversationDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom de la conversation',
+    description: 'Name of the conversation',
     example: 'Discussion de groupe',
   }),
   department: z.string().optional().openapi({
-    description: 'Département associé à la conversation',
+    description: 'Department tied to the conversation',
     example: 'Marketing',
   }),
   kind: ConversationKindSchema.optional().openapi({
@@ -109,27 +109,27 @@ export const ConversationDtoSchema = z.object({
     example: 'user-8',
   }),
   avatarUrl: z.string().url().optional().openapi({
-    description: 'URL de l’avatar de la conversation',
+    description: 'Avatar URL of the conversation',
     example: 'https://example.com/avatar.png',
   }),
   initials: z.string().optional().openapi({
-    description: 'Initiales de la conversation',
+    description: 'Initials of the conversation',
     example: 'DG',
   }),
   presence: PresenceSchema.optional().openapi({
-    description: 'Présence de l’utilisateur, en ligne, hors ligne ou absent',
+    description: 'Presence of the user: online, offline or away',
     example: 'online',
   }),
   lastMessage: z.string().optional().openapi({
-    description: 'Dernier message de la conversation',
-    example: 'Bonjour à tous !',
+    description: 'Last message of the conversation',
+    example: 'Hello everyone!',
   }),
   lastMessageAt: z.string().optional().openapi({
-    description: 'Date et heure du dernier message (format ISO)',
+    description: 'Date and time of the last message (ISO format)',
     example: '2026-06-23T12:32:00Z',
   }),
   unreadCount: z.number().int().optional().openapi({
-    description: 'Nombre de messages non lus dans la conversation',
+    description: 'Number of unread messages in the conversation',
     example: 5,
   }),
   memberCount: z.number().int().optional().openapi({
@@ -137,7 +137,7 @@ export const ConversationDtoSchema = z.object({
     example: 8,
   }),
 }).openapi({
-  description: 'Représentation d’une conversation',
+  description: 'A conversation',
 });
 
 
@@ -146,42 +146,42 @@ export const ConversationDtoSchema = z.object({
 export const AttachmentDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom de la pièce jointe',
+    description: 'Name of the attachment',
     example: 'document.pdf',
   }),
   size: z.number().int().optional().openapi({
-    description: 'Taille de la pièce jointe en octets',
+    description: 'Size of the attachment in bytes',
     example: 102400,
   }),
   type: z.string().optional().openapi({
-    description: 'Type MIME de la pièce jointe',
+    description: 'MIME type of the attachment',
     example: 'application/pdf',
   }),
   url: z.string().url().optional().openapi({
-    description: 'URL pour accéder à la pièce jointe',
+    description: 'URL to reach the attachment',
     example: 'https://example.com/document.pdf',
   }),
 }).openapi({
-  description: 'Représentation d’une pièce jointe',
+  description: 'An attachment',
 });
 
 
 export const MentionDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom de la mention',
+    description: 'Name of the mention',
     example: 'Alice Dupont',
   }),
   kind: ConversationKindSchema.optional().openapi({
-    description: 'Type de conversation associé à la mention',
+    description: 'Type of conversation tied to the mention',
     example: 'direct',
   }),
   description: z.string().optional().openapi({
-    description: 'Description de la mention',
-    example: 'Mention d’un utilisateur dans un message',
+    description: 'Description of the mention',
+    example: 'Mention of a user in a message',
   }),
 }).openapi({
-  description: 'Représentation d’une mention',
+  description: 'A mention',
 });
 
 export const QuotedMessageDtoSchema = z.object({
@@ -196,7 +196,7 @@ export const QuotedMessageDtoSchema = z.object({
   }),
   excerpt: z.string().openapi({
     description: 'First 100 characters of the quoted message',
-    example: 'Quelqu’un a des nouvelles du permis de construire ?',
+    example: 'Any news about the building permit?',
   }),
 }).openapi({
   description: 'The message another message answers, with what is needed to display the quote',
@@ -206,11 +206,11 @@ export const MessageDtoSchema = z.object({
   id: IdSchema,
   conversationId: IdSchema,
   content: z.string().openapi({
-    description: 'Contenu du message',
-    example: 'Bonjour à tous !',
+    description: 'Content of the message',
+    example: 'Hello everyone!',
   }),
   sentAt: z.string().openapi({
-    description: 'Date et heure d’envoi du message (format ISO)',
+    description: 'Date and time the message was sent (ISO format)',
     example: '2026-06-23T12:32:00Z',
   }),
   authorId: IdSchema.optional().openapi({
@@ -218,19 +218,19 @@ export const MessageDtoSchema = z.object({
     example: 'user-12',
   }),
   authorName: z.string().optional().openapi({
-    description: 'Nom de l’auteur du message',
+    description: 'Name of the author of the message',
     example: 'Alice Dupont',
   }),
   direction: MessageDirectionSchema.optional().openapi({
-    description: 'Direction du message, entrant ou sortant',
+    description: 'Direction of the message, incoming or outgoing',
     example: 'incoming',
   }),
   attachments: z.array(AttachmentDtoSchema).optional().openapi({
-    description: 'Liste des pièces jointes du message',
+    description: 'Attachments of the message',
     example: [],
   }),
   mentions: z.array(MentionDtoSchema).optional().openapi({
-    description: 'Liste des mentions dans le message',
+    description: 'Mentions in the message',
     example: [],
   }),
   citation: IdSchema.optional().openapi({
@@ -241,38 +241,38 @@ export const MessageDtoSchema = z.object({
     description: 'The message `citation` points to (author and excerpt), also when it is older than the loaded page',
   }),
 }).openapi({
-  description: 'Représentation d’un message',
+  description: 'A message',
 });
 
 
 export const ContactDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom du contact',
+    description: 'Name of the contact',
     example: 'Alice Dupont',
   }),
   email: z.string().email().optional().openapi({
-    description: 'Adresse email du contact',
+    description: 'Email address of the contact',
     example: 'alice.dupont@mairie360.fr',
   }),
   department: z.string().optional().openapi({
-    description: 'Département associé au contact',
+    description: 'Department of the contact',
     example: 'Marketing',
   }),
   avatarUrl: z.string().url().optional().openapi({
-    description: 'URL de l’avatar du contact',
+    description: 'Avatar URL of the contact',
     example: 'https://example.com/avatar.png',
   }),
   initials: z.string().optional().openapi({
-    description: 'Initiales du contact',
+    description: 'Initials of the contact',
     example: 'AD',
   }),
   presence: PresenceSchema.optional().openapi({
-    description: 'Présence du contact, en ligne, hors ligne ou absent',
+    description: 'Presence of the contact: online, offline or away',
     example: 'online',
   }),
 }).openapi({
-  description: 'Représentation d’un contact',
+  description: 'A contact',
 });
 
 // `GET /conversations/{conversationId}` also takes the numeric `before` cursor. ZAP ("Path Traversal") tries the last
@@ -281,13 +281,13 @@ export const ContactDtoSchema = z.object({
 export const LoadConversationIdParams = z.object({
   conversationId: inputId('conversation', 101).openapi({ example: 'conversation-101' }),
 }).openapi({
-  description: 'Paramètres pour identifier une conversation',
+  description: 'Parameters identifying a conversation',
 });
 
 export const ConversationIdParams = z.object({
   conversationId: inputId('conversation', 101),
 }).openapi({
-  description: 'Paramètres pour identifier une conversation',
+  description: 'Parameters identifying a conversation',
 });
 
 // Writes get their own seeded conversations: a scan replaying the examples must not delete conversation 101,
@@ -315,7 +315,7 @@ export const ConversationsQuery = z.object({
     example: '20',
   }),
 }).openapi({
-  description: 'Paramètres de requête pour filtrer et paginer les conversations',
+  description: 'Query parameters to filter and page the conversations',
 });
 
 
@@ -330,7 +330,7 @@ export const MessagesQuery = z.object({
     example: 117,
   }),
 }).openapi({
-  description: 'Paramètres de requête pour paginer les messages',
+  description: 'Query parameters to page the messages',
 });
 
 export const ContactsQuery = z.object({
@@ -340,54 +340,54 @@ export const ContactsQuery = z.object({
         example: 'Alice'
     }),
     limit: limitQuery().optional().openapi({
-        description: 'Nombre maximum de contacts à retourner',
+        description: 'Maximum number of contacts to return',
         example: 10
     }),
 }).openapi({
-    description: 'Paramètres de requête pour filtrer les contacts',
+    description: 'Query parameters to filter the contacts',
 });
 
-// Requête 
+// Requests 
 
 export const SendMessageBody = z.object({
   content: noMarkup(z.string().min(1).max(MAX_MESSAGE_LENGTH)).openapi({
-    description: 'Contenu du message à envoyer',
-    example: 'Bonjour à tous !',
+    description: 'Content of the message to send',
+    example: 'Hello everyone!',
   }),
   attachmentIds: z.array(inputId('attachment', 1)).max(0, 'Attachments are not supported yet').optional().openapi({
     description: 'Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped.',
   }),
   mentionIds: z.array(inputId('user', 3)).max(MAX_GROUP_MEMBERS).optional().openapi({
-    description: 'Liste des identifiants des mentions dans le message',
+    description: 'Ids of the mentions in the message',
   }),
 }).openapi({
-  description: 'Corps de la requête pour envoyer un message',
+  description: 'Request body to send a message',
 });
 
 export const NewDirectMessageBody = z.object({
   recipientId: inputId('user', 3),
   message: noMarkup(z.string().min(1).max(MAX_MESSAGE_LENGTH)).openapi({
-    description: 'Contenu du message direct à envoyer',
-    example: 'Salut ! Comment ça va ?',
+    description: 'Content of the direct message to send',
+    example: 'Hi! How are you?',
   }),
 }).openapi({
-  description: 'Corps de la requête pour créer un nouveau message direct',
+  description: 'Request body to create a new direct message',
 });
 
 export const CreateGroupBody = z.object({
     name: noMarkup(z.string().min(1).max(MAX_NAME_LENGTH)).openapi({
-        description: 'Nom du groupe à créer',
+        description: 'Name of the group to create',
         example: 'Marketing team',
     }),
     description: noMarkup(z.string().max(MAX_DESCRIPTION_LENGTH)).optional().openapi({
-        description: 'Description du groupe à créer',
+        description: 'Description of the group to create',
         example: 'Group of the marketing team',
     }),
     memberIds: z.array(inputId('user', 3)).max(MAX_GROUP_MEMBERS).openapi({
-        description: 'Liste des identifiants des membres à ajouter au groupe',
+        description: 'Ids of the members to add to the group',
     }),
 }).openapi({
-    description: 'Corps de la requête pour créer un nouveau groupe',
+    description: 'Request body to create a new group',
 });
 
 export const MarkConversationAsReadBody = z.object({
@@ -407,35 +407,35 @@ export const UploadAttachmentBody = z.object({
         description: 'File to upload as an attachment (multipart part named `files`)',
     }),
 }).openapi({
-    description: 'Corps de la requête pour télécharger une pièce jointe',
+    description: 'Request body to upload an attachment',
 });
 
-// Réponse
+// Responses
 
 export const CurrentUserResponse = z.object({
   currentUser: CurrentUserDtoSchema,
 }).openapi({
-  description: 'Réponse contenant l’utilisateur actuel',
+  description: 'Response holding the current user',
 });
 
 export const ConversationsResponse = z.object({
   conversations: z.array(ConversationDtoSchema).openapi({
-    description: 'Liste des conversations',
+    description: 'Conversations',
   }),
   nextCursor: z.string().optional().openapi({
     description: 'Pass it as `cursor` to get the next page; absent on the last page',
     example: '20',
   }),
 }).openapi({
-  description: 'Réponse contenant la liste des conversations et un curseur pour la pagination',
+  description: 'Response holding the conversations and a pagination cursor',
 });
 
 export const MessagesResponse = z.object({
   conversation: ConversationDtoSchema.openapi({
-    description: 'Détails de la conversation associée aux messages',
+    description: 'Details of the conversation of the messages',
   }),
   messages: z.array(MessageDtoSchema).openapi({
-    description: 'Liste des messages',
+    description: 'Messages',
   }),
   hasMore: z.boolean().optional().openapi({
     description: 'Whether older messages remain',
@@ -446,7 +446,7 @@ export const MessagesResponse = z.object({
     example: '117',
   }),
 }).openapi({
-  description: 'Réponse contenant la liste des messages et un curseur pour la pagination',
+  description: 'Response holding the messages and a pagination cursor',
 });
 
 export const LoadConversationResponse = z.object({
@@ -473,74 +473,74 @@ export const LoadConversationResponse = z.object({
 
 export const ContactsResponse = z.object({
     contacts: z.array(ContactDtoSchema).openapi({
-        description: 'Liste des contacts',
+        description: 'Contacts',
     }),
 }).openapi({
-    description: 'Réponse contenant la liste des contacts',
+    description: 'Response holding the contacts',
 });
 
 export const SendMessageResponse = z.object({
   message: MessageDtoSchema.openapi({
-    description: 'Message envoyé',
+    description: 'Sent message',
   }),
   conversation: ConversationDtoSchema.optional().openapi({
-    description: 'Détails de la conversation associée au message envoyé',
+    description: 'Details of the conversation of the sent message',
   }),
 }).openapi({
-  description: 'Réponse contenant le message envoyé et les détails de la conversation associée',
+  description: 'Response holding the sent message and the details of its conversation',
 });
 
 export const NewDirectMessageResponse = z.object({
     conversation: ConversationDtoSchema.openapi({
-        description: 'Détails de la conversation directe créée',
+        description: 'Details of the created direct conversation',
     }),
     message: MessageDtoSchema.openapi({
-        description: 'Message direct envoyé',
+        description: 'Sent direct message',
     }),
 }).openapi({
-    description: 'Réponse contenant les détails de la conversation directe créée et le message envoyé',
+    description: 'Response holding the details of the created direct conversation and the sent message',
 });
 
 export const CreateGroupResponse = z.object({
     conversation: ConversationDtoSchema.openapi({
-        description: 'Détails du groupe créé',
+        description: 'Details of the created group',
     }),
 }).openapi({
-    description: 'Réponse contenant les détails du groupe créé',
+    description: 'Response holding the details of the created group',
 });
 
 export const DeleteConversationResponse = z.object({
     deleted: z.literal(true).openapi({
-        description: 'Indique si la conversation a été supprimée avec succès',
+        description: 'Whether the conversation was deleted',
         example: true,
     }),
     conversationId: IdSchema.optional().openapi({
-        description: 'Identifiant de la conversation supprimée',
+        description: 'Id of the deleted conversation',
         example: '12345',
     }),
 }).openapi({
-    description: 'Réponse indiquant si la conversation a été supprimée avec succès',
+    description: 'Response telling whether the conversation was deleted',
 });
 
 export const MarkConversationAsReadResponse = z.object({
     conversationId: IdSchema.openapi({
-        description: 'Identifiant de la conversation marquée comme lue',
+        description: 'Id of the conversation marked as read',
         example: '12345',
     }),
     unreadCount: z.number().int().openapi({
-        description: 'Nombre de messages non lus restant dans la conversation après la mise à jour',
+        description: 'Number of unread messages left in the conversation after the update',
         example: 0,
     }),
 }).openapi({
-    description: 'Réponse contenant l’identifiant de la conversation et le nombre de messages non lus restant après la mise à jour',
+    description: 'Response holding the id of the conversation and the number of unread messages left after the update',
 });
 
 export const UploadAttachmentResponse = z.object({
     attachments: z.array(AttachmentDtoSchema).openapi({
-        description: 'Liste des pièces jointes téléchargées',
+        description: 'Uploaded attachments',
     }),
 }).openapi({
-    description: 'Réponse contenant la liste des pièces jointes téléchargées',
+    description: 'Response holding the uploaded attachments',
 });
 
 export const MessagingBootstrapResponse = z.object({
@@ -550,7 +550,7 @@ export const MessagingBootstrapResponse = z.object({
     activeConversationId: IdSchema.optional(),
     messages: z.array(MessageDtoSchema),
 }).openapi({
-    description: 'Réponse contenant les données de base pour le démarrage de la messagerie',
+    description: 'Response holding the base data to start the messaging module',
 });
 
 // Body of every error answer, shared by every BFF (`@mairie360/bffs-lib`): `{ error: { code, message, details } }`.

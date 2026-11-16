@@ -12,10 +12,10 @@ registry.registerPath({
     method: 'get',
     path: '/me',
     tags: ['Profile'],
-    summary: 'Récupère le profil de l’utilisateur actuel',
+    summary: 'Get the profile of the current user',
     responses: {
         200: {
-            description: 'Profil utilisateur actuel',
+            description: 'Profile of the current user',
             content: {
                 'application/json': {
                     schema: CurrentUserResponse,
