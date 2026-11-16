@@ -93,7 +93,7 @@ export const CurrentUserDtoSchema = z.object({
 export const ConversationDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom de la conversation',
+    description: 'Name of the conversation',
     example: 'Discussion de groupe',
   }),
   department: z.string().optional().openapi({
@@ -109,11 +109,11 @@ export const ConversationDtoSchema = z.object({
     example: 'user-8',
   }),
   avatarUrl: z.string().url().optional().openapi({
-    description: 'URL de l’avatar de la conversation',
+    description: 'Avatar URL of the conversation',
     example: 'https://example.com/avatar.png',
   }),
   initials: z.string().optional().openapi({
-    description: 'Initiales de la conversation',
+    description: 'Initials of the conversation',
     example: 'DG',
   }),
   presence: PresenceSchema.optional().openapi({
@@ -121,7 +121,7 @@ export const ConversationDtoSchema = z.object({
     example: 'online',
   }),
   lastMessage: z.string().optional().openapi({
-    description: 'Dernier message de la conversation',
+    description: 'Last message of the conversation',
     example: 'Hello everyone!',
   }),
   lastMessageAt: z.string().optional().openapi({
@@ -169,7 +169,7 @@ export const AttachmentDtoSchema = z.object({
 export const MentionDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom de la mention',
+    description: 'Name of the mention',
     example: 'Alice Dupont',
   }),
   kind: ConversationKindSchema.optional().openapi({
@@ -177,7 +177,7 @@ export const MentionDtoSchema = z.object({
     example: 'direct',
   }),
   description: z.string().optional().openapi({
-    description: 'Description de la mention',
+    description: 'Description of the mention',
     example: 'Mention of a user in a message',
   }),
 }).openapi({
@@ -206,7 +206,7 @@ export const MessageDtoSchema = z.object({
   id: IdSchema,
   conversationId: IdSchema,
   content: z.string().openapi({
-    description: 'Contenu du message',
+    description: 'Content of the message',
     example: 'Hello everyone!',
   }),
   sentAt: z.string().openapi({
@@ -218,7 +218,7 @@ export const MessageDtoSchema = z.object({
     example: 'user-12',
   }),
   authorName: z.string().optional().openapi({
-    description: 'Nom de l’auteur du message',
+    description: 'Name of the author of the message',
     example: 'Alice Dupont',
   }),
   direction: MessageDirectionSchema.optional().openapi({
@@ -248,11 +248,11 @@ export const MessageDtoSchema = z.object({
 export const ContactDtoSchema = z.object({
   id: IdSchema,
   name: z.string().openapi({
-    description: 'Nom du contact',
+    description: 'Name of the contact',
     example: 'Alice Dupont',
   }),
   email: z.string().email().optional().openapi({
-    description: 'Adresse email du contact',
+    description: 'Email address of the contact',
     example: 'alice.dupont@mairie360.fr',
   }),
   department: z.string().optional().openapi({
@@ -260,11 +260,11 @@ export const ContactDtoSchema = z.object({
     example: 'Marketing',
   }),
   avatarUrl: z.string().url().optional().openapi({
-    description: 'URL de l’avatar du contact',
+    description: 'Avatar URL of the contact',
     example: 'https://example.com/avatar.png',
   }),
   initials: z.string().optional().openapi({
-    description: 'Initiales du contact',
+    description: 'Initials of the contact',
     example: 'AD',
   }),
   presence: PresenceSchema.optional().openapi({

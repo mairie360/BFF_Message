@@ -247,13 +247,13 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom du contact
+                                 * @description Name of the contact
                                  * @example Alice Dupont
                                  */
                                 name: string;
                                 /**
                                  * Format: email
-                                 * @description Adresse email du contact
+                                 * @description Email address of the contact
                                  * @example alice.dupont@mairie360.fr
                                  */
                                 email?: string;
@@ -264,12 +264,12 @@ export interface paths {
                                 department?: string;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar du contact
+                                 * @description Avatar URL of the contact
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales du contact
+                                 * @description Initials of the contact
                                  * @example AD
                                  */
                                 initials?: string;
@@ -311,7 +311,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -333,12 +333,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -349,7 +349,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -386,7 +386,7 @@ export interface paths {
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
+                                 * @description Content of the message
                                  * @example Hello everyone!
                                  */
                                 content: string;
@@ -401,7 +401,7 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
@@ -454,7 +454,7 @@ export interface paths {
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
@@ -465,7 +465,7 @@ export interface paths {
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
+                                     * @description Description of the mention
                                      * @example Mention of a user in a message
                                      */
                                     description?: string;
@@ -585,13 +585,13 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom du contact
+                                 * @description Name of the contact
                                  * @example Alice Dupont
                                  */
                                 name: string;
                                 /**
                                  * Format: email
-                                 * @description Adresse email du contact
+                                 * @description Email address of the contact
                                  * @example alice.dupont@mairie360.fr
                                  */
                                 email?: string;
@@ -602,12 +602,12 @@ export interface paths {
                                 department?: string;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar du contact
+                                 * @description Avatar URL of the contact
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales du contact
+                                 * @description Initials of the contact
                                  * @example AD
                                  */
                                 initials?: string;
@@ -718,7 +718,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -740,12 +740,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -756,7 +756,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -882,7 +882,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -904,12 +904,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -920,7 +920,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -948,13 +948,13 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom du contact
+                                 * @description Name of the contact
                                  * @example Alice Dupont
                                  */
                                 name: string;
                                 /**
                                  * Format: email
-                                 * @description Adresse email du contact
+                                 * @description Email address of the contact
                                  * @example alice.dupont@mairie360.fr
                                  */
                                 email?: string;
@@ -965,12 +965,12 @@ export interface paths {
                                 department?: string;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar du contact
+                                 * @description Avatar URL of the contact
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales du contact
+                                 * @description Initials of the contact
                                  * @example AD
                                  */
                                 initials?: string;
@@ -994,7 +994,7 @@ export interface paths {
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
+                                 * @description Content of the message
                                  * @example Hello everyone!
                                  */
                                 content: string;
@@ -1009,7 +1009,7 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
@@ -1062,7 +1062,7 @@ export interface paths {
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
@@ -1073,7 +1073,7 @@ export interface paths {
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
+                                     * @description Description of the mention
                                      * @example Mention of a user in a message
                                      */
                                     description?: string;
@@ -1459,7 +1459,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -1481,12 +1481,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -1497,7 +1497,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -1713,7 +1713,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -1735,12 +1735,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -1751,7 +1751,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -1784,7 +1784,7 @@ export interface paths {
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
+                                 * @description Content of the message
                                  * @example Hello everyone!
                                  */
                                 content: string;
@@ -1799,7 +1799,7 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
@@ -1852,7 +1852,7 @@ export interface paths {
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
@@ -1863,7 +1863,7 @@ export interface paths {
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
+                                     * @description Description of the mention
                                      * @example Mention of a user in a message
                                      */
                                     description?: string;
@@ -2014,7 +2014,7 @@ export interface paths {
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
+                                 * @description Content of the message
                                  * @example Hello everyone!
                                  */
                                 content: string;
@@ -2029,7 +2029,7 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
@@ -2082,7 +2082,7 @@ export interface paths {
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
@@ -2093,7 +2093,7 @@ export interface paths {
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
+                                     * @description Description of the mention
                                      * @example Mention of a user in a message
                                      */
                                     description?: string;
@@ -2135,7 +2135,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -2157,12 +2157,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -2173,7 +2173,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -2307,7 +2307,7 @@ export interface paths {
                                  */
                                 id: string | number;
                                 /**
-                                 * @description Nom de la conversation
+                                 * @description Name of the conversation
                                  * @example Discussion de groupe
                                  */
                                 name: string;
@@ -2329,12 +2329,12 @@ export interface paths {
                                 contactId?: string | number;
                                 /**
                                  * Format: uri
-                                 * @description URL de l’avatar de la conversation
+                                 * @description Avatar URL of the conversation
                                  * @example https://example.com/avatar.png
                                  */
                                 avatarUrl?: string;
                                 /**
-                                 * @description Initiales de la conversation
+                                 * @description Initials of the conversation
                                  * @example DG
                                  */
                                 initials?: string;
@@ -2345,7 +2345,7 @@ export interface paths {
                                  */
                                 presence?: "online" | "offline" | "away";
                                 /**
-                                 * @description Dernier message de la conversation
+                                 * @description Last message of the conversation
                                  * @example Hello everyone!
                                  */
                                 lastMessage?: string;
@@ -2378,7 +2378,7 @@ export interface paths {
                                  */
                                 conversationId: string | number;
                                 /**
-                                 * @description Contenu du message
+                                 * @description Content of the message
                                  * @example Hello everyone!
                                  */
                                 content: string;
@@ -2393,7 +2393,7 @@ export interface paths {
                                  */
                                 authorId?: string | number;
                                 /**
-                                 * @description Nom de l’auteur du message
+                                 * @description Name of the author of the message
                                  * @example Alice Dupont
                                  */
                                 authorName?: string;
@@ -2446,7 +2446,7 @@ export interface paths {
                                      */
                                     id: string | number;
                                     /**
-                                     * @description Nom de la mention
+                                     * @description Name of the mention
                                      * @example Alice Dupont
                                      */
                                     name: string;
@@ -2457,7 +2457,7 @@ export interface paths {
                                      */
                                     kind?: "direct" | "group";
                                     /**
-                                     * @description Description de la mention
+                                     * @description Description of the mention
                                      * @example Mention of a user in a message
                                      */
                                     description?: string;
@@ -2656,13 +2656,13 @@ export interface components {
              */
             id: string | number;
             /**
-             * @description Nom du contact
+             * @description Name of the contact
              * @example Alice Dupont
              */
             name: string;
             /**
              * Format: email
-             * @description Adresse email du contact
+             * @description Email address of the contact
              * @example alice.dupont@mairie360.fr
              */
             email?: string;
@@ -2673,12 +2673,12 @@ export interface components {
             department?: string;
             /**
              * Format: uri
-             * @description URL de l’avatar du contact
+             * @description Avatar URL of the contact
              * @example https://example.com/avatar.png
              */
             avatarUrl?: string;
             /**
-             * @description Initiales du contact
+             * @description Initials of the contact
              * @example AD
              */
             initials?: string;
@@ -2697,7 +2697,7 @@ export interface components {
              */
             id: string | number;
             /**
-             * @description Nom de la conversation
+             * @description Name of the conversation
              * @example Discussion de groupe
              */
             name: string;
@@ -2719,12 +2719,12 @@ export interface components {
             contactId?: string | number;
             /**
              * Format: uri
-             * @description URL de l’avatar de la conversation
+             * @description Avatar URL of the conversation
              * @example https://example.com/avatar.png
              */
             avatarUrl?: string;
             /**
-             * @description Initiales de la conversation
+             * @description Initials of the conversation
              * @example DG
              */
             initials?: string;
@@ -2735,7 +2735,7 @@ export interface components {
              */
             presence?: "online" | "offline" | "away";
             /**
-             * @description Dernier message de la conversation
+             * @description Last message of the conversation
              * @example Hello everyone!
              */
             lastMessage?: string;
@@ -2768,7 +2768,7 @@ export interface components {
              */
             conversationId: string | number;
             /**
-             * @description Contenu du message
+             * @description Content of the message
              * @example Hello everyone!
              */
             content: string;
@@ -2783,7 +2783,7 @@ export interface components {
              */
             authorId?: string | number;
             /**
-             * @description Nom de l’auteur du message
+             * @description Name of the author of the message
              * @example Alice Dupont
              */
             authorName?: string;
@@ -2836,7 +2836,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la mention
+                 * @description Name of the mention
                  * @example Alice Dupont
                  */
                 name: string;
@@ -2847,7 +2847,7 @@ export interface components {
                  */
                 kind?: "direct" | "group";
                 /**
-                 * @description Description de la mention
+                 * @description Description of the mention
                  * @example Mention of a user in a message
                  */
                 description?: string;
@@ -2918,7 +2918,7 @@ export interface components {
              */
             id: string | number;
             /**
-             * @description Nom de la mention
+             * @description Name of the mention
              * @example Alice Dupont
              */
             name: string;
@@ -2929,7 +2929,7 @@ export interface components {
              */
             kind?: "direct" | "group";
             /**
-             * @description Description de la mention
+             * @description Description of the mention
              * @example Mention of a user in a message
              */
             description?: string;
@@ -2944,7 +2944,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
@@ -2966,12 +2966,12 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
@@ -2982,7 +2982,7 @@ export interface components {
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
+                 * @description Last message of the conversation
                  * @example Hello everyone!
                  */
                 lastMessage?: string;
@@ -3018,7 +3018,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
@@ -3040,12 +3040,12 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
@@ -3056,7 +3056,7 @@ export interface components {
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
+                 * @description Last message of the conversation
                  * @example Hello everyone!
                  */
                 lastMessage?: string;
@@ -3089,7 +3089,7 @@ export interface components {
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
+                 * @description Content of the message
                  * @example Hello everyone!
                  */
                 content: string;
@@ -3104,7 +3104,7 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
@@ -3157,7 +3157,7 @@ export interface components {
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
@@ -3168,7 +3168,7 @@ export interface components {
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
+                     * @description Description of the mention
                      * @example Mention of a user in a message
                      */
                     description?: string;
@@ -3223,13 +3223,13 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom du contact
+                 * @description Name of the contact
                  * @example Alice Dupont
                  */
                 name: string;
                 /**
                  * Format: email
-                 * @description Adresse email du contact
+                 * @description Email address of the contact
                  * @example alice.dupont@mairie360.fr
                  */
                 email?: string;
@@ -3240,12 +3240,12 @@ export interface components {
                 department?: string;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar du contact
+                 * @description Avatar URL of the contact
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales du contact
+                 * @description Initials of the contact
                  * @example AD
                  */
                 initials?: string;
@@ -3272,7 +3272,7 @@ export interface components {
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
+                 * @description Content of the message
                  * @example Hello everyone!
                  */
                 content: string;
@@ -3287,7 +3287,7 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
@@ -3340,7 +3340,7 @@ export interface components {
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
@@ -3351,7 +3351,7 @@ export interface components {
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
+                     * @description Description of the mention
                      * @example Mention of a user in a message
                      */
                     description?: string;
@@ -3393,7 +3393,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
@@ -3415,12 +3415,12 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
@@ -3431,7 +3431,7 @@ export interface components {
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
+                 * @description Last message of the conversation
                  * @example Hello everyone!
                  */
                 lastMessage?: string;
@@ -3462,7 +3462,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
@@ -3484,12 +3484,12 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
@@ -3500,7 +3500,7 @@ export interface components {
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
+                 * @description Last message of the conversation
                  * @example Hello everyone!
                  */
                 lastMessage?: string;
@@ -3533,7 +3533,7 @@ export interface components {
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
+                 * @description Content of the message
                  * @example Hello everyone!
                  */
                 content: string;
@@ -3548,7 +3548,7 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
@@ -3601,7 +3601,7 @@ export interface components {
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
@@ -3612,7 +3612,7 @@ export interface components {
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
+                     * @description Description of the mention
                      * @example Mention of a user in a message
                      */
                     description?: string;
@@ -3657,7 +3657,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
@@ -3679,12 +3679,12 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
@@ -3695,7 +3695,7 @@ export interface components {
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
+                 * @description Last message of the conversation
                  * @example Hello everyone!
                  */
                 lastMessage?: string;
@@ -3784,13 +3784,13 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom du contact
+                 * @description Name of the contact
                  * @example Alice Dupont
                  */
                 name: string;
                 /**
                  * Format: email
-                 * @description Adresse email du contact
+                 * @description Email address of the contact
                  * @example alice.dupont@mairie360.fr
                  */
                 email?: string;
@@ -3801,12 +3801,12 @@ export interface components {
                 department?: string;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar du contact
+                 * @description Avatar URL of the contact
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales du contact
+                 * @description Initials of the contact
                  * @example AD
                  */
                 initials?: string;
@@ -3848,7 +3848,7 @@ export interface components {
                  */
                 id: string | number;
                 /**
-                 * @description Nom de la conversation
+                 * @description Name of the conversation
                  * @example Discussion de groupe
                  */
                 name: string;
@@ -3870,12 +3870,12 @@ export interface components {
                 contactId?: string | number;
                 /**
                  * Format: uri
-                 * @description URL de l’avatar de la conversation
+                 * @description Avatar URL of the conversation
                  * @example https://example.com/avatar.png
                  */
                 avatarUrl?: string;
                 /**
-                 * @description Initiales de la conversation
+                 * @description Initials of the conversation
                  * @example DG
                  */
                 initials?: string;
@@ -3886,7 +3886,7 @@ export interface components {
                  */
                 presence?: "online" | "offline" | "away";
                 /**
-                 * @description Dernier message de la conversation
+                 * @description Last message of the conversation
                  * @example Hello everyone!
                  */
                 lastMessage?: string;
@@ -3923,7 +3923,7 @@ export interface components {
                  */
                 conversationId: string | number;
                 /**
-                 * @description Contenu du message
+                 * @description Content of the message
                  * @example Hello everyone!
                  */
                 content: string;
@@ -3938,7 +3938,7 @@ export interface components {
                  */
                 authorId?: string | number;
                 /**
-                 * @description Nom de l’auteur du message
+                 * @description Name of the author of the message
                  * @example Alice Dupont
                  */
                 authorName?: string;
@@ -3991,7 +3991,7 @@ export interface components {
                      */
                     id: string | number;
                     /**
-                     * @description Nom de la mention
+                     * @description Name of the mention
                      * @example Alice Dupont
                      */
                     name: string;
@@ -4002,7 +4002,7 @@ export interface components {
                      */
                     kind?: "direct" | "group";
                     /**
-                     * @description Description de la mention
+                     * @description Description of the mention
                      * @example Mention of a user in a message
                      */
                     description?: string;

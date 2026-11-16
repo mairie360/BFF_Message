@@ -159,13 +159,13 @@
           },
           "name": {
             "type": "string",
-            "description": "Nom du contact",
+            "description": "Name of the contact",
             "example": "Alice Dupont"
           },
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Adresse email du contact",
+            "description": "Email address of the contact",
             "example": "alice.dupont@mairie360.fr"
           },
           "department": {
@@ -176,12 +176,12 @@
           "avatarUrl": {
             "type": "string",
             "format": "uri",
-            "description": "URL de l’avatar du contact",
+            "description": "Avatar URL of the contact",
             "example": "https://example.com/avatar.png"
           },
           "initials": {
             "type": "string",
-            "description": "Initiales du contact",
+            "description": "Initials of the contact",
             "example": "AD"
           },
           "presence": {
@@ -218,7 +218,7 @@
           },
           "name": {
             "type": "string",
-            "description": "Nom de la conversation",
+            "description": "Name of the conversation",
             "example": "Discussion de groupe"
           },
           "department": {
@@ -250,12 +250,12 @@
           "avatarUrl": {
             "type": "string",
             "format": "uri",
-            "description": "URL de l’avatar de la conversation",
+            "description": "Avatar URL of the conversation",
             "example": "https://example.com/avatar.png"
           },
           "initials": {
             "type": "string",
-            "description": "Initiales de la conversation",
+            "description": "Initials of the conversation",
             "example": "DG"
           },
           "presence": {
@@ -270,7 +270,7 @@
           },
           "lastMessage": {
             "type": "string",
-            "description": "Dernier message de la conversation",
+            "description": "Last message of the conversation",
             "example": "Hello everyone!"
           },
           "lastMessageAt": {
@@ -324,7 +324,7 @@
           },
           "content": {
             "type": "string",
-            "description": "Contenu du message",
+            "description": "Content of the message",
             "example": "Hello everyone!"
           },
           "sentAt": {
@@ -346,7 +346,7 @@
           },
           "authorName": {
             "type": "string",
-            "description": "Nom de l’auteur du message",
+            "description": "Name of the author of the message",
             "example": "Alice Dupont"
           },
           "direction": {
@@ -425,7 +425,7 @@
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom de la mention",
+                  "description": "Name of the mention",
                   "example": "Alice Dupont"
                 },
                 "kind": {
@@ -439,7 +439,7 @@
                 },
                 "description": {
                   "type": "string",
-                  "description": "Description de la mention",
+                  "description": "Description of the mention",
                   "example": "Mention of a user in a message"
                 }
               },
@@ -577,7 +577,7 @@
           },
           "name": {
             "type": "string",
-            "description": "Nom de la mention",
+            "description": "Name of the mention",
             "example": "Alice Dupont"
           },
           "kind": {
@@ -591,7 +591,7 @@
           },
           "description": {
             "type": "string",
-            "description": "Description de la mention",
+            "description": "Description of the mention",
             "example": "Mention of a user in a message"
           }
         },
@@ -623,7 +623,7 @@
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom de la conversation",
+                  "description": "Name of the conversation",
                   "example": "Discussion de groupe"
                 },
                 "department": {
@@ -655,12 +655,12 @@
                 "avatarUrl": {
                   "type": "string",
                   "format": "uri",
-                  "description": "URL de l’avatar de la conversation",
+                  "description": "Avatar URL of the conversation",
                   "example": "https://example.com/avatar.png"
                 },
                 "initials": {
                   "type": "string",
-                  "description": "Initiales de la conversation",
+                  "description": "Initials of the conversation",
                   "example": "DG"
                 },
                 "presence": {
@@ -675,7 +675,7 @@
                 },
                 "lastMessage": {
                   "type": "string",
-                  "description": "Dernier message de la conversation",
+                  "description": "Last message of the conversation",
                   "example": "Hello everyone!"
                 },
                 "lastMessageAt": {
@@ -733,7 +733,7 @@
               },
               "name": {
                 "type": "string",
-                "description": "Nom de la conversation",
+                "description": "Name of the conversation",
                 "example": "Discussion de groupe"
               },
               "department": {
@@ -765,12 +765,12 @@
               "avatarUrl": {
                 "type": "string",
                 "format": "uri",
-                "description": "URL de l’avatar de la conversation",
+                "description": "Avatar URL of the conversation",
                 "example": "https://example.com/avatar.png"
               },
               "initials": {
                 "type": "string",
-                "description": "Initiales de la conversation",
+                "description": "Initials of the conversation",
                 "example": "DG"
               },
               "presence": {
@@ -785,7 +785,7 @@
               },
               "lastMessage": {
                 "type": "string",
-                "description": "Dernier message de la conversation",
+                "description": "Last message of the conversation",
                 "example": "Hello everyone!"
               },
               "lastMessageAt": {
@@ -841,7 +841,7 @@
                 },
                 "content": {
                   "type": "string",
-                  "description": "Contenu du message",
+                  "description": "Content of the message",
                   "example": "Hello everyone!"
                 },
                 "sentAt": {
@@ -863,7 +863,7 @@
                 },
                 "authorName": {
                   "type": "string",
-                  "description": "Nom de l’auteur du message",
+                  "description": "Name of the author of the message",
                   "example": "Alice Dupont"
                 },
                 "direction": {
@@ -942,7 +942,7 @@
                       },
                       "name": {
                         "type": "string",
-                        "description": "Nom de la mention",
+                        "description": "Name of the mention",
                         "example": "Alice Dupont"
                       },
                       "kind": {
@@ -956,7 +956,7 @@
                       },
                       "description": {
                         "type": "string",
-                        "description": "Description de la mention",
+                        "description": "Description of the mention",
                         "example": "Mention of a user in a message"
                       }
                     },
@@ -1075,13 +1075,13 @@
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom du contact",
+                  "description": "Name of the contact",
                   "example": "Alice Dupont"
                 },
                 "email": {
                   "type": "string",
                   "format": "email",
-                  "description": "Adresse email du contact",
+                  "description": "Email address of the contact",
                   "example": "alice.dupont@mairie360.fr"
                 },
                 "department": {
@@ -1092,12 +1092,12 @@
                 "avatarUrl": {
                   "type": "string",
                   "format": "uri",
-                  "description": "URL de l’avatar du contact",
+                  "description": "Avatar URL of the contact",
                   "example": "https://example.com/avatar.png"
                 },
                 "initials": {
                   "type": "string",
-                  "description": "Initiales du contact",
+                  "description": "Initials of the contact",
                   "example": "AD"
                 },
                 "presence": {
@@ -1157,7 +1157,7 @@
               },
               "content": {
                 "type": "string",
-                "description": "Contenu du message",
+                "description": "Content of the message",
                 "example": "Hello everyone!"
               },
               "sentAt": {
@@ -1179,7 +1179,7 @@
               },
               "authorName": {
                 "type": "string",
-                "description": "Nom de l’auteur du message",
+                "description": "Name of the author of the message",
                 "example": "Alice Dupont"
               },
               "direction": {
@@ -1258,7 +1258,7 @@
                     },
                     "name": {
                       "type": "string",
-                      "description": "Nom de la mention",
+                      "description": "Name of the mention",
                       "example": "Alice Dupont"
                     },
                     "kind": {
@@ -1272,7 +1272,7 @@
                     },
                     "description": {
                       "type": "string",
-                      "description": "Description de la mention",
+                      "description": "Description of the mention",
                       "example": "Mention of a user in a message"
                     }
                   },
@@ -1367,7 +1367,7 @@
               },
               "name": {
                 "type": "string",
-                "description": "Nom de la conversation",
+                "description": "Name of the conversation",
                 "example": "Discussion de groupe"
               },
               "department": {
@@ -1399,12 +1399,12 @@
               "avatarUrl": {
                 "type": "string",
                 "format": "uri",
-                "description": "URL de l’avatar de la conversation",
+                "description": "Avatar URL of the conversation",
                 "example": "https://example.com/avatar.png"
               },
               "initials": {
                 "type": "string",
-                "description": "Initiales de la conversation",
+                "description": "Initials of the conversation",
                 "example": "DG"
               },
               "presence": {
@@ -1419,7 +1419,7 @@
               },
               "lastMessage": {
                 "type": "string",
-                "description": "Dernier message de la conversation",
+                "description": "Last message of the conversation",
                 "example": "Hello everyone!"
               },
               "lastMessageAt": {
@@ -1470,7 +1470,7 @@
               },
               "name": {
                 "type": "string",
-                "description": "Nom de la conversation",
+                "description": "Name of the conversation",
                 "example": "Discussion de groupe"
               },
               "department": {
@@ -1502,12 +1502,12 @@
               "avatarUrl": {
                 "type": "string",
                 "format": "uri",
-                "description": "URL de l’avatar de la conversation",
+                "description": "Avatar URL of the conversation",
                 "example": "https://example.com/avatar.png"
               },
               "initials": {
                 "type": "string",
-                "description": "Initiales de la conversation",
+                "description": "Initials of the conversation",
                 "example": "DG"
               },
               "presence": {
@@ -1522,7 +1522,7 @@
               },
               "lastMessage": {
                 "type": "string",
-                "description": "Dernier message de la conversation",
+                "description": "Last message of the conversation",
                 "example": "Hello everyone!"
               },
               "lastMessageAt": {
@@ -1576,7 +1576,7 @@
               },
               "content": {
                 "type": "string",
-                "description": "Contenu du message",
+                "description": "Content of the message",
                 "example": "Hello everyone!"
               },
               "sentAt": {
@@ -1598,7 +1598,7 @@
               },
               "authorName": {
                 "type": "string",
-                "description": "Nom de l’auteur du message",
+                "description": "Name of the author of the message",
                 "example": "Alice Dupont"
               },
               "direction": {
@@ -1677,7 +1677,7 @@
                     },
                     "name": {
                       "type": "string",
-                      "description": "Nom de la mention",
+                      "description": "Name of the mention",
                       "example": "Alice Dupont"
                     },
                     "kind": {
@@ -1691,7 +1691,7 @@
                     },
                     "description": {
                       "type": "string",
-                      "description": "Description de la mention",
+                      "description": "Description of the mention",
                       "example": "Mention of a user in a message"
                     }
                   },
@@ -1796,7 +1796,7 @@
               },
               "name": {
                 "type": "string",
-                "description": "Nom de la conversation",
+                "description": "Name of the conversation",
                 "example": "Discussion de groupe"
               },
               "department": {
@@ -1828,12 +1828,12 @@
               "avatarUrl": {
                 "type": "string",
                 "format": "uri",
-                "description": "URL de l’avatar de la conversation",
+                "description": "Avatar URL of the conversation",
                 "example": "https://example.com/avatar.png"
               },
               "initials": {
                 "type": "string",
-                "description": "Initiales de la conversation",
+                "description": "Initials of the conversation",
                 "example": "DG"
               },
               "presence": {
@@ -1848,7 +1848,7 @@
               },
               "lastMessage": {
                 "type": "string",
-                "description": "Dernier message de la conversation",
+                "description": "Last message of the conversation",
                 "example": "Hello everyone!"
               },
               "lastMessageAt": {
@@ -2013,13 +2013,13 @@
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom du contact",
+                  "description": "Name of the contact",
                   "example": "Alice Dupont"
                 },
                 "email": {
                   "type": "string",
                   "format": "email",
-                  "description": "Adresse email du contact",
+                  "description": "Email address of the contact",
                   "example": "alice.dupont@mairie360.fr"
                 },
                 "department": {
@@ -2030,12 +2030,12 @@
                 "avatarUrl": {
                   "type": "string",
                   "format": "uri",
-                  "description": "URL de l’avatar du contact",
+                  "description": "Avatar URL of the contact",
                   "example": "https://example.com/avatar.png"
                 },
                 "initials": {
                   "type": "string",
-                  "description": "Initiales du contact",
+                  "description": "Initials of the contact",
                   "example": "AD"
                 },
                 "presence": {
@@ -2132,7 +2132,7 @@
                 },
                 "name": {
                   "type": "string",
-                  "description": "Nom de la conversation",
+                  "description": "Name of the conversation",
                   "example": "Discussion de groupe"
                 },
                 "department": {
@@ -2164,12 +2164,12 @@
                 "avatarUrl": {
                   "type": "string",
                   "format": "uri",
-                  "description": "URL de l’avatar de la conversation",
+                  "description": "Avatar URL of the conversation",
                   "example": "https://example.com/avatar.png"
                 },
                 "initials": {
                   "type": "string",
-                  "description": "Initiales de la conversation",
+                  "description": "Initials of the conversation",
                   "example": "DG"
                 },
                 "presence": {
@@ -2184,7 +2184,7 @@
                 },
                 "lastMessage": {
                   "type": "string",
-                  "description": "Dernier message de la conversation",
+                  "description": "Last message of the conversation",
                   "example": "Hello everyone!"
                 },
                 "lastMessageAt": {
@@ -2253,7 +2253,7 @@
                 },
                 "content": {
                   "type": "string",
-                  "description": "Contenu du message",
+                  "description": "Content of the message",
                   "example": "Hello everyone!"
                 },
                 "sentAt": {
@@ -2275,7 +2275,7 @@
                 },
                 "authorName": {
                   "type": "string",
-                  "description": "Nom de l’auteur du message",
+                  "description": "Name of the author of the message",
                   "example": "Alice Dupont"
                 },
                 "direction": {
@@ -2354,7 +2354,7 @@
                       },
                       "name": {
                         "type": "string",
-                        "description": "Nom de la mention",
+                        "description": "Name of the mention",
                         "example": "Alice Dupont"
                       },
                       "kind": {
@@ -2368,7 +2368,7 @@
                       },
                       "description": {
                         "type": "string",
-                        "description": "Description de la mention",
+                        "description": "Description of the mention",
                         "example": "Mention of a user in a message"
                       }
                     },
@@ -3078,13 +3078,13 @@
                           },
                           "name": {
                             "type": "string",
-                            "description": "Nom du contact",
+                            "description": "Name of the contact",
                             "example": "Alice Dupont"
                           },
                           "email": {
                             "type": "string",
                             "format": "email",
-                            "description": "Adresse email du contact",
+                            "description": "Email address of the contact",
                             "example": "alice.dupont@mairie360.fr"
                           },
                           "department": {
@@ -3095,12 +3095,12 @@
                           "avatarUrl": {
                             "type": "string",
                             "format": "uri",
-                            "description": "URL de l’avatar du contact",
+                            "description": "Avatar URL of the contact",
                             "example": "https://example.com/avatar.png"
                           },
                           "initials": {
                             "type": "string",
-                            "description": "Initiales du contact",
+                            "description": "Initials of the contact",
                             "example": "AD"
                           },
                           "presence": {
@@ -3197,7 +3197,7 @@
                           },
                           "name": {
                             "type": "string",
-                            "description": "Nom de la conversation",
+                            "description": "Name of the conversation",
                             "example": "Discussion de groupe"
                           },
                           "department": {
@@ -3229,12 +3229,12 @@
                           "avatarUrl": {
                             "type": "string",
                             "format": "uri",
-                            "description": "URL de l’avatar de la conversation",
+                            "description": "Avatar URL of the conversation",
                             "example": "https://example.com/avatar.png"
                           },
                           "initials": {
                             "type": "string",
-                            "description": "Initiales de la conversation",
+                            "description": "Initials of the conversation",
                             "example": "DG"
                           },
                           "presence": {
@@ -3249,7 +3249,7 @@
                           },
                           "lastMessage": {
                             "type": "string",
-                            "description": "Dernier message de la conversation",
+                            "description": "Last message of the conversation",
                             "example": "Hello everyone!"
                           },
                           "lastMessageAt": {
@@ -3318,7 +3318,7 @@
                           },
                           "content": {
                             "type": "string",
-                            "description": "Contenu du message",
+                            "description": "Content of the message",
                             "example": "Hello everyone!"
                           },
                           "sentAt": {
@@ -3340,7 +3340,7 @@
                           },
                           "authorName": {
                             "type": "string",
-                            "description": "Nom de l’auteur du message",
+                            "description": "Name of the author of the message",
                             "example": "Alice Dupont"
                           },
                           "direction": {
@@ -3419,7 +3419,7 @@
                                 },
                                 "name": {
                                   "type": "string",
-                                  "description": "Nom de la mention",
+                                  "description": "Name of the mention",
                                   "example": "Alice Dupont"
                                 },
                                 "kind": {
@@ -3433,7 +3433,7 @@
                                 },
                                 "description": {
                                   "type": "string",
-                                  "description": "Description de la mention",
+                                  "description": "Description of the mention",
                                   "example": "Mention of a user in a message"
                                 }
                               },
@@ -3627,13 +3627,13 @@
                           },
                           "name": {
                             "type": "string",
-                            "description": "Nom du contact",
+                            "description": "Name of the contact",
                             "example": "Alice Dupont"
                           },
                           "email": {
                             "type": "string",
                             "format": "email",
-                            "description": "Adresse email du contact",
+                            "description": "Email address of the contact",
                             "example": "alice.dupont@mairie360.fr"
                           },
                           "department": {
@@ -3644,12 +3644,12 @@
                           "avatarUrl": {
                             "type": "string",
                             "format": "uri",
-                            "description": "URL de l’avatar du contact",
+                            "description": "Avatar URL of the contact",
                             "example": "https://example.com/avatar.png"
                           },
                           "initials": {
                             "type": "string",
-                            "description": "Initiales du contact",
+                            "description": "Initials of the contact",
                             "example": "AD"
                           },
                           "presence": {
@@ -3806,7 +3806,7 @@
                           },
                           "name": {
                             "type": "string",
-                            "description": "Nom de la conversation",
+                            "description": "Name of the conversation",
                             "example": "Discussion de groupe"
                           },
                           "department": {
@@ -3838,12 +3838,12 @@
                           "avatarUrl": {
                             "type": "string",
                             "format": "uri",
-                            "description": "URL de l’avatar de la conversation",
+                            "description": "Avatar URL of the conversation",
                             "example": "https://example.com/avatar.png"
                           },
                           "initials": {
                             "type": "string",
-                            "description": "Initiales de la conversation",
+                            "description": "Initials of the conversation",
                             "example": "DG"
                           },
                           "presence": {
@@ -3858,7 +3858,7 @@
                           },
                           "lastMessage": {
                             "type": "string",
-                            "description": "Dernier message de la conversation",
+                            "description": "Last message of the conversation",
                             "example": "Hello everyone!"
                           },
                           "lastMessageAt": {
@@ -4032,7 +4032,7 @@
                         },
                         "name": {
                           "type": "string",
-                          "description": "Nom de la conversation",
+                          "description": "Name of the conversation",
                           "example": "Discussion de groupe"
                         },
                         "department": {
@@ -4064,12 +4064,12 @@
                         "avatarUrl": {
                           "type": "string",
                           "format": "uri",
-                          "description": "URL de l’avatar de la conversation",
+                          "description": "Avatar URL of the conversation",
                           "example": "https://example.com/avatar.png"
                         },
                         "initials": {
                           "type": "string",
-                          "description": "Initiales de la conversation",
+                          "description": "Initials of the conversation",
                           "example": "DG"
                         },
                         "presence": {
@@ -4084,7 +4084,7 @@
                         },
                         "lastMessage": {
                           "type": "string",
-                          "description": "Dernier message de la conversation",
+                          "description": "Last message of the conversation",
                           "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
@@ -4128,13 +4128,13 @@
                           },
                           "name": {
                             "type": "string",
-                            "description": "Nom du contact",
+                            "description": "Name of the contact",
                             "example": "Alice Dupont"
                           },
                           "email": {
                             "type": "string",
                             "format": "email",
-                            "description": "Adresse email du contact",
+                            "description": "Email address of the contact",
                             "example": "alice.dupont@mairie360.fr"
                           },
                           "department": {
@@ -4145,12 +4145,12 @@
                           "avatarUrl": {
                             "type": "string",
                             "format": "uri",
-                            "description": "URL de l’avatar du contact",
+                            "description": "Avatar URL of the contact",
                             "example": "https://example.com/avatar.png"
                           },
                           "initials": {
                             "type": "string",
-                            "description": "Initiales du contact",
+                            "description": "Initials of the contact",
                             "example": "AD"
                           },
                           "presence": {
@@ -4203,7 +4203,7 @@
                           },
                           "content": {
                             "type": "string",
-                            "description": "Contenu du message",
+                            "description": "Content of the message",
                             "example": "Hello everyone!"
                           },
                           "sentAt": {
@@ -4225,7 +4225,7 @@
                           },
                           "authorName": {
                             "type": "string",
-                            "description": "Nom de l’auteur du message",
+                            "description": "Name of the author of the message",
                             "example": "Alice Dupont"
                           },
                           "direction": {
@@ -4304,7 +4304,7 @@
                                 },
                                 "name": {
                                   "type": "string",
-                                  "description": "Nom de la mention",
+                                  "description": "Name of the mention",
                                   "example": "Alice Dupont"
                                 },
                                 "kind": {
@@ -4318,7 +4318,7 @@
                                 },
                                 "description": {
                                   "type": "string",
-                                  "description": "Description de la mention",
+                                  "description": "Description of the mention",
                                   "example": "Mention of a user in a message"
                                 }
                               },
@@ -4865,7 +4865,7 @@
                         },
                         "name": {
                           "type": "string",
-                          "description": "Nom de la conversation",
+                          "description": "Name of the conversation",
                           "example": "Discussion de groupe"
                         },
                         "department": {
@@ -4897,12 +4897,12 @@
                         "avatarUrl": {
                           "type": "string",
                           "format": "uri",
-                          "description": "URL de l’avatar de la conversation",
+                          "description": "Avatar URL of the conversation",
                           "example": "https://example.com/avatar.png"
                         },
                         "initials": {
                           "type": "string",
-                          "description": "Initiales de la conversation",
+                          "description": "Initials of the conversation",
                           "example": "DG"
                         },
                         "presence": {
@@ -4917,7 +4917,7 @@
                         },
                         "lastMessage": {
                           "type": "string",
-                          "description": "Dernier message de la conversation",
+                          "description": "Last message of the conversation",
                           "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
@@ -5207,7 +5207,7 @@
                         },
                         "name": {
                           "type": "string",
-                          "description": "Nom de la conversation",
+                          "description": "Name of the conversation",
                           "example": "Discussion de groupe"
                         },
                         "department": {
@@ -5239,12 +5239,12 @@
                         "avatarUrl": {
                           "type": "string",
                           "format": "uri",
-                          "description": "URL de l’avatar de la conversation",
+                          "description": "Avatar URL of the conversation",
                           "example": "https://example.com/avatar.png"
                         },
                         "initials": {
                           "type": "string",
-                          "description": "Initiales de la conversation",
+                          "description": "Initials of the conversation",
                           "example": "DG"
                         },
                         "presence": {
@@ -5259,7 +5259,7 @@
                         },
                         "lastMessage": {
                           "type": "string",
-                          "description": "Dernier message de la conversation",
+                          "description": "Last message of the conversation",
                           "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
@@ -5315,7 +5315,7 @@
                           },
                           "content": {
                             "type": "string",
-                            "description": "Contenu du message",
+                            "description": "Content of the message",
                             "example": "Hello everyone!"
                           },
                           "sentAt": {
@@ -5337,7 +5337,7 @@
                           },
                           "authorName": {
                             "type": "string",
-                            "description": "Nom de l’auteur du message",
+                            "description": "Name of the author of the message",
                             "example": "Alice Dupont"
                           },
                           "direction": {
@@ -5416,7 +5416,7 @@
                                 },
                                 "name": {
                                   "type": "string",
-                                  "description": "Nom de la mention",
+                                  "description": "Name of the mention",
                                   "example": "Alice Dupont"
                                 },
                                 "kind": {
@@ -5430,7 +5430,7 @@
                                 },
                                 "description": {
                                   "type": "string",
-                                  "description": "Description de la mention",
+                                  "description": "Description of the mention",
                                   "example": "Mention of a user in a message"
                                 }
                               },
@@ -5718,7 +5718,7 @@
                         },
                         "content": {
                           "type": "string",
-                          "description": "Contenu du message",
+                          "description": "Content of the message",
                           "example": "Hello everyone!"
                         },
                         "sentAt": {
@@ -5740,7 +5740,7 @@
                         },
                         "authorName": {
                           "type": "string",
-                          "description": "Nom de l’auteur du message",
+                          "description": "Name of the author of the message",
                           "example": "Alice Dupont"
                         },
                         "direction": {
@@ -5819,7 +5819,7 @@
                               },
                               "name": {
                                 "type": "string",
-                                "description": "Nom de la mention",
+                                "description": "Name of the mention",
                                 "example": "Alice Dupont"
                               },
                               "kind": {
@@ -5833,7 +5833,7 @@
                               },
                               "description": {
                                 "type": "string",
-                                "description": "Description de la mention",
+                                "description": "Description of the mention",
                                 "example": "Mention of a user in a message"
                               }
                             },
@@ -5928,7 +5928,7 @@
                         },
                         "name": {
                           "type": "string",
-                          "description": "Nom de la conversation",
+                          "description": "Name of the conversation",
                           "example": "Discussion de groupe"
                         },
                         "department": {
@@ -5960,12 +5960,12 @@
                         "avatarUrl": {
                           "type": "string",
                           "format": "uri",
-                          "description": "URL de l’avatar de la conversation",
+                          "description": "Avatar URL of the conversation",
                           "example": "https://example.com/avatar.png"
                         },
                         "initials": {
                           "type": "string",
-                          "description": "Initiales de la conversation",
+                          "description": "Initials of the conversation",
                           "example": "DG"
                         },
                         "presence": {
@@ -5980,7 +5980,7 @@
                         },
                         "lastMessage": {
                           "type": "string",
-                          "description": "Dernier message de la conversation",
+                          "description": "Last message of the conversation",
                           "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
@@ -6147,7 +6147,7 @@
                         },
                         "name": {
                           "type": "string",
-                          "description": "Nom de la conversation",
+                          "description": "Name of the conversation",
                           "example": "Discussion de groupe"
                         },
                         "department": {
@@ -6179,12 +6179,12 @@
                         "avatarUrl": {
                           "type": "string",
                           "format": "uri",
-                          "description": "URL de l’avatar de la conversation",
+                          "description": "Avatar URL of the conversation",
                           "example": "https://example.com/avatar.png"
                         },
                         "initials": {
                           "type": "string",
-                          "description": "Initiales de la conversation",
+                          "description": "Initials of the conversation",
                           "example": "DG"
                         },
                         "presence": {
@@ -6199,7 +6199,7 @@
                         },
                         "lastMessage": {
                           "type": "string",
-                          "description": "Dernier message de la conversation",
+                          "description": "Last message of the conversation",
                           "example": "Hello everyone!"
                         },
                         "lastMessageAt": {
@@ -6253,7 +6253,7 @@
                         },
                         "content": {
                           "type": "string",
-                          "description": "Contenu du message",
+                          "description": "Content of the message",
                           "example": "Hello everyone!"
                         },
                         "sentAt": {
@@ -6275,7 +6275,7 @@
                         },
                         "authorName": {
                           "type": "string",
-                          "description": "Nom de l’auteur du message",
+                          "description": "Name of the author of the message",
                           "example": "Alice Dupont"
                         },
                         "direction": {
@@ -6354,7 +6354,7 @@
                               },
                               "name": {
                                 "type": "string",
-                                "description": "Nom de la mention",
+                                "description": "Name of the mention",
                                 "example": "Alice Dupont"
                               },
                               "kind": {
@@ -6368,7 +6368,7 @@
                               },
                               "description": {
                                 "type": "string",
-                                "description": "Description de la mention",
+                                "description": "Description of the mention",
                                 "example": "Mention of a user in a message"
                               }
                             },
