@@ -628,6 +628,75 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expectApiError(anonymous, 401, 'UNAUTHORIZED');
       expect(messageApi.requests).toEqual([]);
     });
+
+    // MAIR-537: upstream failures on the write routes and on the Core reads of the messaging screens.
+    test.each([
+      ['a Message API 500 on the find-or-create', 500],
+      ['a Message API 404', 404],
+    ])('MAIR-537 POST /direct-messages maps %s to a documented 502 without posting', async (_label, status) => {
+      mockMessageApi({ chats: [], messages: {}, members: {}, directChatId: 21 });
+      messageApi.on('post', MESSAGE_API.direct, { status, raw: 'Database error chats', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Bonjour' });
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expectBffContract('post', '/direct-messages', response);
+      expect(JSON.stringify(response.body)).not.toContain('Database error');
+      expect(messageApi.calls(MESSAGE_API.direct, 'POST')).toHaveLength(1);
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST')).toHaveLength(0);
+    });
+
+    test('MAIR-537 POST /direct-messages maps a Message API 500 on the post itself to a 502, once', async () => {
+      mockMessageApi({ chats: [directChatView(21, sophie.id, 'Sophie Leroy')], messages: { 21: [] }, members: { 21: [agent.id, sophie.id] }, directChatId: 21 });
+      messageApi.on('post', MESSAGE_API.messages, { status: 500, raw: 'Database error messages', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Bonjour' });
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expect(JSON.stringify(response.body)).not.toContain('Database error');
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST')).toHaveLength(1);
+    });
+
+    test('MAIR-537 POST /groups maps a Message API 500 to a documented 502 and never retries the creation', async () => {
+      mockMessageApi();
+      messageApi.on('post', MESSAGE_API.chats, { status: 500, raw: 'Database error chats', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).post('/groups').set('Authorization', authorizationFor(agent.id))
+        .send({ name: 'Équipe voirie', memberIds: ['user-8', 9] });
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expectBffContract('post', '/groups', response);
+      expect(JSON.stringify(response.body)).not.toContain('Database error');
+      expect(messageApi.calls(MESSAGE_API.chats, 'POST')).toHaveLength(1);
+    });
+
+    test.each([
+      ['/contacts'],
+      ['/me'],
+      ['/messaging/bootstrap'],
+    ])('MAIR-537 GET %s maps a Core API 500 to a documented 502 without leaking its body', async (route) => {
+      mockMessageApi();
+      coreApi.on('get', CORE_API.directory, { status: 500, raw: 'Database error users', contentType: 'text/plain', outOfContract: true });
+      coreApi.on('get', CORE_API.me, { status: 500, raw: 'Database error users', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).get(route).set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expectBffContract('get', route, response);
+      expect(JSON.stringify(response.body)).not.toContain('Database error');
+    });
+
+    test('MAIR-537 GET /contacts retries the idempotent Core read once, then gives up with a 502', async () => {
+      mockMessageApi();
+      coreApi.on('get', CORE_API.directory, { status: 503, raw: 'busy', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).get('/contacts').set('Authorization', authorizationFor(agent.id));
+
+      expectApiError(response, 502, 'BAD_GATEWAY');
+      expect(coreApi.calls(CORE_API.directory, 'GET')).toHaveLength(2);
+    });
   });
 
   describe('current user, contacts and bootstrap', () => {
