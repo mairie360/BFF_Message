@@ -1,16 +1,17 @@
 # Journal des releases — BFF_Message
 
-<!-- release-journal-state {"dev": "e21092b04232a2d4c2bd7d82c09c045bb9e6228c", "prod": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "prod_tag": "v1.2.0", "staging": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "updated": {"dev": "2026-11-17 17:11 UTC", "prod": "2026-11-13 00:46 UTC", "staging": "2026-11-13 00:28 UTC"}} -->
+<!-- release-journal-state {"dev": "85c2ec96f11df1a4015caddeed83f83b3cff98ff", "prod": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "prod_tag": "v1.2.0", "staging": "dd6618655f445b5920bd5e4d34cfb20dc243ddbc", "updated": {"dev": "2026-11-18 01:02 UTC", "prod": "2026-11-13 00:46 UTC", "staging": "2026-11-13 00:28 UTC"}} -->
 > Tenu à jour par la CI (`mairie360/CICD`, action `release/release-journal`) à chaque passage en dev, staging et prod. Ne pas modifier à la main : le fichier est réécrit au passage suivant.
 
 | Environnement | Version | Commit | Mis à jour |
 | --- | --- | --- | --- |
 | prod | v1.2.0 | `dd66186` | 2026-11-13 00:46 UTC |
 | staging | — | `dd66186` | 2026-11-13 00:28 UTC |
-| dev | — | `e21092b` | 2026-11-17 17:11 UTC |
+| dev | — | `85c2ec9` | 2026-11-18 01:02 UTC |
 
 ## Ajouté sur main depuis la dernière release prod (v1.2.0)
 
+- fix: MAIR-682 [Audit 23/10] All BFFs: graceful shutdown on SIGTERM (B7) (#274) ([#274](https://github.com/mairie360/BFF_Message/pull/274))
 - test: MAIR-537 Test upstream error mapping on every write route of the BFFs ([#272](https://github.com/mairie360/BFF_Message/pull/272))
 - test: MAIR-538 Add cross-cutting timeout, 413 and token-refusal tests to the BFFs and the template ([#270](https://github.com/mairie360/BFF_Message/pull/270))
 - feat: MAIR-998 Test stacks follow the moving upstream tag of the stage (#267) ([#267](https://github.com/mairie360/BFF_Message/pull/267))
@@ -23,6 +24,7 @@
 
 ## Différence dev → staging (en dev, pas encore en staging)
 
+- fix: MAIR-682 [Audit 23/10] All BFFs: graceful shutdown on SIGTERM (B7) (#274) ([#274](https://github.com/mairie360/BFF_Message/pull/274))
 - test: MAIR-537 Test upstream error mapping on every write route of the BFFs ([#272](https://github.com/mairie360/BFF_Message/pull/272))
 - test: MAIR-538 Add cross-cutting timeout, 413 and token-refusal tests to the BFFs and the template ([#270](https://github.com/mairie360/BFF_Message/pull/270))
 - feat: MAIR-998 Test stacks follow the moving upstream tag of the stage (#267) ([#267](https://github.com/mairie360/BFF_Message/pull/267))
@@ -44,6 +46,7 @@ _Rien._
 <!-- release-journal-history:start -->
 | Date | Environnement | Version | Commit | Run |
 | --- | --- | --- | --- | --- |
+| 2026-11-18 01:02 UTC | dev | — | `85c2ec9` | [run](https://github.com/mairie360/BFF_Message/actions/runs/44211995887) |
 | 2026-11-17 17:11 UTC | dev | — | `e21092b` | [run](https://github.com/mairie360/BFF_Message/actions/runs/44131553698) |
 | 2026-11-17 17:09 UTC | dev | — | `d4cb171` | [run](https://github.com/mairie360/BFF_Message/actions/runs/44131539024) |
 | 2026-11-17 11:59 UTC | dev | — | `40d8acf` | [run](https://github.com/mairie360/BFF_Message/actions/runs/44076524977) |
