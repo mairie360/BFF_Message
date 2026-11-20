@@ -97,8 +97,17 @@ BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, rol
 SSE `GET /api/v1/stream` as `GET /stream`: signals translated to `{ type, conversationId }`, pings kept, `id:` /
 `Last-Event-ID` relayed, head + `retry:` + `: connected` sent before Message API answers (MAIR-561: its refusal or
 failure is then an `event: stream_error` carrying the `ErrorResponse`, not a status), ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full
-answer; k6 covers it in `crud` only). The relay is moving to a WebSocket `GET /ws` (epic MAIR-655, MAIR-658), SSE kept
-until MAIR-662: the frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
+answer; k6 covers it in `crud` only). The relay is moving to a WebSocket `GET /ws` (epic MAIR-655), SSE kept
+until MAIR-662. `realtime.ts` (MAIR-658) relays Message API's `GET /api/v1/ws`: Express cannot upgrade, so
+`attachRealtime(server)` handles the HTTP server's `upgrade` event (wired in `serve()`, `src/index.ts`, which also closes
+the sockets with `1001` on SIGTERM; a test server must call it too), runs the lib's `requireSession` on the handshake
+(`401` before any upstream call, `503` unconfigured), opens Message API's socket with the caller's token and upgrades the
+client only once it is open (`401` when Message API answers 401/404, `502` otherwise or after 10 s). Frames go through
+`translateFrame` (the 4 contract types only, `MessageRealtimeEvent`), client data frames are dropped, `4001`/`4008`/
+`1001`/`1000` are relayed and any other upstream end becomes `1013`; 15 s ping / 45 s pong timeout and
+`MESSAGE_WS_MAX_MS` (30 min ± 10 %) close with `1001`. The Express route `GET /ws` only answers `400` to a plain GET.
+`tests/mair-658-websocket.test.ts` runs it against a `ws` stand-in of Message API (orval cannot describe frames);
+newman only checks the refused handshakes and k6 the plain `400` until MAIR-661. The frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
 `docs/en/realtime-websocket.md` (decision: `docs/en/adr/0001-messaging-websocket.md`, French under `docs/fr/`), and
 `docs/en/technical.md` / `docs/fr/technical.md` here summarise the BFF's side.
 

@@ -4,6 +4,7 @@ import type { Server } from 'node:http';
 import './telemetry';
 import { assertConfigured, gracefulShutdown, type GracefulShutdown, sessionKeysFromEnv } from '@mairie360/bffs-lib';
 import app from './app';
+import { attachRealtime, type Realtime } from './routes/Messages/realtime';
 import { logger } from './logger';
 
 /** Every upstream the BFF calls, configured by `<SERVICE>_URL` (+ optional `<SERVICE>_PORT`). */
@@ -32,10 +33,20 @@ export function assertStartupConfiguration(): void {
   }
 }
 
-/** Listens and drains on SIGTERM instead of dropping the requests in flight (bffs-lib gracefulShutdown). */
-export function serve(port: number): { server: Server; shutdown: GracefulShutdown } {
+/**
+ * Listens, relays the WebSocket handshakes of `GET /ws` (MAIR-658) and drains on SIGTERM instead of dropping the
+ * requests in flight (bffs-lib gracefulShutdown). An upgraded socket is no longer an HTTP request the drain can end:
+ * the drain starts with `server.close()`, which closes the WebSockets with `1001` first, so it does not wait for them.
+ */
+export function serve(port: number): { server: Server; shutdown: GracefulShutdown; realtime: Realtime } {
   const server = app.listen(port, () => logger.info('server listening', { port }));
-  return { server, shutdown: gracefulShutdown(server) };
+  const realtime = attachRealtime(server);
+  const close = server.close.bind(server);
+  server.close = (callback?: (error?: Error) => void) => {
+    realtime.closeAll();
+    return close(callback);
+  };
+  return { server, realtime, shutdown: gracefulShutdown(server) };
 }
 
 if (require.main === module) {
