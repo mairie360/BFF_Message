@@ -33,4 +33,8 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1`. Il est exécu
 
 ## Références métier
 
-`/business-references` est construit dans BFF Message depuis Project API et Calendar API (`PROJECT_API_URL`, `CALENDAR_API_URL`), jamais depuis un autre BFF (MAIR-525). `/stream` remplace le rechargement toutes les 2 s : le front ouvre un `EventSource` et recharge la conversation signalée. Le web service relaie la même réponse. Les pièces jointes ou groupes déjà gérés en mémoire par le BFF ne deviennent pas persistants par cet alignement.
+`/business-references` est construit dans BFF Message depuis Project API et Calendar API (`PROJECT_API_URL`, `CALENDAR_API_URL`), jamais depuis un autre BFF (MAIR-525). `/stream` remplace le rechargement toutes les 2 s : le web service relaie la même réponse, le front la lit avec `fetch` en flux (pas d'`EventSource`), relit la conversation signalée et ne recharge toutes les 2 s que tant que le flux n'est pas connecté.
+
+## Temps réel WebSocket (MAIR-655)
+
+Le flux `/stream` est remplacé par un WebSocket `GET /ws` (MAIR-658), le SSE restant disponible jusqu'à sa validation puis son retrait (MAIR-662). Le contrat (poignée de main front → BFF → Message API, trames `MessageRealtimeEvent` `{ type, conversationId, messageId, unreadCount }`, codes de fermeture, limites, comportement du client) est figé dans `docs/fr/temps-reel-websocket.md` de Message_API (version anglaise de référence : `docs/en/realtime-websocket.md`, décision : `docs/en/adr/0001-messaging-websocket.md`). Le front n'ouvre `/ws` que via son propre serveur : le BFF reste privé et ne lit aucun cookie. Les pièces jointes ou groupes déjà gérés en mémoire par le BFF ne deviennent pas persistants par cet alignement.
