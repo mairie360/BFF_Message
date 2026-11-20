@@ -97,7 +97,10 @@ BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, rol
 SSE `GET /api/v1/stream` as `GET /stream`: signals translated to `{ type, conversationId }`, pings kept, `id:` /
 `Last-Event-ID` relayed, head + `retry:` + `: connected` sent before Message API answers (MAIR-561: its refusal or
 failure is then an `event: stream_error` carrying the `ErrorResponse`, not a status), ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full
-answer; k6 covers it in `crud` only).
+answer; k6 covers it in `crud` only). The relay is moving to a WebSocket `GET /ws` (epic MAIR-655, MAIR-658), SSE kept
+until MAIR-662: the frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
+`docs/en/realtime-websocket.md` (decision: `docs/en/adr/0001-messaging-websocket.md`, French under `docs/fr/`), and
+`docs/en/technical.md` / `docs/fr/technical.md` here summarise the BFF's side.
 
 **ID convention.** Outward IDs are prefixed strings: `conversation-<n>`, `message-<n>`, `user-<n>`.
 `parseNumericId` extracts the trailing digits before calling upstream (which uses numeric ids).
