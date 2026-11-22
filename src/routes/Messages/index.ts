@@ -7,7 +7,9 @@ import bootstrapRoutes from './bootstrap';
 import contactsRoutes from './contacts';
 import conversationRoutes from './conversation';
 import groupsRoutes from './groups';
+import linkSuggestionsRouter from './link_suggestions';
 import meRoutes from './me';
+import membersRoutes from './members';
 import messageRoutes from './message';
 import streamRoutes from './stream';
 
@@ -22,6 +24,7 @@ export const SESSION_BOUND_PATHS = [
     '/conversations',
     '/direct-messages',
     '/groups',
+    '/link-suggestions',
     '/me',
     '/messaging',
     '/stream',
@@ -35,7 +38,9 @@ router.use('/attachments', attachmentsRoutes);
 router.use('/messaging/bootstrap', bootstrapRoutes);
 router.use('/contacts', contactsRoutes);
 router.use('/conversations', conversationRoutes);
+router.use('/conversations', membersRoutes);
 router.use('/groups', groupsRoutes);
+router.use('/link-suggestions', linkSuggestionsRouter);
 router.use('/me', meRoutes);
 router.use('/stream', streamRoutes);
 router.use('/', messageRoutes);
