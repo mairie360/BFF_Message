@@ -32,7 +32,7 @@ export const CALENDAR_WINDOW_HALF_DAYS = 182;
 
 type BusinessReferenceKind = "project" | "task" | "event";
 
-type BusinessReference = {
+export type BusinessReference = {
   id: string;
   title: string;
   kind: BusinessReferenceKind;
@@ -59,7 +59,7 @@ async function seesEveryTask(req: Request): Promise<boolean> {
  * PROJECT_DETAILS_CONCURRENCY at a time, until Project API lists the caller's tasks in one call, MAIR-524). Ids and
  * labels are those of BFF Project (`project-<id>`, `task-<id>`), so a reference made earlier still matches.
  */
-async function loadProjectReferences(req: Request): Promise<BusinessReference[]> {
+export async function loadProjectReferences(req: Request): Promise<BusinessReference[]> {
   const options = () => asCaller('PROJECT_API', req, BUSINESS_API_TIMEOUT_MS);
   const [page, everyTask] = await Promise.all([
     callUpstream('PROJECT_API', async () => (await projectApi.getProjects({ limit: PROJECTS_PAGE_LIMIT }, options())).data, READ),
@@ -105,7 +105,7 @@ export function calendarDateRange(at: Date = new Date()) {
 }
 
 /** The caller's events of the window, from one Calendar API list (no detail per event, MAIR-525). */
-async function loadCalendarReferences(req: Request): Promise<BusinessReference[]> {
+export async function loadCalendarReferences(req: Request): Promise<BusinessReference[]> {
   const { from, to } = calendarDateRange();
   const params = { start: wallClockToUtc(from, '00:00:00'), end: wallClockToUtc(to, '23:59:59') };
   const calendar = await callUpstream('CALENDAR_API', async () => (

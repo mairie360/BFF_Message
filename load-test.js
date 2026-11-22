@@ -103,6 +103,26 @@ function conversationIdOf(response) {
   return body.conversation ? body.conversation.id : undefined;
 }
 
+/** A second seeded member a group can be extended with (init-test.sql). */
+const SECOND_MEMBER_ID = 'user-10';
+
+/**
+ * A group of the caller and the contact with one message of the caller (MAIR-1154 write handlers): the group is kept
+ * for cleanup() unless the handler deletes it itself (`keep: false`).
+ */
+function groupWithMessage(data, keep = true) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, data.user);
+  const created = http.post(coverage.url('POST /groups'), JSON.stringify(groupBody(unique('k6 v2 group'))), { headers, tags: { op: 'POST /groups' } });
+  check(created, { 'create group 201': (r) => r.status === 201 });
+  const conversationId = need(conversationIdOf(created), 'V2 group');
+  if (keep) state.groups = (state.groups || []).concat(conversationId);
+  const sent = http.post(coverage.url('POST /conversations/{conversationId}/messages', { conversationId }), JSON.stringify({ content: 'k6 v2 message' }), {
+    headers, tags: { op: 'POST /conversations/{conversationId}/messages' },
+  });
+  check(sent, { 'send message 201': (r) => r.status === 201 });
+  return { conversationId, messageId: need((json(sent) || { message: {} }).message.id, 'V2 message') };
+}
+
 function groupBody(name) {
   return { name, description: 'k6 group', memberIds: [CONTACT_ID] };
 }
@@ -255,6 +275,81 @@ const handlers = {
     check(res, { 'direct message 201': (r) => r.status === 201 });
     state.directId = conversationIdOf(res);
   },
+  // --- Messaging V2 (MAIR-1154) ---
+  // Reads: the members of one of the agent's group chats (8 members), a search of its messages, its @ suggestions.
+  'GET /conversations/{conversationId}/members': ({ request }) => {
+    const agent = randomAgent();
+    check(request({ path: { conversationId: agent.chat }, headers: agent.headers }), {
+      'members 200': (r) => r.status === 200,
+      'members of the agent chat': (r) => r.status === 200 && (body(r).members || []).some((m) => m.id === `user-${agent.id}`),
+    });
+  },
+  'GET /conversations/{conversationId}/search': ({ request }) => {
+    const agent = randomAgent();
+    check(request({ path: { conversationId: agent.chat }, query: { q: 'Perf message', limit: 10 }, headers: agent.headers }), {
+      'search 200': (r) => r.status === 200,
+      'search finds the seeded messages': (r) => r.status === 200 && (body(r).items || []).length === 10,
+    });
+  },
+  'GET /conversations/{conversationId}/mention-suggestions': ({ request }) => {
+    const agent = randomAgent();
+    check(request({ path: { conversationId: agent.chat }, headers: agent.headers }), {
+      'mention suggestions 200': (r) => r.status === 200,
+      'mention suggestions list the other members': (r) => r.status === 200 && (body(r).people || []).length > 0
+        && !(body(r).people || []).some((p) => p.id === `user-${agent.id}`),
+    });
+  },
+  // Project API and Calendar API are not part of the stack: both sources are unavailable, the route still answers 200.
+  'GET /link-suggestions': ({ request }) =>
+    check(request({ query: { q: 'projet' } }), { 'link suggestions 200': (r) => r.status === 200 }),
+  // Writes: each creates its own group (kept in state.groups, deleted by cleanup()) and message, whatever the order.
+  'PATCH /conversations/{conversationId}/messages/{messageId}': ({ request, data }) => {
+    const { conversationId, messageId } = groupWithMessage(data);
+    check(request({ path: { conversationId, messageId }, body: { content: 'k6 edited message', mentionIds: [CONTACT_ID] } }), {
+      'edit message 200': (r) => r.status === 200,
+      'edited message': (r) => r.status === 200 && Boolean(body(r).message && body(r).message.editedAt),
+    });
+  },
+  'DELETE /conversations/{conversationId}/messages/{messageId}': ({ request, data }) => {
+    const { conversationId, messageId } = groupWithMessage(data);
+    check(request({ path: { conversationId, messageId } }), {
+      'delete message 200': (r) => r.status === 200 && body(r).message && body(r).message.deleted === true,
+    });
+  },
+  'POST /conversations/{conversationId}/messages/{messageId}/reactions': ({ request, data }) => {
+    const { conversationId, messageId } = groupWithMessage(data);
+    check(request({ path: { conversationId, messageId }, body: { emoji: '👍' } }), {
+      'react 200': (r) => r.status === 200 && (body(r).reactions || []).length === 1,
+    });
+  },
+  'DELETE /conversations/{conversationId}/messages/{messageId}/reactions': ({ request, data }) => {
+    const { conversationId, messageId } = groupWithMessage(data);
+    const reacted = http.post(coverage.url('POST /conversations/{conversationId}/messages/{messageId}/reactions', { conversationId, messageId }),
+      JSON.stringify({ emoji: '👍' }), {
+        headers: Object.assign({ 'Content-Type': 'application/json' }, data.user),
+        tags: { op: 'POST /conversations/{conversationId}/messages/{messageId}/reactions' },
+      });
+    check(reacted, { 'react 200': (r) => r.status === 200 });
+    check(request({ path: { conversationId, messageId }, query: { emoji: '👍' } }), {
+      'remove reaction 200': (r) => r.status === 200 && (body(r).reactions || []).length === 0,
+    });
+  },
+  'POST /conversations/{conversationId}/members': ({ request, data }) => {
+    const { conversationId } = groupWithMessage(data);
+    check(request({ path: { conversationId }, body: { userIds: [SECOND_MEMBER_ID] } }), {
+      'add member 200': (r) => r.status === 200 && Boolean(body(r).systemMessage),
+    });
+  },
+  'DELETE /conversations/{conversationId}/members/{userId}': ({ request, data }) => {
+    const { conversationId } = groupWithMessage(data);
+    check(request({ path: { conversationId, userId: CONTACT_ID } }), {
+      'remove member 200': (r) => r.status === 200 && Boolean(body(r).systemMessage),
+    });
+  },
+  'POST /conversations/{conversationId}/leave': ({ request, data }) => {
+    const { conversationId } = groupWithMessage(data, false);
+    check(request({ path: { conversationId } }), { 'leave 204': (r) => r.status === 204 });
+  },
 };
 
 const coverage = createCoverage(handlers);
@@ -263,7 +358,7 @@ const readOperations = coverage.operations.filter((o) => o.method === 'GET' && o
 
 // Deletes the conversations kept by the handlers, so that the listings do not grow during the test.
 function cleanup(data) {
-  for (const conversationId of [state.groupId, state.directId]) {
+  for (const conversationId of [state.groupId, state.directId, ...(state.groups || [])]) {
     if (!conversationId) continue;
     http.del(coverage.url('DELETE /conversations/{conversationId}', { conversationId }), null, {
       headers: data.user,

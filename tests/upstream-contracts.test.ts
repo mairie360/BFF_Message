@@ -4,7 +4,7 @@ import type { JsonSchema, OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract, resolveOrvalPackage } from './support/orval-contract';
 import {
   calendarApiUrls, calendarResult, eventView, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult, directChatView,
-  directoryUsers, messageApiUrls, messageView, postMessageResult, projectApiUrls, projectListItem, projectsResult, taskView, tasksResult, users,
+  directoryUsers, messageApiUrls, messageView, systemNoteView, postMessageResult, projectApiUrls, projectListItem, projectsResult, taskView, tasksResult, users,
 } from './support/upstream-fixtures';
 
 // Les contrats des services amont sont reconstruits depuis les paquets @mairie360/*-openapi installés :
@@ -37,6 +37,14 @@ const CONSUMED = [
   { contract: messageApi, operationId: 'getChatUsers', method: 'get', url: messageApiUrls.getGetChatUsersUrl(4) },
   { contract: messageApi, operationId: 'acknowledgeRead', method: 'post', url: messageApiUrls.getAcknowledgeReadUrl(4) },
   { contract: messageApi, operationId: 'health', method: 'get', url: messageApiUrls.getHealthUrl() },
+  // MAIR-1154: messaging V2.
+  { contract: messageApi, operationId: 'patchMessage', method: 'patch', url: messageApiUrls.getPatchMessageUrl(4, 41) },
+  { contract: messageApi, operationId: 'deleteMessage', method: 'delete', url: messageApiUrls.getDeleteMessageUrl(4, 41) },
+  { contract: messageApi, operationId: 'addReaction', method: 'post', url: messageApiUrls.getAddReactionUrl(4, 41) },
+  { contract: messageApi, operationId: 'removeReaction', method: 'delete', url: messageApiUrls.getRemoveReactionUrl(4, 41, { emoji: '👍' }) },
+  { contract: messageApi, operationId: 'addUsersToChat', method: 'post', url: messageApiUrls.getAddUsersToChatUrl(4) },
+  { contract: messageApi, operationId: 'searchChat', method: 'get', url: messageApiUrls.getSearchChatUrl(4, { q: 'permis', type: 'messages' }) },
+  { contract: messageApi, operationId: 'getMentionGroups', method: 'get', url: messageApiUrls.getGetMentionGroupsUrl(4, { q: 'urba' }) },
   { contract: coreApi, operationId: 'listDirectoryUsers', method: 'get', url: coreApiUrls.getListDirectoryUsersUrl({ ids: '7,8' }) },
   { contract: coreApi, operationId: 'health', method: 'get', url: coreApiUrls.getHealthUrl() },
   { contract: messageApi, operationId: 'sseStreamRoute', method: 'get', url: messageApiUrls.getSseStreamRouteUrl() },
@@ -85,7 +93,14 @@ describe('upstream contracts from the installed @mairie360 OpenAPI packages', ()
     expect(messageApi.schema('ChatView')).toMatchObject({ required: ['contact_id', 'id', 'kind', 'last_activity_at', 'member_count', 'name', 'unread_count'] });
     // MAIR-507: the chat page carries the chat itself, the members carry their names.
     expect(messageApi.schema('GetChatResultView')).toMatchObject({ required: expect.arrayContaining(['chat', 'messages']) });
-    expect(messageApi.schema('User')).toMatchObject({ required: ['first_name', 'id', 'last_name'] });
+    expect(messageApi.schema('User')).toMatchObject({ required: ['first_name', 'id', 'is_admin', 'last_name'] });
+    // MAIR-1155: tags, reactions and system notes of a message, the tags of a post.
+    expect(messageApi.schema('MessageView')).toMatchObject({
+      required: expect.arrayContaining(['kind', 'system_event', 'mentions', 'mentions_everyone', 'group_mentions', 'links', 'reactions']),
+    });
+    expect(messageApi.schema('PostMessageView')).toMatchObject({
+      properties: { citation: expect.anything(), mentions: expect.anything(), mentions_everyone: expect.anything(), group_mentions: expect.anything(), links: expect.anything() },
+    });
     expect(messageApi.schema('GetChatsParams')).toMatchObject({ properties: { limit: expect.anything(), offset: expect.anything(), search: expect.anything() } });
     expect(messageApi.responseSchema(messageApi.match('DELETE', messageApiUrls.getRemoveUserFromChatUrl(4, 7))!, 200)).toEqual({ documented: true, schema: undefined });
     // Les erreurs ne sont pas typées par orval : aucun statut hors 2XX n'est documenté.
@@ -104,6 +119,18 @@ describe('upstream fixtures conform to the upstream contracts', () => {
     ],
     ['Message API postMessage 200', messageApi, 'post', messageApiUrls.getPostMessageUrl(4), postMessageResult(31)],
     ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8], false, { 7: ['Agent', 'Test'], 8: ['Sophie', 'Leroy'] })],
+    [
+      'Message API getChat 200 with V2 messages', messageApi, 'get', messageApiUrls.getGetChatUrl(4),
+      chatResult(chatView(4), [
+        messageView(43, 7, { mentions: [8], mentions_everyone: true, group_mentions: [3], links: [{ kind: 'project', id: 12 }], reactions: [{ emoji: '👍', count: 1, user_ids: [8] }] }),
+        systemNoteView(44, 7, 'members_added', [9]),
+      ]),
+    ],
+    ['Message API patchMessage 200', messageApi, 'patch', messageApiUrls.getPatchMessageUrl(4, 41), messageView(41, 7, { edited_at: '2026-09-15T09:05:00Z' })],
+    ['Message API addReaction 200', messageApi, 'post', messageApiUrls.getAddReactionUrl(4, 41), { reactions: [{ emoji: '👍', count: 2, user_ids: [7, 8] }] }],
+    ['Message API addUsersToChat 200', messageApi, 'post', messageApiUrls.getAddUsersToChatUrl(4), { added: [9], chat_id: 4, system_message: systemNoteView(45, 7, 'members_added', [9]) }],
+    ['Message API searchChat 200', messageApi, 'get', messageApiUrls.getSearchChatUrl(4, { q: 'x' }), { type: 'messages', items: [{ id: 41, sender_id: 7, created_at: '2026-09-15T09:00:00Z', content: 'x' }], has_more: false, total: 1 }],
+    ['Message API getMentionGroups 200', messageApi, 'get', messageApiUrls.getGetMentionGroupsUrl(4), { groups: [{ id: 3, name: 'Urbanisme' }] }],
     ['Message API acknowledgeRead 200', messageApi, 'post', messageApiUrls.getAcknowledgeReadUrl(4), acknowledgeReadResult(2)],
     ['Core API listDirectoryUsers 200', coreApi, 'get', coreApiUrls.getListDirectoryUsersUrl(), directoryUsers([users.agent, users.thomas])],
     ['Core API getMe 200', coreApi, 'get', coreApiUrls.getGetMeUrl(), { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: 'User', roles: ['User'] }],

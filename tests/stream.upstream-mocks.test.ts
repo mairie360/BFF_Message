@@ -248,3 +248,14 @@ describe('translateEvent (MAIR-525)', () => {
     expect(translateEvent(block)).toBe(expected);
   });
 });
+
+describe('translateEvent (MAIR-1154)', () => {
+  test.each([
+    ['{"type":"MSG_REACTED","chat_id":5,"message_id":118}', { type: 'message_reacted', conversationId: 'conversation-5', messageId: 'message-118' }],
+    ['{"type":"MEMBERS_CHANGED","chat_id":5}', { type: 'members_changed', conversationId: 'conversation-5' }],
+    ['{"type":"MENTIONED","chat_id":5,"message_id":119}', { type: 'mentioned', conversationId: 'conversation-5', messageId: 'message-119' }],
+    ['{"type":"NEW_MSG","chat_id":5,"message_id":120}', { type: 'NEW_MSG', conversationId: 'conversation-5', messageId: 'message-120' }],
+  ])('relays %s with the front names and ids', (data, event) => {
+    expect(translateEvent(`data: ${data}`)).toBe(`data: ${JSON.stringify(event)}\n\n`);
+  });
+});

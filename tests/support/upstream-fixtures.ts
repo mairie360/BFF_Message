@@ -4,6 +4,7 @@ import { AxiosHeaders, type AxiosResponse } from 'axios';
 import { getMessageAPIMairie360 } from '@mairie360/message-api-openapi/endpoints/messageAPIMairie360';
 import type {
   AcknowledgeReadResultView, ChatView, CreateChatResultView, GetChatResultView, GetChatsResultView, GetUsersView, MessageView, PostMessageResultView,
+  SystemEventView,
 } from '@mairie360/message-api-openapi/model';
 import { getCoreAPIMairie360 } from '@mairie360/core-api-openapi/endpoints/coreAPIMairie360';
 import type { DirectoryUser, DirectoryUsersResultView } from '@mairie360/core-api-openapi/model';
@@ -52,13 +53,23 @@ export function chatsResult(chats: ChatView[], has_more = false): GetChatsResult
   return { chats, has_more };
 }
 
-/** A message of the history: never deleted there, not edited, last changed when posted (MAIR-524 fields). */
+/**
+ * A message of the history: never deleted there, not edited, last changed when posted (MAIR-524 fields), written by an
+ * agent, without tags or reactions (MAIR-1155 fields).
+ */
 export function messageView(id: number, sender_id: number, overrides: Partial<MessageView> = {}): MessageView {
   const created_at = overrides.created_at ?? '2026-09-15T09:00:00Z';
   return {
     id, sender_id, content: `Message ${id}`, created_at, citation: null, quoted: null,
-    deleted: false, edited_at: null, updated_at: created_at, ...overrides,
+    deleted: false, edited_at: null, updated_at: created_at,
+    kind: 'user', system_event: null, mentions: [], mentions_everyone: false, group_mentions: [], links: [], reactions: [],
+    ...overrides,
   };
+}
+
+/** A system note of the history (MAIR-1155): the actor as sender, an empty content, what changed in `system_event`. */
+export function systemNoteView(id: number, actor_id: number, action: SystemEventView['action'], user_ids: number[]): MessageView {
+  return messageView(id, actor_id, { kind: 'system', content: '', system_event: { action, actor_id, user_ids } });
 }
 
 /** A history page; `next_since` / `next_since_id` (MAIR-524, incremental reads) are not read by the BFF. */
@@ -69,10 +80,15 @@ export function chatResult(chat: ChatView, messages: MessageView[], next_before:
   };
 }
 
-/** Members of a chat with their names (MAIR-507): `names` maps an id to `[first_name, last_name]`. */
-export function chatUsers(ids: number[], has_more = false, names: Record<number, [string, string]> = {}): GetUsersView {
+/**
+ * Members of a chat with their names (MAIR-507): `names` maps an id to `[first_name, last_name]`; `admins` are the
+ * members Message API flags `is_admin` (the creator still a member, MAIR-1155).
+ */
+export function chatUsers(ids: number[], has_more = false, names: Record<number, [string, string]> = {}, admins: number[] = []): GetUsersView {
   return {
-    users: ids.map((id) => ({ id, first_name: names[id]?.[0] ?? 'Agent', last_name: names[id]?.[1] ?? `Numéro ${id}` })),
+    users: ids.map((id) => ({
+      id, first_name: names[id]?.[0] ?? 'Agent', last_name: names[id]?.[1] ?? `Numéro ${id}`, is_admin: admins.includes(id),
+    })),
     has_more,
   };
 }

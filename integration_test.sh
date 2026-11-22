@@ -31,8 +31,10 @@ echo "==> BFF under test: $IMAGE_REF"
 source ./stack_secrets.sh || exit 1
 JWT_ADMIN="$ADMIN_JWT"
 JWT_AGENT="$(sign_jwt 2 user 3600)" || exit 1
+# User 3 (seeded contact): the second member of the messaging V2 journey (MAIR-1154).
+JWT_THIRD="$(sign_jwt 3 user 3600)" || exit 1
 JWT_FORGED="$(sign_jwt 1 admin 3600 "$(openssl genpkey -algorithm ed25519 2>/dev/null)")" || exit 1
-export JWT_ADMIN JWT_AGENT JWT_FORGED
+export JWT_ADMIN JWT_AGENT JWT_THIRD JWT_FORGED
 
 # The newman container (non-root) writes its junit report here; the CI job publishes it.
 rm -rf "$REPORT_DIR" && mkdir -p "$REPORT_DIR" && chmod a+rwx "$REPORT_DIR"

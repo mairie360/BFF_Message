@@ -202,6 +202,75 @@ export const QuotedMessageDtoSchema = z.object({
   description: 'The message another message answers, with what is needed to display the quote',
 });
 
+/** Number of ids a write may tag a message with, for each kind of tag (Message API's limit, MAIR-1155). */
+export const MAX_MESSAGE_TAGS = 50;
+
+export const MessageKindSchema = z.enum(['user', 'system']).openapi({
+  description: '`user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)',
+  example: 'user',
+});
+
+export const SystemEventDtoSchema = z.object({
+  action: z.enum(['members_added', 'member_removed', 'member_left']).openapi({
+    description: '`members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left',
+    example: 'members_added',
+  }),
+  actorId: IdSchema.openapi({ description: 'Id of the agent who made the change (`user-<n>`)', example: 'user-1' }),
+  actorName: z.string().optional().openapi({
+    description: 'Name of the actor, absent when the directory does not know the account any more',
+    example: 'Alice Dupont',
+  }),
+  userIds: z.array(IdSchema).openapi({ description: 'Agents added or removed (`user-<n>`); the actor alone for `member_left`', example: ['user-3'] }),
+  userNames: z.array(z.string()).openapi({
+    description: 'Names of `userIds`, in the same order, for the agents the directory still knows',
+    example: ['Contact Sample'],
+  }),
+}).openapi({
+  description: 'The membership change a system note records',
+});
+
+export const GroupMentionDtoSchema = z.object({
+  id: IdSchema.openapi({ description: 'Id of the group (`group-<n>`)', example: 'group-4' }),
+  name: z.string().optional().openapi({
+    description: 'Name of the group, absent when none of the members of the conversation belongs to it any more',
+    example: 'Service urbanisme',
+  }),
+}).openapi({
+  description: 'A group mentioned by a message',
+});
+
+export const LinkKindSchema = z.enum(['project', 'task', 'event']).openapi({
+  description: 'Kind of business object: a project, a task or a calendar event',
+  example: 'project',
+});
+
+export const MessageLinkDtoSchema = z.object({
+  id: IdSchema.openapi({ description: 'Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)', example: 'project-12' }),
+  kind: LinkKindSchema,
+  title: z.string().optional().openapi({
+    description: 'Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote',
+    example: 'Rénovation de la médiathèque',
+  }),
+  url: z.string().optional().openapi({
+    description: 'Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF',
+    example: 'https://projets.mairie360.fr/projects/12',
+  }),
+}).openapi({
+  description: 'A project, task or event a message links to',
+});
+
+export const ReactionDtoSchema = z.object({
+  emoji: z.string().openapi({ description: 'The emoji', example: '👍' }),
+  count: z.number().int().openapi({ description: 'Number of agents who reacted with it', example: 2 }),
+  reactedByMe: z.boolean().openapi({ description: 'Whether the caller is one of them', example: true }),
+  userNames: z.array(z.string()).openapi({
+    description: 'Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows',
+    example: ['Alice Dupont', 'Contact Sample'],
+  }),
+}).openapi({
+  description: 'The reactions to a message with one emoji',
+});
+
 export const MessageDtoSchema = z.object({
   id: IdSchema,
   conversationId: IdSchema,
@@ -239,6 +308,34 @@ export const MessageDtoSchema = z.object({
   }),
   quoted: QuotedMessageDtoSchema.optional().openapi({
     description: 'The message `citation` points to (author and excerpt), also when it is older than the loaded page',
+  }),
+  kind: MessageKindSchema,
+  systemEvent: SystemEventDtoSchema.optional().openapi({
+    description: 'System notes only (`kind: system`): the membership change the note records',
+  }),
+  editedAt: z.string().optional().openapi({
+    description: 'Date and time of the last edit of the content (ISO format); absent when the message was never edited',
+    example: '2026-06-23T12:40:00Z',
+  }),
+  deleted: z.boolean().openapi({
+    description: 'Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction',
+    example: false,
+  }),
+  mentionsEveryone: z.boolean().openapi({
+    description: 'Whether the message mentions every member of the conversation (`@everyone`)',
+    example: false,
+  }),
+  groupMentions: z.array(GroupMentionDtoSchema).openapi({
+    description: 'Groups the message mentions',
+    example: [],
+  }),
+  links: z.array(MessageLinkDtoSchema).openapi({
+    description: 'Projects, tasks and events the message links to (`#`)',
+    example: [],
+  }),
+  reactions: z.array(ReactionDtoSchema).openapi({
+    description: 'Reactions to the message, one entry per emoji, in the order of their first reaction',
+    example: [],
   }),
 }).openapi({
   description: 'A message',
@@ -300,6 +397,26 @@ export const WrittenConversationIdParams = z.object({
   conversationId: inputId('conversation', 201),
 });
 
+// The examples name rows of init-test.sql written by the Admin, so that a scan replaying them reaches real rows.
+export const EditedMessageParams = z.object({
+  conversationId: inputId('conversation', 201),
+  messageId: inputId('message', 2001),
+});
+
+export const DeletedMessageParams = z.object({
+  conversationId: inputId('conversation', 201),
+  messageId: inputId('message', 2002),
+});
+
+export const RemovedMemberParams = z.object({
+  conversationId: inputId('conversation', 201),
+  userId: inputId('user', 10),
+});
+
+export const LeftConversationIdParams = z.object({
+  conversationId: inputId('conversation', 203),
+});
+
 
 export const ConversationsQuery = z.object({
   search: noControlCharacter(z.string().max(MAX_NAME_LENGTH)).optional().openapi({
@@ -349,6 +466,33 @@ export const ContactsQuery = z.object({
 
 // Requests 
 
+const LinkInputSchema = z.object({
+  id: z.string().regex(/^(?:project|task|event)-\d{1,9}$/, 'Expected project-<id>, task-<id> or event-<id>').openapi({
+    description: 'The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read',
+    example: 'project-12',
+  }),
+}).openapi({ description: 'A project, task or event to link the message to' });
+
+/** Tags of a message written by the caller (MAIR-1154): every field optional. */
+function messageTagsFields() {
+  return {
+    mentionIds: z.array(inputId('user', 3)).max(MAX_MESSAGE_TAGS).optional().openapi({
+      description: 'Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise)',
+    }),
+    mentionEveryone: z.boolean().optional().openapi({
+      description: 'Whether the message mentions every member of the conversation (`@everyone`)',
+      example: false,
+    }),
+    groupMentionIds: z.array(inputId('group', 4)).max(MAX_MESSAGE_TAGS).optional().openapi({
+      description: 'Groups the message mentions (`group-<n>` or integer, from `GET /conversations/{conversationId}/mention-suggestions`), at most 50: groups a member of the conversation belongs to (400 otherwise)',
+    }),
+    links: z.array(LinkInputSchema).max(MAX_MESSAGE_TAGS).optional().openapi({
+      description: 'Projects, tasks and events the message links to, at most 50: objects the author may read (400 otherwise)',
+    }),
+  };
+}
+
+
 export const SendMessageBody = z.object({
   content: noMarkup(z.string().min(1).max(MAX_MESSAGE_LENGTH)).openapi({
     description: 'Content of the message to send',
@@ -357,12 +501,73 @@ export const SendMessageBody = z.object({
   attachmentIds: z.array(inputId('attachment', 1)).max(0, 'Attachments are not supported yet').optional().openapi({
     description: 'Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped.',
   }),
-  mentionIds: z.array(inputId('user', 3)).max(MAX_GROUP_MEMBERS).optional().openapi({
-    description: 'Ids of the mentions in the message',
+  ...messageTagsFields(),
+  replyTo: inputId('message', 1001).optional().openapi({
+    description: 'Id of the message this one answers (`message-<n>` or integer), in the same conversation: the answer then carries `citation` and `quoted`',
+    example: 1001,
   }),
 }).openapi({
   description: 'Request body to send a message',
 });
+
+export const EditMessageBody = z.object({
+  content: noMarkup(z.string().min(1).max(MAX_MESSAGE_LENGTH)).openapi({
+    description: 'New content of the message',
+    example: 'The meeting is moved to 3 pm.',
+  }),
+  ...messageTagsFields(),
+}).openapi({
+  description: 'Request body to edit a message: each tag field present replaces the tags of that kind, an absent one keeps them',
+});
+
+// Codepoints, like Message API counts them (👍 is one character, two UTF-16 units).
+export const ReactionEmoji = z.string().min(1).max(64)
+  .refine((value) => [...value].length <= 32, 'must be at most 32 characters')
+  .refine((value) => !/[\s\p{Cc}]/u.test(value), 'must not contain whitespace or control characters')
+  .openapi({ description: 'The emoji: 1 to 32 characters, no whitespace nor control character', example: '👍' });
+
+export const ReactionBody = z.object({ emoji: ReactionEmoji }).openapi({ description: 'Request body to react to a message' });
+
+export const ReactionQuery = z.object({ emoji: ReactionEmoji }).openapi({ description: 'The reaction of the caller to remove' });
+
+export const AddMembersBody = z.object({
+  userIds: z.array(inputId('user', 10)).min(1).max(MAX_MESSAGE_TAGS).openapi({
+    description: 'Agents to add (`user-<n>` or integer), 1 to 50, none already a member',
+    example: [10],
+  }),
+}).openapi({ description: 'Request body to add members to a group conversation' });
+
+export const SEARCH_TYPES = ['messages', 'files', 'people'] as const;
+
+export const ConversationSearchQuery = z.object({
+  q: noControlCharacter(z.string().max(150)).refine((value) => value.trim().length > 0, 'must not be blank').openapi({
+    description: 'Text to find, case-insensitive: in the content of the messages, or in the first name, last name or full name of the members. 1 to 150 characters, no control character.',
+    example: 'permis',
+  }),
+  type: z.enum(SEARCH_TYPES).optional().openapi({
+    description: '`messages` (default), `files` (always empty: attachments are not supported yet) or `people`',
+    example: 'messages',
+  }),
+  limit: z.coerce.number().int().min(1).max(50).optional().openapi({ description: 'Results per page, 1 to 50. Default 20.', example: 20 }),
+  offset: z.coerce.number().int().min(0).max(1_000_000).optional().openapi({
+    description: 'Results to skip: the previous `offset` plus `limit` while `hasMore`. Default 0.',
+    example: 0,
+  }),
+}).openapi({ description: 'Query of a search in a conversation' });
+
+export const MentionSuggestionsQuery = z.object({
+  q: noControlCharacter(z.string().max(64)).optional().openapi({
+    description: 'What the agent typed after `@` (at most 64 characters). Absent or empty: every suggestion.',
+    example: 'ali',
+  }),
+}).openapi({ description: 'Query of the `@` suggestions' });
+
+export const LinkSuggestionsQuery = z.object({
+  q: noControlCharacter(z.string().max(MAX_NAME_LENGTH)).optional().openapi({
+    description: 'What the agent typed after `#` (at most 100 characters), matched case- and accent-insensitively against the titles. Absent or empty: every suggestion.',
+    example: 'média',
+  }),
+}).openapi({ description: 'Query of the `#` suggestions' });
 
 export const NewDirectMessageBody = z.object({
   recipientId: inputId('user', 3),
@@ -553,6 +758,103 @@ export const MessagingBootstrapResponse = z.object({
     description: 'Response holding the base data to start the messaging module',
 });
 
+export const EditMessageResponse = z.object({
+  message: MessageDtoSchema.openapi({ description: 'The message as it now reads' }),
+}).openapi({ description: 'Response holding the edited message' });
+
+export const DeleteMessageResponse = z.object({
+  message: MessageDtoSchema.openapi({ description: 'The deleted message: `deleted: true`, empty content, no tag nor reaction' }),
+}).openapi({ description: 'Response holding the deleted message (tombstone)' });
+
+export const ReactionsResponse = z.object({
+  reactions: z.array(ReactionDtoSchema).openapi({ description: 'Every reaction to the message after the change' }),
+}).openapi({ description: 'Response holding the reactions of a message' });
+
+export const MemberDtoSchema = z.object({
+  id: IdSchema.openapi({ description: 'Id of the agent (`user-<n>`)', example: 'user-3' }),
+  name: z.string().openapi({ description: 'Full name of the agent', example: 'Contact Sample' }),
+  department: z.string().optional().openapi({ description: 'Department of the agent, when known', example: 'Urbanisme' }),
+  isAdmin: z.boolean().openapi({
+    description: 'Whether the agent administers the group: its creator, as long as they stay a member',
+    example: false,
+  }),
+}).openapi({ description: 'A member of a conversation' });
+
+export const MembersResponse = z.object({
+  members: z.array(MemberDtoSchema).openapi({ description: 'The members of the conversation, the caller included' }),
+  canManage: z.boolean().openapi({
+    description: 'Whether the caller may add and remove members: a group conversation, and the caller is its administrator or a platform administrator',
+    example: true,
+  }),
+}).openapi({ description: 'The members of a conversation' });
+
+export const MembersChangeResponse = MembersResponse.extend({
+  systemMessage: MessageDtoSchema.optional().openapi({
+    description: 'The system note the change wrote in the conversation (`kind: system`); absent when it could not be read back',
+  }),
+}).openapi({ description: 'The members of a conversation after a change, and the system note recording it' });
+
+export const SearchMessageItemSchema = z.object({
+  messageId: IdSchema.openapi({ description: 'Id of the message (`message-<n>`), to scroll to it', example: 'message-1001' }),
+  authorId: IdSchema.optional().openapi({ description: 'Id of the author (`user-<n>`), absent once the account is deleted', example: 'user-3' }),
+  authorName: z.string().optional().openapi({ description: 'Name of the author when they are a current member', example: 'Contact Sample' }),
+  createdAt: z.string().openapi({ description: 'Date and time the message was sent (ISO format)', example: '2026-06-23T12:32:00Z' }),
+  excerpt: z.string().openapi({
+    description: 'The content of the message, cut around the first match when it is long (`…` marks a cut)',
+    example: 'Any news about the building permit?',
+  }),
+  highlights: z.array(z.object({
+    start: z.number().int().openapi({ description: 'Index of the match in `excerpt` (UTF-16 code units, as JavaScript counts them)', example: 22 }),
+    length: z.number().int().openapi({ description: 'Length of the match (UTF-16 code units)', example: 6 }),
+  })).openapi({ description: 'Every match of `q` in `excerpt`, case-insensitive, in order' }),
+}).openapi({ description: 'A message found by a search' });
+
+export const SearchPersonItemSchema = z.object({
+  id: IdSchema.openapi({ description: 'Id of the member (`user-<n>`)', example: 'user-3' }),
+  name: z.string().openapi({ description: 'Full name of the member', example: 'Contact Sample' }),
+}).openapi({ description: 'A member found by a search' });
+
+export const ConversationSearchResponse = z.object({
+  type: z.enum(SEARCH_TYPES).openapi({ description: 'What was searched', example: 'messages' }),
+  items: z.array(z.union([SearchMessageItemSchema, SearchPersonItemSchema])).openapi({
+    description: 'One page of results, newest message first or by name: `SearchMessageItem` for `messages`, `SearchPersonItem` for `people`, always empty for `files`',
+  }),
+  hasMore: z.boolean().openapi({ description: 'Whether more results follow (next page: `offset` + `limit`)', example: false }),
+  total: z.number().int().openapi({ description: 'Number of results of the whole search', example: 1 }),
+}).openapi({ description: 'One page of the results of a search in a conversation' });
+
+export const MentionSuggestionsResponse = z.object({
+  everyone: z.boolean().openapi({
+    description: 'Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label',
+    example: true,
+  }),
+  groups: z.array(z.object({
+    id: IdSchema.openapi({ description: 'Id of the group (`group-<n>`), for `groupMentionIds`', example: 'group-4' }),
+    name: z.string().openapi({ description: 'Name of the group', example: 'Service urbanisme' }),
+  })).openapi({ description: 'Groups a member of the conversation belongs to whose name contains `q` (at most 20)' }),
+  people: z.array(z.object({
+    id: IdSchema.openapi({ description: 'Id of the member (`user-<n>`), for `mentionIds`', example: 'user-3' }),
+    name: z.string().openapi({ description: 'Full name of the member', example: 'Contact Sample' }),
+  })).openapi({ description: 'Members of the conversation but the caller whose name contains `q` (case- and accent-insensitive)' }),
+}).openapi({ description: 'What an agent may mention after `@` in a conversation' });
+
+export const LinkSuggestionsResponse = z.object({
+  items: z.array(z.object({
+    id: z.string().openapi({ description: 'Id to send in `links` (`project-<n>`, `task-<n>` or `event-<n>`)', example: 'project-12' }),
+    kind: LinkKindSchema,
+    title: z.string().openapi({ description: 'Title of the object', example: 'Rénovation de la médiathèque' }),
+    detail: z.string().optional().openapi({ description: 'What the object is, to display under its title', example: 'Projet' }),
+    url: z.string().optional().openapi({
+      description: 'Page of the object in its front, absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF',
+      example: 'https://projets.mairie360.fr/projects/12',
+    }),
+  })).openapi({ description: 'Projects, tasks and events the caller may read whose title matches `q`' }),
+  sources: z.object({
+    projects: z.enum(['available', 'unavailable']),
+    calendar: z.enum(['available', 'unavailable']),
+  }).openapi({ description: 'Whether Project API and Calendar API answered: an unavailable source contributes no item' }),
+}).openapi({ description: 'What an agent may link a message to after `#`' });
+
 // Body of every error answer, shared by every BFF (`@mairie360/bffs-lib`): `{ error: { code, message, details } }`.
 // clone(): the lib builds its schemas on import, before extendZodWithOpenApi() above, and zod 4 only
 // adds .openapi() to schemas created after the extension.
@@ -600,3 +902,21 @@ registry.register('ConversationsQuery', ConversationsQuery);
 registry.register('MessagesQuery', MessagesQuery);
 registry.register('ContactsQuery', ContactsQuery);
 registry.register('ConversationIdParams', ConversationIdParams);
+registry.register('EditMessageBody', EditMessageBody);
+registry.register('ReactionBody', ReactionBody);
+registry.register('AddMembersBody', AddMembersBody);
+registry.register('EditMessageResponse', EditMessageResponse);
+registry.register('DeleteMessageResponse', DeleteMessageResponse);
+registry.register('ReactionsResponse', ReactionsResponse);
+registry.register('MemberDtoSchema', MemberDtoSchema);
+registry.register('MembersResponse', MembersResponse);
+registry.register('MembersChangeResponse', MembersChangeResponse);
+registry.register('SearchMessageItem', SearchMessageItemSchema);
+registry.register('SearchPersonItem', SearchPersonItemSchema);
+registry.register('ConversationSearchResponse', ConversationSearchResponse);
+registry.register('MentionSuggestionsResponse', MentionSuggestionsResponse);
+registry.register('LinkSuggestionsResponse', LinkSuggestionsResponse);
+registry.register('ReactionDtoSchema', ReactionDtoSchema);
+registry.register('MessageLinkDtoSchema', MessageLinkDtoSchema);
+registry.register('GroupMentionDtoSchema', GroupMentionDtoSchema);
+registry.register('SystemEventDtoSchema', SystemEventDtoSchema);

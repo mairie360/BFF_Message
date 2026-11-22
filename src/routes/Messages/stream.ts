@@ -19,9 +19,22 @@ const router = Router();
 
 /** One event of the stream: something happened in the conversation, which the front reloads. */
 export const MessageStreamEventSchema = registry.register('MessageStreamEvent', z.object({
-  type: z.string().openapi({ description: 'What happened, as Message API names it (`NEW_MSG`...)', example: 'NEW_MSG' }),
+  type: z.string().openapi({
+    description: 'What happened: `NEW_MSG`, `MSG_EDITED`, `MSG_DELETED`, `CHAT_READ` as Message API names them, and (MAIR-1154) '
+      + '`message_reacted` (the reactions of `messageId` changed), `members_changed` (members were added, removed or left: reload '
+      + 'the members; a removed agent gets it too) and `mentioned` (`messageId` mentions the caller, sent with `NEW_MSG` or `MSG_EDITED`)',
+    example: 'NEW_MSG',
+  }),
   conversationId: z.string().openapi({ description: 'Conversation to reload', example: 'conversation-5' }),
+  messageId: z.string().optional().openapi({ description: 'The message concerned (`message-<n>`), when the event is about one', example: 'message-118' }),
 }));
+
+/** Signals of messaging V2 (MAIR-1155) as the front names them (MAIR-1154); the earlier ones keep Message API's name. */
+export const RENAMED_SIGNALS: Readonly<Record<string, string>> = {
+  MSG_REACTED: 'message_reacted',
+  MEMBERS_CHANGED: 'members_changed',
+  MENTIONED: 'mentioned',
+};
 
 /** Longest life of one stream, in ms (`MESSAGE_STREAM_MAX_MS`, 5 minutes by default): the client reconnects then. */
 export function streamMaxMs(): number {
@@ -38,7 +51,7 @@ export const RECONNECT_DELAY_MS = 3_000;
  */
 export const STREAM_ERROR_EVENT = 'stream_error';
 
-const UpstreamSignal = z.object({ type: z.string(), chat_id: z.number().int().nonnegative() });
+const UpstreamSignal = z.object({ type: z.string(), chat_id: z.number().int().nonnegative(), message_id: z.number().int().nonnegative().optional() });
 
 /**
  * One SSE event block of Message API turned into the BFF's, or `null` to drop it. Comments (`: ping`) are kept, so
@@ -56,7 +69,11 @@ export function translateEvent(block: string): string | null {
   } catch {
     return null;
   }
-  const event = MessageStreamEventSchema.parse({ type: signal.type, conversationId: `conversation-${signal.chat_id}` });
+  const event = MessageStreamEventSchema.parse({
+    type: RENAMED_SIGNALS[signal.type] ?? signal.type,
+    conversationId: `conversation-${signal.chat_id}`,
+    ...(signal.message_id === undefined ? {} : { messageId: `message-${signal.message_id}` }),
+  });
   return `${id && !/[\r\n]/.test(id) ? `id: ${id}\n` : ''}data: ${JSON.stringify(event)}\n\n`;
 }
 
