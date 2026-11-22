@@ -15,6 +15,7 @@ Domaine fonctionnel: Messagerie instantanée.
 - Chargement initial de l’utilisateur, des contacts, conversations et messages de la conversation active.
 - Envoi de messages directs ou dans une conversation, création de groupes et suppression de conversations.
 - Recherche de contacts et références de projets, tâches et événements via `/business-references`.
+- Messagerie V2 (MAIR-1154) : répondre, modifier et supprimer un message, réactions, membres d’un groupe (liste, ajout, retrait, départ) avec leurs notes système, recherche dans une conversation, suggestions `@` et `#`, et leurs événements temps réel.
 
 ## Parcours type
 

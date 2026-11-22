@@ -67,6 +67,7 @@ Values below are local examples or explicitly described behavior, not production
 | `CORE_API_URL` / `CORE_API_PORT` | http://localhost:3000 / — | Core API directory (contacts, current user), also probed by `/check_apis`. **Required**. |
 | `PROJECT_API_URL` / `PROJECT_API_PORT` | http://localhost:3001 / — | Source of project and task references. **Required**. |
 | `CALENDAR_API_URL` / `CALENDAR_API_PORT` | http://localhost:3002 / — | Source of event references. **Required**. |
+| `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` | unset | Optional base URLs of the Projects and Calendar fronts (the variables the fronts already use): the `url` of message links and `#` suggestions (MAIR-1154), absent when unset or not http(s). |
 | `MESSAGE_STREAM_MAX_MS` | 300000 | Longest life of one `GET /stream`, after which the client reconnects. |
 | `RATE_LIMIT_ENABLED` | true | `false` disables the per-caller limit of `GET /business-references` (load tests). |
 | `BUSINESS_REFERENCES_RATE_LIMIT_MAX` / `_WINDOW_MS` | 30 / 60000 | Requests per session (hash of the Bearer token, never the unverified JWT `sub`) and window on `GET /business-references`, answered 429 beyond. |
@@ -94,8 +95,47 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 | GET | `/me` | — | 200, 401, 502, 503 |
 | GET | `/conversations/{conversationId}` | — | 200, 400, 401, 404, 502, 503 |
 | GET | `/conversations/{conversationId}/messages` | — | 200, 400, 401, 404, 502, 503 |
-| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 404, 502, 503 |
+| POST | `/conversations/{conversationId}/messages` | application/json | 201, 400, 401, 403, 404, 429, 502, 503 |
+| PATCH | `/conversations/{conversationId}/messages/{messageId}` | application/json | 200, 400, 401, 403, 404, 429, 502, 503 |
+| DELETE | `/conversations/{conversationId}/messages/{messageId}` | — | 200, 400, 401, 403, 404, 429, 502, 503 |
+| POST | `/conversations/{conversationId}/messages/{messageId}/reactions` | application/json | 200, 400, 401, 403, 404, 429, 502, 503 |
+| DELETE | `/conversations/{conversationId}/messages/{messageId}/reactions` | `?emoji=` | 200, 400, 401, 403, 404, 429, 502, 503 |
+| GET | `/conversations/{conversationId}/members` | — | 200, 400, 401, 404, 429, 502, 503 |
+| POST | `/conversations/{conversationId}/members` | application/json | 200, 400, 401, 403, 404, 409, 429, 502, 503 |
+| DELETE | `/conversations/{conversationId}/members/{userId}` | — | 200, 400, 401, 403, 404, 429, 502, 503 |
+| POST | `/conversations/{conversationId}/leave` | — | 204, 400, 401, 403, 404, 429, 502, 503 |
+| GET | `/conversations/{conversationId}/search` | `?q=&type=&limit=&offset=` | 200, 400, 401, 404, 429, 502, 503 |
+| GET | `/conversations/{conversationId}/mention-suggestions` | `?q=` | 200, 400, 401, 404, 429, 502, 503 |
+| GET | `/link-suggestions` | `?q=` | 200, 400, 401, 429 |
 | POST | `/direct-messages` | application/json | 201, 400, 401, 502, 503 |
+
+### Messaging V2 (MAIR-1154)
+
+- **Messages** carry `kind` (`user` / `system`), `systemEvent` (system notes: `members_added`, `member_removed`,
+  `member_left`, with the actor and the agents concerned and their names), `editedAt`, `deleted`, real `mentions`
+  (`{ id, name }`), `mentionsEveryone`, `groupMentions` (`{ id: 'group-<n>', name }`), `links`
+  (`{ id: 'project-<n>' | 'task-<n>' | 'event-<n>', kind, url? }`) and `reactions` (`{ emoji, count, reactedByMe, userNames }`).
+  Names come from the members of the conversation; the agents a page names without being members any more (former
+  members) are read in ONE Core API directory call, and the mentioned groups in ONE Message API call, only when needed:
+  a failure there only leaves the names out.
+- **Writes**: `POST …/messages` takes `replyTo`, `mentionIds`, `mentionEveryone`, `groupMentionIds` and `links`
+  (`[{ id }]`, at most 50 each); `PATCH …/messages/{messageId}` edits the content (author only) and replaces each tag
+  field present; `DELETE …/messages/{messageId}` answers the tombstone; `POST` / `DELETE …/reactions` answer every
+  reaction of the message.
+- **Members**: `GET …/members` (`isAdmin` = creator still a member, `canManage` = a group administered by the caller or
+  a platform administrator), `POST …/members` and `DELETE …/members/{userId}` answer the members and the
+  `systemMessage` the change wrote, `POST …/leave` answers 204 (the caller leaves through it, not through `DELETE
+  …/members/{own id}`, which answers 400).
+- **Search**: `GET …/search?q=&type=messages|people|files` (`files` is always empty: no attachments yet) answers
+  `{ type, items, hasMore, total }`; a message item carries an excerpt cut around the first match and the
+  `highlights` (`start`, `length` in UTF-16 units).
+- **Suggestions**: `GET …/mention-suggestions?q=` (other members, groups of the members, `everyone` when `q` is empty
+  or starts « tout le monde » / « everyone ») and `GET /link-suggestions?q=` (the business references filtered by
+  title, case- and accent-insensitive, at most 50, rate limited like `/business-references`). The `url` of a link is
+  `<PROJECT_FRONT_URL>/projects/<id>`, `<PROJECT_FRONT_URL>/tasks/<id>` or `<CALENDAR_FRONT_URL>/events/<id>`, absent
+  when the variable is unset.
+- **Stream**: the events carry `messageId` when Message API gives one, and the new signals are named
+  `message_reacted`, `members_changed` and `mentioned` (the earlier ones keep `NEW_MSG`, `MSG_EDITED`...).
 
 ## Session, permissions and errors
 

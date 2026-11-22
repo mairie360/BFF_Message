@@ -24,6 +24,16 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | GET | `/conversations/{conversationId}/messages` | 200 Une page de messages (`limit`, `before`) avec la conversation, `nextCursor` |
 | POST | `/conversations/{conversationId}/messages` | 201 Message créé avec succès |
 | POST | `/direct-messages` | 201 Message direct créé avec succès |
+| PATCH | `/conversations/{conversationId}/messages/{messageId}` | 200 `{ message }` modifié par son auteur (MAIR-1154) |
+| DELETE | `/conversations/{conversationId}/messages/{messageId}` | 200 `{ message }` supprimé (`deleted: true`) |
+| POST / DELETE | `/conversations/{conversationId}/messages/{messageId}/reactions` | 200 `{ reactions }` (`{ emoji }` / `?emoji=`) |
+| GET | `/conversations/{conversationId}/members` | 200 `{ members, canManage }` |
+| POST | `/conversations/{conversationId}/members` | 200 `{ members, canManage, systemMessage }` (`{ userIds }`) |
+| DELETE | `/conversations/{conversationId}/members/{userId}` | 200 `{ members, canManage, systemMessage }` |
+| POST | `/conversations/{conversationId}/leave` | 204 |
+| GET | `/conversations/{conversationId}/search` | 200 `{ type, items, hasMore, total }` (`q`, `type`, `limit`, `offset`) |
+| GET | `/conversations/{conversationId}/mention-suggestions` | 200 `{ everyone, groups, people }` (`q`) |
+| GET | `/link-suggestions` | 200 `{ items, sources }` (`q`) |
 
 ## Mise à jour et validation
 
