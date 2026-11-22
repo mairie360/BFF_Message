@@ -38,15 +38,21 @@ INSERT INTO conversations (id, title, kind)
 VALUES
     (101, 'Scan conversation', 'group'),
     (102, 'Scan deleted conversation', 'group'),
-    (201, 'Scan written conversation', 'group')
+    (201, 'Scan written conversation', 'group'),
+    -- Left by the scan through POST /conversations/{conversationId}/leave (MAIR-1154).
+    (203, 'Scan left conversation', 'group')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO conversation_members (conversation_id, user_id)
-VALUES (101, 1), (101, 2), (101, 3), (102, 1), (102, 3), (201, 1), (201, 3)
+VALUES (101, 1), (101, 2), (101, 3), (102, 1), (102, 3), (201, 1), (201, 3), (203, 1), (203, 3)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO messages (id, conversation_id, owner_id, content)
-VALUES (1001, 101, 3, 'Message read by the ZAP scan')
+VALUES (1001, 101, 3, 'Message read by the ZAP scan'),
+    -- The Admin's own messages of conversation 201, edited, reacted to and deleted by the scan (MAIR-1154): nobody edits
+    -- someone else's message.
+    (2001, 201, 1, 'Message edited by the ZAP scan'),
+    (2002, 201, 1, 'Message deleted by the ZAP scan')
 ON CONFLICT (id) DO NOTHING;
 
 -- Explicit ids do not advance the sequences: move them past the seeded rows so that the
