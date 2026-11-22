@@ -548,7 +548,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -1282,7 +1282,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -2384,7 +2384,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -2782,7 +2782,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -3218,7 +3218,7 @@ export interface paths {
         };
         /**
          * What the caller may mention after @
-         * @description The other members whose name contains `q` (case- and accent-insensitive), the groups a member belongs to whose name contains it (at most 20), and whether to offer `@tout le monde`.
+         * @description The other members whose name contains `q` (case- and accent-insensitive), the groups a member belongs to whose name contains it (at most 20), and whether to offer a mention of everyone.
          */
         get: {
             parameters: {
@@ -3243,7 +3243,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /**
-                             * @description Whether to suggest `@tout le monde`: `q` is empty or the start of « tout le monde » / « everyone »
+                             * @description Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label
                              * @example true
                              */
                             everyone: boolean;
@@ -3616,7 +3616,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -3787,7 +3787,7 @@ export interface paths {
                         /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
                         mentionIds?: (number | string)[];
                         /**
-                         * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                         * @description Whether the message mentions every member of the conversation (`@everyone`)
                          * @example false
                          */
                         mentionEveryone?: boolean;
@@ -3992,7 +3992,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -4419,7 +4419,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -4593,7 +4593,7 @@ export interface paths {
                         /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
                         mentionIds?: (number | string)[];
                         /**
-                         * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                         * @description Whether the message mentions every member of the conversation (`@everyone`)
                          * @example false
                          */
                         mentionEveryone?: boolean;
@@ -4793,7 +4793,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -5487,7 +5487,7 @@ export interface paths {
                                  */
                                 deleted: boolean;
                                 /**
-                                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                                  * @example false
                                  */
                                 mentionsEveryone: boolean;
@@ -6003,7 +6003,7 @@ export interface components {
              */
             deleted: boolean;
             /**
-             * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+             * @description Whether the message mentions every member of the conversation (`@everyone`)
              * @example false
              */
             mentionsEveryone: boolean;
@@ -6450,7 +6450,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -6759,7 +6759,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -7146,7 +7146,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -7662,7 +7662,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -7779,7 +7779,7 @@ export interface components {
             /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
             mentionIds?: (number | string)[];
             /**
-             * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+             * @description Whether the message mentions every member of the conversation (`@everyone`)
              * @example false
              */
             mentionEveryone?: boolean;
@@ -7905,7 +7905,7 @@ export interface components {
             /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
             mentionIds?: (number | string)[];
             /**
-             * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+             * @description Whether the message mentions every member of the conversation (`@everyone`)
              * @example false
              */
             mentionEveryone?: boolean;
@@ -8115,7 +8115,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -8370,7 +8370,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -8736,7 +8736,7 @@ export interface components {
                  */
                 deleted: boolean;
                 /**
-                 * @description Whether the message mentions every member of the conversation (`@tout le monde`)
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
                  * @example false
                  */
                 mentionsEveryone: boolean;
@@ -8942,7 +8942,7 @@ export interface components {
         /** @description What an agent may mention after `@` in a conversation */
         MentionSuggestionsResponse: {
             /**
-             * @description Whether to suggest `@tout le monde`: `q` is empty or the start of « tout le monde » / « everyone »
+             * @description Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label
              * @example true
              */
             everyone: boolean;

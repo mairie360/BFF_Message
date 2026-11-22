@@ -142,7 +142,7 @@ registry.registerPath({
     tags: ['Members'],
     summary: 'What the caller may mention after @',
     description: 'The other members whose name contains `q` (case- and accent-insensitive), the groups a member belongs to whose name '
-        + 'contains it (at most 20), and whether to offer `@tout le monde`.',
+        + 'contains it (at most 20), and whether to offer a mention of everyone.',
     request: { params: ConversationIdParams, query: MentionSuggestionsQuery },
     responses: {
         200: { description: 'The suggestions', content: { 'application/json': { schema: MentionSuggestionsResponse } } },

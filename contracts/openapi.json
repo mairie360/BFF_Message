@@ -597,7 +597,7 @@
           },
           "mentionsEveryone": {
             "type": "boolean",
-            "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+            "description": "Whether the message mentions every member of the conversation (`@everyone`)",
             "example": false
           },
           "groupMentions": {
@@ -1333,7 +1333,7 @@
                 },
                 "mentionsEveryone": {
                   "type": "boolean",
-                  "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                  "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                   "example": false
                 },
                 "groupMentions": {
@@ -1868,7 +1868,7 @@
               },
               "mentionsEveryone": {
                 "type": "boolean",
-                "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                 "example": false
               },
               "groupMentions": {
@@ -2506,7 +2506,7 @@
               },
               "mentionsEveryone": {
                 "type": "boolean",
-                "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                 "example": false
               },
               "groupMentions": {
@@ -3402,7 +3402,7 @@
                 },
                 "mentionsEveryone": {
                   "type": "boolean",
-                  "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                  "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                   "example": false
                 },
                 "groupMentions": {
@@ -3668,7 +3668,7 @@
           },
           "mentionEveryone": {
             "type": "boolean",
-            "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+            "description": "Whether the message mentions every member of the conversation (`@everyone`)",
             "example": false
           },
           "groupMentionIds": {
@@ -3959,7 +3959,7 @@
           },
           "mentionEveryone": {
             "type": "boolean",
-            "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+            "description": "Whether the message mentions every member of the conversation (`@everyone`)",
             "example": false
           },
           "groupMentionIds": {
@@ -4360,7 +4360,7 @@
               },
               "mentionsEveryone": {
                 "type": "boolean",
-                "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                 "example": false
               },
               "groupMentions": {
@@ -4810,7 +4810,7 @@
               },
               "mentionsEveryone": {
                 "type": "boolean",
-                "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                 "example": false
               },
               "groupMentions": {
@@ -5453,7 +5453,7 @@
               },
               "mentionsEveryone": {
                 "type": "boolean",
-                "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                 "example": false
               },
               "groupMentions": {
@@ -5846,7 +5846,7 @@
         "properties": {
           "everyone": {
             "type": "boolean",
-            "description": "Whether to suggest `@tout le monde`: `q` is empty or the start of « tout le monde » / « everyone »",
+            "description": "Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label",
             "example": true
           },
           "groups": {
@@ -6991,7 +6991,7 @@
                           },
                           "mentionsEveryone": {
                             "type": "boolean",
-                            "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                            "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                             "example": false
                           },
                           "groupMentions": {
@@ -8095,7 +8095,7 @@
                           },
                           "mentionsEveryone": {
                             "type": "boolean",
-                            "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                            "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                             "example": false
                           },
                           "groupMentions": {
@@ -9685,7 +9685,7 @@
                         },
                         "mentionsEveryone": {
                           "type": "boolean",
-                          "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                          "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                           "example": false
                         },
                         "groupMentions": {
@@ -10323,7 +10323,7 @@
                         },
                         "mentionsEveryone": {
                           "type": "boolean",
-                          "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                          "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                           "example": false
                         },
                         "groupMentions": {
@@ -10955,7 +10955,7 @@
           "Members"
         ],
         "summary": "What the caller may mention after @",
-        "description": "The other members whose name contains `q` (case- and accent-insensitive), the groups a member belongs to whose name contains it (at most 20), and whether to offer `@tout le monde`.",
+        "description": "The other members whose name contains `q` (case- and accent-insensitive), the groups a member belongs to whose name contains it (at most 20), and whether to offer a mention of everyone.",
         "parameters": [
           {
             "schema": {
@@ -11000,7 +11000,7 @@
                   "properties": {
                     "everyone": {
                       "type": "boolean",
-                      "description": "Whether to suggest `@tout le monde`: `q` is empty or the start of « tout le monde » / « everyone »",
+                      "description": "Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label",
                       "example": true
                     },
                     "groups": {
@@ -11598,7 +11598,7 @@
                           },
                           "mentionsEveryone": {
                             "type": "boolean",
-                            "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                            "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                             "example": false
                           },
                           "groupMentions": {
@@ -11903,7 +11903,7 @@
                   },
                   "mentionEveryone": {
                     "type": "boolean",
-                    "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                    "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                     "example": false
                   },
                   "groupMentionIds": {
@@ -12278,7 +12278,7 @@
                         },
                         "mentionsEveryone": {
                           "type": "boolean",
-                          "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                          "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                           "example": false
                         },
                         "groupMentions": {
@@ -12678,7 +12678,7 @@
                   },
                   "mentionEveryone": {
                     "type": "boolean",
-                    "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                    "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                     "example": false
                   },
                   "groupMentionIds": {
@@ -13039,7 +13039,7 @@
                         },
                         "mentionsEveryone": {
                           "type": "boolean",
-                          "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                          "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                           "example": false
                         },
                         "groupMentions": {
@@ -13617,7 +13617,7 @@
                         },
                         "mentionsEveryone": {
                           "type": "boolean",
-                          "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                          "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                           "example": false
                         },
                         "groupMentions": {
@@ -14683,7 +14683,7 @@
                         },
                         "mentionsEveryone": {
                           "type": "boolean",
-                          "description": "Whether the message mentions every member of the conversation (`@tout le monde`)",
+                          "description": "Whether the message mentions every member of the conversation (`@everyone`)",
                           "example": false
                         },
                         "groupMentions": {

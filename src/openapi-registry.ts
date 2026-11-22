@@ -322,7 +322,7 @@ export const MessageDtoSchema = z.object({
     example: false,
   }),
   mentionsEveryone: z.boolean().openapi({
-    description: 'Whether the message mentions every member of the conversation (`@tout le monde`)',
+    description: 'Whether the message mentions every member of the conversation (`@everyone`)',
     example: false,
   }),
   groupMentions: z.array(GroupMentionDtoSchema).openapi({
@@ -480,7 +480,7 @@ function messageTagsFields() {
       description: 'Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise)',
     }),
     mentionEveryone: z.boolean().optional().openapi({
-      description: 'Whether the message mentions every member of the conversation (`@tout le monde`)',
+      description: 'Whether the message mentions every member of the conversation (`@everyone`)',
       example: false,
     }),
     groupMentionIds: z.array(inputId('group', 4)).max(MAX_MESSAGE_TAGS).optional().openapi({
@@ -825,7 +825,7 @@ export const ConversationSearchResponse = z.object({
 
 export const MentionSuggestionsResponse = z.object({
   everyone: z.boolean().openapi({
-    description: 'Whether to suggest `@tout le monde`: `q` is empty or the start of « tout le monde » / « everyone »',
+    description: 'Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label',
     example: true,
   }),
   groups: z.array(z.object({
