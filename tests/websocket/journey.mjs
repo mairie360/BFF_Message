@@ -37,6 +37,9 @@ function check(name, ok, detail = '') {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Whether `conn` is still upgraded: open, and never closed by the server. */
+const isOpen = (conn) => conn.ws.readyState === WebSocket.OPEN && conn.closeCode === null;
+
 /** Opens GET /ws as `user`; resolves once upgraded, rejects if the handshake fails. */
 function connect(user, label) {
   return new Promise((resolve, reject) => {
@@ -120,6 +123,8 @@ async function main() {
   check('A, the author, receives nothing', a.frames.length === 0, JSON.stringify(a.frames));
   check('C, not a member, receives nothing', c.frames.length === 0, JSON.stringify(c.frames));
   check('B receives the signal once', b.frames.filter(newMsg(chat.id, message.id)).length === 1, JSON.stringify(b.frames));
+  // A silent socket only proves the filtering while it is still open.
+  check('A and C are still connected', [a, c].every(isOpen), `close codes ${a.closeCode} ${c.closeCode}`);
 
   console.log(`MAIR-661 A ${MAX_CONNECTIONS + 1}th connection evicts the oldest with ${EVICTED}`);
   const others = [];
@@ -135,7 +140,10 @@ async function main() {
     others.map((conn) => waitFor(conn, (x) => x.frames.some(newMsg(chat.id, second.id)), DELIVERY_MS)),
   );
   check(`the ${MAX_CONNECTIONS} live connections of B receive NEW_MSG`, all.every(Boolean), all.join(','));
+  // The frames of B may arrive before a late one of C: give C the same time as after the first post.
+  await sleep(SILENCE_MS);
   check('C still receives nothing', c.frames.length === 0, JSON.stringify(c.frames));
+  check('C is still connected', isOpen(c), `close code ${c.closeCode}`);
 
   await api(USERS.A, 'DELETE', `/conversations/${chat.id}`);
   await api(USERS.B, 'DELETE', `/conversations/${chat.id}`);

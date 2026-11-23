@@ -531,7 +531,9 @@ export function websocket(data) {
           { headers: Object.assign({ 'Content-Type': 'application/json', Connection: 'close' }, data.user), tags: { op: 'ws_post' } },
         );
         posts += 1;
-        const id = (json(post) || { message: {} }).message.id;
+        // An error envelope (502, 429…) has no `message`: the check below records it instead of throwing.
+        const body = json(post);
+        const id = body && body.message ? body.message.id : undefined;
         if (check(post, { 'ws post 201': (r) => r.status === 201 && Boolean(id) })) pending[id] = startedAt;
       }, WS_POST_EVERY_MS);
       socket.setTimeout(() => { closing = true; socket.close(); }, WS_SESSION_MS + WS_DRAIN_MS);
