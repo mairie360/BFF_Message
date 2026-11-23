@@ -237,6 +237,7 @@ services:
       --environment /etc/newman/environment.json
       --working-dir /etc/newman
       --env-var baseUrl=http://bff-message:4003
+      --env-var coreUrl=http://core-api:3000
       --env-var jwt_admin=${JWT_ADMIN:?JWT_ADMIN must be set, run ./integration_test.sh}
       --env-var jwt_agent=${JWT_AGENT:?JWT_AGENT must be set, run ./integration_test.sh}
       --env-var jwt_third=${JWT_THIRD:?JWT_THIRD must be set, run ./integration_test.sh}
