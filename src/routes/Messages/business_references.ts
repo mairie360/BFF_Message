@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { calendarApi, projectApi } from '../../clients/businessApiClients';
 import { readCallerRoles } from '../../clients/coreClient';
 import { errorResponses, registry } from '../../openapi-registry';
+import type { LinkTarget } from './message_helpers';
 const router = Router();
 export const BusinessReferencesSchema = registry.register('BusinessReferencesResponse', z.object({
   references: z.array(z.object({ id: z.string(), title: z.string(), kind: z.enum(['project', 'task', 'event']), description: z.string().optional() })),
@@ -32,12 +33,15 @@ export const CALENDAR_WINDOW_HALF_DAYS = 182;
 
 type BusinessReferenceKind = "project" | "task" | "event";
 
-type BusinessReference = {
+export type BusinessReference = {
   id: string;
   title: string;
   kind: BusinessReferenceKind;
   description?: string;
+  /** What the front page of the object needs besides its id (MAIR-1166): a task's project, an event's start. Not answered. */
+  target?: LinkTarget;
 };
+
 
 /** Timeout of each call to Project API / Calendar API, in ms. */
 const BUSINESS_API_TIMEOUT_MS = 8_000;
@@ -59,7 +63,7 @@ async function seesEveryTask(req: Request): Promise<boolean> {
  * PROJECT_DETAILS_CONCURRENCY at a time, until Project API lists the caller's tasks in one call, MAIR-524). Ids and
  * labels are those of BFF Project (`project-<id>`, `task-<id>`), so a reference made earlier still matches.
  */
-async function loadProjectReferences(req: Request): Promise<BusinessReference[]> {
+export async function loadProjectReferences(req: Request): Promise<BusinessReference[]> {
   const options = () => asCaller('PROJECT_API', req, BUSINESS_API_TIMEOUT_MS);
   const [page, everyTask] = await Promise.all([
     callUpstream('PROJECT_API', async () => (await projectApi.getProjects({ limit: PROJECTS_PAGE_LIMIT }, options())).data, READ),
@@ -81,6 +85,7 @@ async function loadProjectReferences(req: Request): Promise<BusinessReference[]>
       title: task.title,
       kind: "task" as const,
       description: `Tâche · ${project.name}`,
+      target: { projectId: project.id },
     })));
 
   return [
@@ -105,7 +110,7 @@ export function calendarDateRange(at: Date = new Date()) {
 }
 
 /** The caller's events of the window, from one Calendar API list (no detail per event, MAIR-525). */
-async function loadCalendarReferences(req: Request): Promise<BusinessReference[]> {
+export async function loadCalendarReferences(req: Request): Promise<BusinessReference[]> {
   const { from, to } = calendarDateRange();
   const params = { start: wallClockToUtc(from, '00:00:00'), end: wallClockToUtc(to, '23:59:59') };
   const calendar = await callUpstream('CALENDAR_API', async () => (
@@ -118,6 +123,7 @@ async function loadCalendarReferences(req: Request): Promise<BusinessReference[]
     title: event.name,
     kind: "event" as const,
     description: `Calendrier · ${utcToWallClock(event.start).date}`,
+    target: { start: event.start },
   }));
 }
 
@@ -150,9 +156,10 @@ router.get('/', requireSession, createBusinessReferencesRateLimiter(), async (re
     loadProjectReferences(request),
     loadCalendarReferences(request),
   ]);
+  // `target` only builds the link URLs of `GET /link-suggestions`: the contract answers the four fields.
   const references = results.flatMap((result) =>
     result.status === "fulfilled" ? result.value : [],
-  );
+  ).map(({ target: _target, ...reference }) => reference);
 
   return response.json(
     {

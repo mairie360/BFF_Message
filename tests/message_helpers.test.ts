@@ -7,6 +7,8 @@ import {
   fetchConversations,
   fetchCurrentUser,
   loadConversation,
+  SEARCH_EXCERPT_LENGTH,
+  searchExcerpt,
   sendMessageToConversation,
 } from '../src/routes/Messages/message_helpers';
 import {
@@ -176,5 +178,25 @@ describe('Core API directory ids', () => {
     expect(queries.join(',').split(',').map(Number)).toEqual(ids);
     expect(idsQueries([7, 8, 7])).toEqual(['7,8']);
     expect(idsQueries([])).toEqual([]);
+  });
+});
+
+describe('searchExcerpt (MAIR-1154)', () => {
+  it('keeps a short content whole and marks every case-insensitive match', () => {
+    expect(searchExcerpt('Permis ou permis ?', 'PERMIS')).toEqual({ excerpt: 'Permis ou permis ?', highlights: [{ start: 0, length: 6 }, { start: 10, length: 6 }] });
+  });
+
+  it('cuts a long content around the first match, with an ellipsis at each cut', () => {
+    const content = `${'a'.repeat(300)} permis ${'b'.repeat(300)}`;
+    const { excerpt, highlights } = searchExcerpt(content, 'permis');
+    expect(excerpt.startsWith('…')).toBe(true);
+    expect(excerpt.endsWith('…')).toBe(true);
+    expect(excerpt.length).toBe(SEARCH_EXCERPT_LENGTH + 2);
+    expect(highlights).toHaveLength(1);
+    expect(excerpt.slice(highlights[0]!.start, highlights[0]!.start + highlights[0]!.length)).toBe('permis');
+  });
+
+  it('treats the query as text, not as a pattern', () => {
+    expect(searchExcerpt('a.b and axb', 'a.b').highlights).toEqual([{ start: 0, length: 3 }]);
   });
 });

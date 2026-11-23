@@ -1,25 +1,42 @@
-import { asCaller, callUpstream, HttpError, sessionUserId, upstreamStatus } from '@mairie360/bffs-lib';
+import {
+  asCaller, callUpstream, hasRole, HttpError, sessionRole, sessionUserId, upstreamStatus, utcToWallClock,
+} from '@mairie360/bffs-lib';
 import type { z } from 'zod';
 import type { CallContext } from '../../clients/context';
 import messageClient from '../../clients/messageClient';
-import { getContactUser, listContacts } from '../../clients/coreClient';
+import { getContactUser, listContacts, listContactsByIds, readCallerRoles } from '../../clients/coreClient';
 import type {
   ChatView,
   GetChatParams,
   GetChatResultView,
+  MessageLinkView,
   MessageView,
+  ReactionView,
+  SearchMessageItem,
+  SearchPersonItem,
 } from '@mairie360/message-api-openapi/model';
 import {
   ContactDtoSchema,
   ConversationDtoSchema,
+  ConversationSearchResponse,
   CurrentUserDtoSchema,
+  LinkKindSchema,
+  MemberDtoSchema,
+  MentionSuggestionsResponse,
   MessageDtoSchema,
+  MessageLinkDtoSchema,
+  ReactionDtoSchema,
+  SEARCH_TYPES,
 } from '../../openapi-registry';
 
 export type BffContact = z.infer<typeof ContactDtoSchema>;
 export type BffConversation = z.infer<typeof ConversationDtoSchema>;
 export type BffCurrentUser = z.infer<typeof CurrentUserDtoSchema>;
 export type BffMessage = z.infer<typeof MessageDtoSchema>;
+export type BffMember = z.infer<typeof MemberDtoSchema>;
+export type BffReaction = z.infer<typeof ReactionDtoSchema>;
+export type BffMessageLink = z.infer<typeof MessageLinkDtoSchema>;
+type LinkKind = z.infer<typeof LinkKindSchema>;
 
 const MESSAGE_API_TIMEOUT_MS = 5_000;
 
@@ -52,8 +69,8 @@ function callerId(context: CallContext): number {
   return sessionUserId(context.req);
 }
 
-/** A member of a chat as Message API lists it: Core API id and names. */
-type ChatUser = { id: number; first_name: string; last_name: string };
+/** A member of a chat as Message API lists it: Core API id, names, and whether they administer the group (MAIR-1155). */
+type ChatUser = { id: number; first_name: string; last_name: string; is_admin?: boolean };
 
 /** Every member of the chat with their names, read page by page from Message API (by increasing id). */
 async function listChatUsers(
@@ -130,6 +147,10 @@ function publicMessageId(messageId: number): string {
 
 function publicUserId(userId: string | number): string {
   return `user-${userId}`;
+}
+
+function publicGroupId(groupId: number): string {
+  return `group-${groupId}`;
 }
 
 /**
@@ -235,22 +256,113 @@ function mapChatToConversation(chat: ChatSummary, lastMessage?: Pick<MessageView
 }
 
 /**
+ * Names a message refers to (MAIR-1154): agents by Core API id (the members of the conversation, completed with the
+ * directory for the former members a page refers to) and groups by id (the groups of the members).
+ */
+export type NameBook = { users: Map<number, string>; groups: Map<number, string> };
+
+const emptyNames = (): NameBook => ({ users: new Map(), groups: new Map() });
+
+function fullName(user: { first_name?: string | null; last_name?: string | null }): string {
+  return [user.first_name, user.last_name].filter((part): part is string => Boolean(part?.trim())).join(' ');
+}
+
+/** The names of the members of a chat, by Core API id. */
+function memberNames(users: ChatUser[]): Map<number, string> {
+  return new Map(users.flatMap((user) => {
+    const name = fullName(user);
+    return name ? [[user.id, name] as const] : [];
+  }));
+}
+
+/** A message as the BFF maps it: what a history page gives, every MAIR-1155 field optional (a message just sent). */
+type UpstreamMessage = Pick<MessageView, 'id' | 'content' | 'created_at' | 'sender_id'> & Partial<MessageView>;
+
+/** Agents a message names without being its author: mentions, reactions, the actor and the targets of a system note. */
+function referencedUserIds(message: UpstreamMessage): number[] {
+  return [
+    ...(message.mentions ?? []),
+    ...(message.reactions ?? []).flatMap((reaction) => reaction.user_ids),
+    ...(message.system_event ? [message.system_event.actor_id, ...message.system_event.user_ids] : []),
+  ];
+}
+
+/** Base URL of a front (`PROJECT_FRONT_URL`, `CALENDAR_FRONT_URL`), read on every call; `undefined` when unset or not http(s). */
+function frontUrl(variable: 'PROJECT_FRONT_URL' | 'CALENDAR_FRONT_URL'): string | undefined {
+  const value = process.env[variable]?.trim();
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href.replace(/\/+$/, '') : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** A task opens in the Projects front with its project, an event in the Calendar front on its day (MAIR-1166). */
+export type LinkTarget = { projectId?: number; start?: string };
+
+/**
+ * Page of a business object in its front (MAIR-1166). The Projects and Calendar fronts have one page,
+ * addressed by its query: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`
+ * (a task needs its project) and `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>` (the day of its start, in the
+ * instance time zone; the front ignores `event` without `date`). `undefined` when that front is not configured or
+ * the task's project / the event's start is unknown.
+ */
+export function businessObjectUrl(kind: LinkKind, id: number, target: LinkTarget = {}): string | undefined {
+  const base = frontUrl(kind === 'event' ? 'CALENDAR_FRONT_URL' : 'PROJECT_FRONT_URL');
+  if (base === undefined) return undefined;
+  const query = new URLSearchParams();
+  if (kind === 'project') {
+    query.set('project', String(id));
+  } else if (kind === 'task') {
+    if (target.projectId === undefined) return undefined;
+    query.set('project', String(target.projectId));
+    query.set('task', String(id));
+  } else {
+    if (target.start === undefined) return undefined;
+    query.set('date', utcToWallClock(target.start).date);
+    query.set('event', String(id));
+  }
+  return `${base}/?${query.toString()}`;
+}
+
+function mapLink(link: MessageLinkView): BffMessageLink {
+  const url = businessObjectUrl(link.kind, link.id, {
+    ...(link.project_id != null ? { projectId: link.project_id } : {}),
+    ...(link.start != null ? { start: link.start } : {}),
+  });
+  return { id: `${link.kind}-${link.id}`, kind: link.kind, ...(url ? { url } : {}) };
+}
+
+/** Reactions with the caller's own and the names of who reacted (the names the book knows). */
+function mapReactions(reactions: ReactionView[], currentUserId: number, names: NameBook): BffReaction[] {
+  return reactions.map((reaction) => ({
+    emoji: reaction.emoji,
+    count: reaction.count,
+    reactedByMe: reaction.user_ids.includes(currentUserId),
+    userNames: reaction.user_ids.flatMap((id) => names.users.get(id) ?? []),
+  }));
+}
+
+/**
  * `authorName` is the author's name when the author is a current member of the chat, and is left out
  * otherwise (former member): no placeholder name is made up. `authorId` is left out too once the author's
  * account is deleted (Message API `sender_id: null`). A quoted message carries its author and an excerpt, also
- * when it is older than the page.
+ * when it is older than the page. Mentions, reactions and system notes name the agents the book knows (MAIR-1154).
  */
 function mapMessageToDto(
   conversationId: string | number,
-  message: Pick<MessageView, 'id' | 'content' | 'created_at' | 'sender_id'> & Partial<Pick<MessageView, 'citation' | 'quoted'>>,
+  message: UpstreamMessage,
   currentUserId: number,
-  members: BffContact[] = [],
+  names: NameBook = emptyNames(),
 ): BffMessage {
-  const nameOf = (id: string | undefined) => (id === undefined ? undefined : members.find((member) => member.id === id)?.name);
+  const authorName = message.sender_id == null ? undefined : names.users.get(message.sender_id);
   const authorId = message.sender_id == null ? undefined : publicUserId(message.sender_id);
-  const authorName = nameOf(authorId);
   const quotedAuthorId = message.quoted?.sender_id == null ? undefined : publicUserId(message.quoted.sender_id);
-  const quotedAuthorName = nameOf(quotedAuthorId);
+  const quotedAuthorName = message.quoted?.sender_id == null ? undefined : names.users.get(message.quoted.sender_id);
+  const event = message.system_event;
+  const actorName = event ? names.users.get(event.actor_id) : undefined;
 
   return {
     id: publicMessageId(message.id),
@@ -261,7 +373,11 @@ function mapMessageToDto(
     ...(authorName ? { authorName } : {}),
     direction: authorId !== undefined && publicUserId(currentUserId) === authorId ? 'outgoing' : 'incoming',
     attachments: [],
-    mentions: [],
+    // A mention of an agent the directory does not know any more has no name to show: it is left out.
+    mentions: (message.mentions ?? []).flatMap((id) => {
+      const name = names.users.get(id);
+      return name ? [{ id: publicUserId(id), name }] : [];
+    }),
     ...(message.citation == null ? {} : { citation: publicMessageId(message.citation) }),
     ...(message.quoted == null
       ? {}
@@ -273,7 +389,59 @@ function mapMessageToDto(
           excerpt: message.quoted.excerpt,
         },
       }),
+    kind: message.kind ?? 'user',
+    ...(event
+      ? {
+        systemEvent: {
+          action: event.action,
+          actorId: publicUserId(event.actor_id),
+          ...(actorName ? { actorName } : {}),
+          userIds: event.user_ids.map(publicUserId),
+          userNames: event.user_ids.flatMap((id) => names.users.get(id) ?? []),
+        },
+      }
+      : {}),
+    ...(message.edited_at ? { editedAt: message.edited_at } : {}),
+    deleted: message.deleted ?? false,
+    mentionsEveryone: message.mentions_everyone ?? false,
+    groupMentions: (message.group_mentions ?? []).map((id) => {
+      const name = names.groups.get(id);
+      return { id: publicGroupId(id), ...(name ? { name } : {}) };
+    }),
+    links: (message.links ?? []).map(mapLink),
+    reactions: mapReactions(message.reactions ?? [], currentUserId, names),
   };
+}
+
+/**
+ * The names `messages` refer to: the members' (`users`), completed with ONE directory read for the other agents they
+ * name (former members), and the groups of the members when a message mentions one (ONE Message API read). Both reads
+ * only happen when needed, and a failure only leaves the names out: a page is never refused for a name.
+ */
+async function nameBook(chatId: number, users: ChatUser[], messages: UpstreamMessage[], context: CallContext): Promise<NameBook> {
+  const known = memberNames(users);
+  const missing = [...new Set(messages.flatMap(referencedUserIds))].filter((id) => !known.has(id));
+  const groupIds = new Set(messages.flatMap((message) => message.group_mentions ?? []));
+  const quiet: CallContext = { req: context.req, declared: [] };
+  const [directory, groups] = await Promise.all([
+    missing.length === 0 ? [] : listContactsByIds(missing, quiet).catch(() => []),
+    groupIds.size === 0 ? [] : listMentionGroups(chatId, undefined, quiet).catch(() => []),
+  ]);
+  for (const user of directory) {
+    const name = fullName(user);
+    if (name && !known.has(user.id)) known.set(user.id, name);
+  }
+  return { users: known, groups: new Map(groups.map((group) => [group.id, group.name])) };
+}
+
+/** The groups at least one member of the chat belongs to, whose name contains `q` (at most 20, Message API). */
+async function listMentionGroups(chatId: number, q: string | undefined, context: CallContext) {
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.getMentionGroups(chatId, q ? { q } : {}, messageApi(context)),
+    { declared: context.declared, retry: true },
+  );
+  return response.data.groups;
 }
 
 /** Offset of a `cursor` of `GET /conversations` (the `nextCursor` of the previous page). */
@@ -351,13 +519,14 @@ export async function loadConversation(
     return contact ? [contact] : [];
   });
   const latest = result.messages[result.messages.length - 1];
+  const names = await nameBook(chatId, users, result.messages, context);
 
   // Messages carry the public id of their conversation (= `conversation.id`), never the form the client sent:
   // the front matches the two before it trusts a page or a write (MAIR-603).
   return {
     conversation: mapChatToConversation(result.chat, latest),
     participants,
-    messages: result.messages.map((message) => mapMessageToDto(publicChatId(chatId), message, currentUserId, participants)),
+    messages: result.messages.map((message) => mapMessageToDto(publicChatId(chatId), message, currentUserId, names)),
     hasMore: result.has_more,
     ...(result.has_more && result.next_before != null ? { nextCursor: String(result.next_before) } : {}),
   };
@@ -373,32 +542,82 @@ export async function fetchConversationMessages(
   return { conversation, messages, hasMore, ...(nextCursor === undefined ? {} : { nextCursor }) };
 }
 
+/** Tags of a message written through the BFF (MAIR-1154), as the routes validated them. */
+export type MessageTags = {
+  replyTo?: string | number;
+  mentionIds?: Array<string | number>;
+  mentionEveryone?: boolean;
+  groupMentionIds?: Array<string | number>;
+  links?: Array<{ id: string }>;
+};
+
+/** Numeric ids of public ids the route already validated (`user-3`, `3`). */
+function numericIds(ids: Array<string | number>): number[] {
+  return ids.map(parseNumericId).filter((id): id is number => id !== null);
+}
+
+/** A link of a request (`project-12`) as Message API takes it (`{ kind: 'project', id: 12 }`). */
+function linkOf(id: string): MessageLinkView {
+  const match = /^(project|task|event)-(\d+)$/.exec(id);
+  if (!match) throw new HttpError(400, 'Invalid link id');
+  return { kind: match[1] as LinkKind, id: Number(match[2]) };
+}
+
+/** The tag fields of a Message API write: only the ones the request carries (an absent field keeps the tags of an edit). */
+function upstreamTags(tags: MessageTags) {
+  return {
+    ...(tags.mentionIds === undefined ? {} : { mentions: numericIds(tags.mentionIds) }),
+    ...(tags.mentionEveryone === undefined ? {} : { mentions_everyone: tags.mentionEveryone }),
+    ...(tags.groupMentionIds === undefined ? {} : { group_mentions: numericIds(tags.groupMentionIds) }),
+    ...(tags.links === undefined ? {} : { links: tags.links.map((link) => linkOf(link.id)) }),
+  };
+}
+
+function requireChatId(conversationId: string | number): number {
+  const chatId = parseNumericId(conversationId);
+  if (chatId === null) throw new HttpError(400, 'Invalid conversation id');
+  return chatId;
+}
+
+function requireMessageId(messageId: string | number): number {
+  const id = parseNumericId(messageId);
+  if (id === null) throw new HttpError(400, 'Invalid message id');
+  return id;
+}
+
 export async function sendMessageToConversation(
   conversationId: string | number,
   content: string,
   context: CallContext,
+  tags: MessageTags = {},
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
-  const chatId = parseNumericId(conversationId);
-  if (chatId === null) {
-    throw new HttpError(400, 'Invalid conversation id');
-  }
+  const chatId = requireChatId(conversationId);
+  const citation = tags.replyTo === undefined ? undefined : requireMessageId(tags.replyTo);
+  const body = { content, ...(citation === undefined ? {} : { citation }), ...upstreamTags(tags) };
 
   const currentUserId = callerId(context);
   // The post, the conversation (one message of its page carries it) and the members' names, in parallel.
   const [response, header, users] = await Promise.all([
-    callUpstream('MESSAGE_API', () => messageClient.postMessage(chatId, { content }, messageApi(context)), { declared: context.declared }),
+    callUpstream('MESSAGE_API', () => messageClient.postMessage(chatId, body, messageApi(context)), { declared: context.declared }),
     getChatPage(chatId, { limit: 1 }, context),
     listChatUsers(chatId, context, context.declared),
   ]);
-  const members = users.flatMap((user) => {
-    const contact = mapCoreUserToContact(user);
-    return contact ? [contact] : [];
-  });
-  const sent = { id: response.data.id, content, created_at: new Date().toISOString(), sender_id: currentUserId };
+  const sent: UpstreamMessage = {
+    id: response.data.id,
+    content,
+    created_at: new Date().toISOString(),
+    sender_id: currentUserId,
+    citation: citation ?? null,
+    mentions: body.mentions ?? [],
+    mentions_everyone: body.mentions_everyone ?? false,
+    group_mentions: body.group_mentions ?? [],
+    links: body.links ?? [],
+  };
+  const names = await nameBook(chatId, users, [sent], context);
 
   return {
     conversation: mapChatToConversation(header.chat, sent),
-    message: mapMessageToDto(publicChatId(chatId), sent, currentUserId, members),
+    message: mapMessageToDto(publicChatId(chatId), sent, currentUserId, names),
   };
 }
 
@@ -578,4 +797,270 @@ export async function fetchMessagingBootstrap(context: CallContext): Promise<{
 
 export async function getCurrentUser(context: CallContext): Promise<{ currentUser: BffCurrentUser }> {
   return { currentUser: await fetchCurrentUser(context) };
+}
+
+// --- Messaging V2 (MAIR-1154): edit, delete, reactions, members, search and `@` suggestions ---
+
+/** How far back the read of a deleted message looks for its tombstone (changes of the conversation since then). */
+const TOMBSTONE_LOOKBACK_MS = 5 * 60_000;
+/** Messages read back after a membership change to find the system note it wrote. */
+const SYSTEM_NOTE_LOOKUP = 5;
+/** Longest excerpt of a message found by a search, around its first match. */
+export const SEARCH_EXCERPT_LENGTH = 200;
+
+/** `PATCH`: the author edits the content and, for each tag field present, replaces those tags. */
+export async function editMessage(
+  conversationId: string | number,
+  messageId: string | number,
+  content: string,
+  tags: Omit<MessageTags, 'replyTo'>,
+  context: CallContext,
+): Promise<{ message: BffMessage }> {
+  const chatId = requireChatId(conversationId);
+  const id = requireMessageId(messageId);
+  const [response, users] = await Promise.all([
+    callUpstream(
+      'MESSAGE_API',
+      () => messageClient.patchMessage(chatId, id, { content, ...upstreamTags(tags) }, messageApi(context)),
+      { declared: context.declared },
+    ),
+    listChatUsers(chatId, context, context.declared),
+  ]);
+  const names = await nameBook(chatId, users, [response.data], context);
+  return { message: mapMessageToDto(publicChatId(chatId), response.data, callerId(context), names) };
+}
+
+/**
+ * Deletes a message (its author, or an administrator) and answers its tombstone, read back from the changes of the
+ * conversation; when that read fails, a tombstone is built from the id alone (dated of the deletion).
+ */
+export async function deleteMessage(
+  conversationId: string | number,
+  messageId: string | number,
+  context: CallContext,
+): Promise<{ message: BffMessage }> {
+  const chatId = requireChatId(conversationId);
+  const id = requireMessageId(messageId);
+  const since = new Date(Date.now() - TOMBSTONE_LOOKBACK_MS).toISOString();
+  await callUpstream('MESSAGE_API', () => messageClient.deleteMessage(chatId, id, messageApi(context)), { declared: context.declared });
+
+  const quiet: CallContext = { req: context.req, declared: [] };
+  const [changes, users] = await Promise.all([
+    getChatPage(chatId, { since, limit: MESSAGE_API_PAGE_SIZE }, quiet).catch(() => undefined),
+    listChatUsers(chatId, quiet).catch(() => []),
+  ]);
+  const tombstone: UpstreamMessage = changes?.messages.find((message) => message.id === id)
+    ?? { id, content: '', created_at: new Date().toISOString(), deleted: true };
+  const names = { users: memberNames(users), groups: new Map<number, string>() };
+  return { message: mapMessageToDto(publicChatId(chatId), { ...tombstone, deleted: true }, callerId(context), names) };
+}
+
+/** Adds (`emoji` given to `add`) or removes the caller's reaction, and answers every reaction of the message. */
+export async function reactToMessage(
+  conversationId: string | number,
+  messageId: string | number,
+  emoji: string,
+  action: 'add' | 'remove',
+  context: CallContext,
+): Promise<{ reactions: BffReaction[] }> {
+  const chatId = requireChatId(conversationId);
+  const id = requireMessageId(messageId);
+  const [response, users] = await Promise.all([
+    callUpstream(
+      'MESSAGE_API',
+      () => (action === 'add'
+        ? messageClient.addReaction(chatId, id, { emoji }, messageApi(context))
+        : messageClient.removeReaction(chatId, id, { emoji }, messageApi(context))),
+      { declared: context.declared },
+    ),
+    listChatUsers(chatId, context, context.declared),
+  ]);
+  const names = await nameBook(chatId, users, [{ id, content: '', created_at: '', reactions: response.data.reactions }], context);
+  return { reactions: mapReactions(response.data.reactions, callerId(context), names) };
+}
+
+/** Whether the caller is a platform administrator: the role of the token, or Core's when the token has none. */
+async function isPlatformAdmin(context: CallContext): Promise<boolean> {
+  const role = sessionRole(context.req);
+  const roles = role !== undefined ? [role] : await readCallerRoles({ req: context.req, declared: [] }).catch(() => []);
+  return hasRole(roles, 'Admin', 'Administrateur');
+}
+
+type MembersRead = { users: ChatUser[]; members: BffMember[]; canManage: boolean };
+
+/** The members of the chat and whether the caller may manage them (a group, administered by the caller or a platform admin). */
+async function readMembers(chatId: number, context: CallContext): Promise<MembersRead> {
+  const [users, header] = await Promise.all([
+    listChatUsers(chatId, context, context.declared),
+    getChatPage(chatId, { limit: 1 }, context),
+  ]);
+  const currentUserId = callerId(context);
+  const members = users.map((user) => ({
+    id: publicUserId(user.id),
+    name: fullName(user),
+    isAdmin: user.is_admin ?? false,
+  }));
+  const canManage = header.chat.kind === 'group'
+    && (users.some((user) => user.id === currentUserId && user.is_admin) || await isPlatformAdmin(context));
+  return { users, members, canManage };
+}
+
+export async function fetchMembers(conversationId: string | number, context: CallContext): Promise<{ members: BffMember[]; canManage: boolean }> {
+  const { members, canManage } = await readMembers(requireChatId(conversationId), context);
+  return { members, canManage };
+}
+
+/** Adds members to a group; answers the members after the change and the system note Message API wrote. */
+export async function addMembers(
+  conversationId: string | number,
+  userIds: Array<string | number>,
+  context: CallContext,
+): Promise<{ members: BffMember[]; canManage: boolean; systemMessage?: BffMessage }> {
+  const chatId = requireChatId(conversationId);
+  const response = await callUpstream(
+    'MESSAGE_API',
+    () => messageClient.addUsersToChat(chatId, { users_id: numericIds(userIds) }, messageApi(context)),
+    { declared: context.declared },
+  );
+  const { users, members, canManage } = await readMembers(chatId, context);
+  const note = response.data.system_message;
+  if (!note) return { members, canManage };
+  const names = await nameBook(chatId, users, [note], context);
+  return { members, canManage, systemMessage: mapMessageToDto(publicChatId(chatId), note, callerId(context), names) };
+}
+
+/**
+ * Removes another member from a group (its administrator or a platform admin); answers the members after the change
+ * and the system note Message API wrote (read back from the latest messages). The caller leaves with `leaveConversation`.
+ */
+export async function removeMember(
+  conversationId: string | number,
+  userId: string | number,
+  context: CallContext,
+): Promise<{ members: BffMember[]; canManage: boolean; systemMessage?: BffMessage }> {
+  const chatId = requireChatId(conversationId);
+  const memberId = parseNumericId(userId);
+  if (memberId === null) throw new HttpError(400, 'Invalid user id');
+  if (memberId === callerId(context)) {
+    throw new HttpError(400, 'Use POST /conversations/{conversationId}/leave to leave a conversation');
+  }
+
+  try {
+    await callUpstream('MESSAGE_API', () => messageClient.removeUserFromChat(chatId, memberId, messageApi(context)), {
+      declared: context.declared,
+    });
+  } catch (error) {
+    // Message API answers 400 when `user_id` is not a member of the chat.
+    if (error instanceof HttpError && upstreamStatus(error.cause) === 400) {
+      throw new HttpError(404, 'This agent is not a member of the conversation');
+    }
+    throw error;
+  }
+
+  const [read, latest] = await Promise.all([
+    readMembers(chatId, context),
+    getChatPage(chatId, { limit: SYSTEM_NOTE_LOOKUP }, { req: context.req, declared: [] }).catch(() => undefined),
+  ]);
+  const note = [...(latest?.messages ?? [])].reverse().find((message) => message.kind === 'system'
+    && message.system_event?.action === 'member_removed' && message.system_event.user_ids.includes(memberId));
+  if (!note) return { members: read.members, canManage: read.canManage };
+  const names = await nameBook(chatId, read.users, [note], context);
+  return {
+    members: read.members,
+    canManage: read.canManage,
+    systemMessage: mapMessageToDto(publicChatId(chatId), note, callerId(context), names),
+  };
+}
+
+/** The caller leaves the conversation (a direct one is only hidden): the same as deleting it from the list. */
+export async function leaveConversation(conversationId: string | number, context: CallContext): Promise<void> {
+  await deleteConversation(conversationId, context);
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * The excerpt of a message found by `q`: the whole content when short, otherwise `SEARCH_EXCERPT_LENGTH` characters
+ * around the first match with `…` at each cut; and every case-insensitive match of `q` in it.
+ */
+export function searchExcerpt(content: string, q: string): { excerpt: string; highlights: Array<{ start: number; length: number }> } {
+  const needle = q.trim();
+  const pattern = new RegExp(escapeRegExp(needle), 'giu');
+  let excerpt = content;
+  if (content.length > SEARCH_EXCERPT_LENGTH) {
+    const first = needle ? content.search(pattern) : -1;
+    const start = Math.max(0, Math.min(first - Math.floor(SEARCH_EXCERPT_LENGTH / 3), content.length - SEARCH_EXCERPT_LENGTH));
+    const end = start + SEARCH_EXCERPT_LENGTH;
+    excerpt = `${start > 0 ? '…' : ''}${content.slice(start, end)}${end < content.length ? '…' : ''}`;
+  }
+  const highlights = needle
+    ? [...excerpt.matchAll(pattern)].map((match) => ({ start: match.index ?? 0, length: match[0].length }))
+    : [];
+  return { excerpt, highlights };
+}
+
+type SearchType = (typeof SEARCH_TYPES)[number];
+
+/** One page of a search in the conversation: messages (with the author names of the members), people, or files (none). */
+export async function searchConversation(
+  conversationId: string | number,
+  query: { q: string; type?: SearchType; limit?: number; offset?: number },
+  context: CallContext,
+): Promise<z.infer<typeof ConversationSearchResponse>> {
+  const chatId = requireChatId(conversationId);
+  const type = query.type ?? 'messages';
+  const params = { q: query.q, type, ...(query.limit === undefined ? {} : { limit: query.limit }), ...(query.offset === undefined ? {} : { offset: query.offset }) };
+  const [response, users] = await Promise.all([
+    callUpstream('MESSAGE_API', () => messageClient.searchChat(chatId, params, messageApi(context)), { declared: context.declared, retry: true }),
+    type === 'messages' ? listChatUsers(chatId, context, context.declared) : Promise.resolve([]),
+  ]);
+  const names = memberNames(users);
+  const items = response.data.items.map((item) => {
+    if ('content' in item) {
+      const message = item as SearchMessageItem;
+      const authorName = message.sender_id == null ? undefined : names.get(message.sender_id);
+      return {
+        messageId: publicMessageId(message.id),
+        ...(message.sender_id == null ? {} : { authorId: publicUserId(message.sender_id) }),
+        ...(authorName ? { authorName } : {}),
+        createdAt: message.created_at,
+        ...searchExcerpt(message.content, query.q),
+      };
+    }
+    const person = item as SearchPersonItem;
+    return { id: publicUserId(person.id), name: fullName(person) };
+  });
+  return { type, items, hasMore: response.data.has_more, total: response.data.total };
+}
+
+/** Lower case, without accents: « Éloïse » matches « elo ». */
+export function foldText(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
+}
+
+const EVERYONE_LABELS = ['tout le monde', 'everyone'];
+
+/** What the caller may mention after `@q`: `@tout le monde`, the groups of the members, the other members. */
+export async function fetchMentionSuggestions(
+  conversationId: string | number,
+  q: string | undefined,
+  context: CallContext,
+): Promise<z.infer<typeof MentionSuggestionsResponse>> {
+  const chatId = requireChatId(conversationId);
+  const needle = foldText(q ?? '');
+  const [users, groups] = await Promise.all([
+    listChatUsers(chatId, context, context.declared),
+    listMentionGroups(chatId, q?.trim() || undefined, context),
+  ]);
+  const currentUserId = callerId(context);
+  return {
+    everyone: needle === '' || EVERYONE_LABELS.some((label) => label.startsWith(needle)),
+    groups: groups.map((group) => ({ id: publicGroupId(group.id), name: group.name })),
+    people: users
+      .filter((user) => user.id !== currentUserId)
+      .map((user) => ({ id: publicUserId(user.id), name: fullName(user) }))
+      .filter((person) => person.name && foldText(person.name).includes(needle)),
+  };
 }

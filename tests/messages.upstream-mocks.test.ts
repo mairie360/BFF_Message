@@ -20,7 +20,7 @@ import { loadOrvalContract } from './support/orval-contract';
 import {
   authorizationFor, calendarApiUrls, calendarResult, eventView, chatResult, chatUsers, chatView, chatsResult, coreApiUrls,
   directChatView, acknowledgeReadResult, createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectApiUrls,
-  projectListItem, projectsResult, sessionToken, taskView, tasksResult, tokenFor, users,
+  projectListItem, projectsResult, sessionToken, systemNoteView, taskView, tasksResult, tokenFor, users,
 } from './support/upstream-fixtures';
 import { MAX_PROJECT_DETAILS, PROJECTS_PAGE_LIMIT } from '../src/routes/Messages/business_references';
 import { captureLogs } from './support/logs';
@@ -43,6 +43,10 @@ const MESSAGE_API = {
   users: '/api/v1/{chatId}/users/',
   member: '/api/v1/{chatId}/users/{userId}/',
   read: '/api/v1/{chatId}/read/',
+  message: '/api/v1/{chatId}/messages/{messageId}/',
+  reactions: '/api/v1/{chatId}/messages/{messageId}/reactions/',
+  search: '/api/v1/{chatId}/search/',
+  mentionGroups: '/api/v1/{chatId}/mention-groups/',
   health: '/health',
 } as const;
 const CORE_API = { directory: '/api/v1/user/', me: '/api/v1/user/me/', health: '/health' } as const;
@@ -175,6 +179,8 @@ function expectApiError(response: request.Response, status: number, code: string
 /** Appels reçus par un service simulé, sous la forme `MÉTHODE chemin?query` (tels que les construisent les clients générés). */
 const upstreamSequence = (mock: ContractMockServer) => mock.requests.map((call) => `${call.method} ${call.url.pathname}${call.url.search}`);
 const called = (method: string, url: string) => `${method} ${url}`;
+/** What a message without tags, reaction nor edit carries since messaging V2 (MAIR-1154). */
+const V2_DEFAULTS = { kind: 'user', deleted: false, mentionsEveryone: false, groupMentions: [], links: [], reactions: [] };
 /** First page of a paginated Message API listing, as the BFF asks for it (largest page). */
 const FIRST_PAGE = { limit: 100, offset: 0 };
 
@@ -436,9 +442,9 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         { id: 'user-8', name: 'Sophie Leroy', initials: 'SL', presence: 'offline' },
       ]);
       expect(response.body.messages).toEqual([
-        { id: 'message-41', conversationId: 'conversation-4', content: 'Mon message', sentAt: '2026-09-15T09:00:00Z', authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [] },
+        { id: 'message-41', conversationId: 'conversation-4', content: 'Mon message', sentAt: '2026-09-15T09:00:00Z', authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [], ...V2_DEFAULTS },
         {
-          id: 'message-42', conversationId: 'conversation-4', content: 'Réponse reçue', sentAt: '2026-09-15T09:01:00Z', authorId: 'user-8', authorName: 'Sophie Leroy', direction: 'incoming', attachments: [], mentions: [],
+          id: 'message-42', conversationId: 'conversation-4', content: 'Réponse reçue', sentAt: '2026-09-15T09:01:00Z', authorId: 'user-8', authorName: 'Sophie Leroy', direction: 'incoming', attachments: [], mentions: [], ...V2_DEFAULTS,
           citation: 'message-40', quoted: { id: 'message-40', authorId: 'user-8', authorName: 'Sophie Leroy', excerpt: long },
         },
       ]);
@@ -535,10 +541,10 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expect(response.status).toBe(201);
       expectBffContract('post', '/conversations/conversation-4/messages', response);
       expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => [call.url.pathname, call.body]))
-        .toEqual([[messageApiUrls.getPostMessageUrl(4), { content: 'Bonjour à tous' }]]);
+        .toEqual([[messageApiUrls.getPostMessageUrl(4), { content: 'Bonjour à tous', mentions: [] }]]);
       expect(response.body.message).toEqual({
         id: 'message-31', conversationId: 'conversation-4', content: 'Bonjour à tous', sentAt: expect.any(String),
-        authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [],
+        authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [], ...V2_DEFAULTS,
       });
       expect(response.body.conversation).toMatchObject({ id: 'conversation-4', name: 'Équipe communication', department: '2 membres', lastMessage: 'Bonjour à tous' });
       // The chat is read through one message of its page, never through the whole list; no Core API call.
@@ -1163,6 +1169,332 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       const response = await request(app).post('/groups').set('Authorization', authorizationFor(agent.id)).send({ name: 'Équipe', memberIds: [8] });
 
       expectApiError(response, 502, 'BAD_GATEWAY');
+    });
+  });
+
+  describe('messaging V2 (MAIR-1154)', () => {
+    // The token carries the role (MAIR-529), so whether the caller is a platform administrator needs no Core call.
+    const auth = () => `Bearer ${sessionToken(agent.id, undefined, undefined, { role: 'User' })}`;
+    const textError = (status: number, raw: string) => ({ status, raw, contentType: 'text/plain', outOfContract: true });
+
+    test('GET /conversations/:id maps tags, reactions and system notes, naming former members through ONE directory read', async () => {
+      mockMessageApi({
+        chats: [chatView(4, 'Équipe communication', 0, 2)],
+        messages: { 4: [
+          messageView(41, sophie.id, {
+            mentions: [agent.id, 99], mentions_everyone: true, group_mentions: [3], links: [{ kind: 'project', id: 12 }, { kind: 'task', id: 6, project_id: 12 }, { kind: 'task', id: 8 }, { kind: 'event', id: 5, start: '2026-09-30T22:30:00Z' }],
+            reactions: [{ emoji: '👍', count: 2, user_ids: [agent.id, thomas.id] }], edited_at: '2026-09-15T09:05:00Z',
+          }),
+          systemNoteView(42, agent.id, 'member_removed', [thomas.id]),
+        ] },
+        members: { 4: [agent.id, sophie.id] },
+      });
+      messageApi.on('get', MESSAGE_API.mentionGroups, { body: { groups: [{ id: 3, name: 'Urbanisme' }] } });
+      process.env.PROJECT_FRONT_URL = 'https://projets.mairie360.test/';
+      process.env.CALENDAR_FRONT_URL = 'https://agenda.mairie360.test';
+      try {
+        const response = await request(app).get('/conversations/4').set('Authorization', auth());
+
+        expect(response.status).toBe(200);
+        expectBffContract('get', '/conversations/4', response);
+        const [tagged, note] = response.body.messages;
+        expect(tagged).toMatchObject({
+          kind: 'user', editedAt: '2026-09-15T09:05:00Z', deleted: false, mentionsEveryone: true,
+          mentions: [{ id: 'user-7', name: 'Agent Test' }],
+          groupMentions: [{ id: 'group-3', name: 'Urbanisme' }],
+          // MAIR-1166: the pages of the fronts; a task without its project gets no URL, an event opens on its Paris day.
+          links: [
+            { id: 'project-12', kind: 'project', url: 'https://projets.mairie360.test/?project=12' },
+            { id: 'task-6', kind: 'task', url: 'https://projets.mairie360.test/?project=12&task=6' },
+            { id: 'task-8', kind: 'task' },
+            { id: 'event-5', kind: 'event', url: 'https://agenda.mairie360.test/?date=2026-10-01&event=5' },
+          ],
+          reactions: [{ emoji: '👍', count: 2, reactedByMe: true, userNames: ['Agent Test', 'Thomas Bernard'] }],
+        });
+        expect(note).toMatchObject({
+          kind: 'system', content: '',
+          systemEvent: { action: 'member_removed', actorId: 'user-7', actorName: 'Agent Test', userIds: ['user-9'], userNames: ['Thomas Bernard'] },
+        });
+        // Thomas (former member) and 99 (unknown) are read in one directory call; 99 has no name, so no mention.
+        expect(coreApi.requests.map((call) => call.url.searchParams.get('ids'))).toEqual(['99,9']);
+      } finally {
+        delete process.env.PROJECT_FRONT_URL;
+        delete process.env.CALENDAR_FRONT_URL;
+      }
+    });
+
+    test('POST /conversations/:id/messages forwards replyTo and the tags as Message API names them', async () => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id, sophie.id] }, postedMessageId: 50 });
+      messageApi.on('get', MESSAGE_API.mentionGroups, { body: { groups: [{ id: 3, name: 'Urbanisme' }] } });
+
+      const response = await request(app).post('/conversations/conversation-4/messages').set('Authorization', auth()).send({
+        content: 'Voir le projet', replyTo: 'message-41', mentionIds: ['user-8'], mentionEveryone: false,
+        groupMentionIds: ['group-3'], links: [{ id: 'project-12' }, { id: 'task-5' }],
+      });
+
+      expect(response.status).toBe(201);
+      expectBffContract('post', '/conversations/conversation-4/messages', response);
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST')[0]?.body).toEqual({
+        content: 'Voir le projet', citation: 41, mentions: [8], mentions_everyone: false, group_mentions: [3],
+        links: [{ kind: 'project', id: 12 }, { kind: 'task', id: 5 }],
+      });
+      expect(response.body.message).toMatchObject({
+        id: 'message-50', citation: 'message-41', mentions: [{ id: 'user-8', name: 'Sophie Leroy' }],
+        groupMentions: [{ id: 'group-3', name: 'Urbanisme' }], links: [{ id: 'project-12', kind: 'project' }, { id: 'task-5', kind: 'task' }],
+      });
+    });
+
+    test('POST /conversations/:id/messages refuses an invalid link id before calling Message API', async () => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id] } });
+      const response = await request(app).post('/conversations/4/messages').set('Authorization', auth())
+        .send({ content: 'x', links: [{ id: 'folder-1' }] });
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expect(messageApi.requests).toEqual([]);
+    });
+
+    test('PATCH /conversations/:id/messages/:messageId edits the message and only sends the tags present', async () => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id, sophie.id] } });
+      messageApi.on('patch', MESSAGE_API.message, ({ body }) => ({
+        body: messageView(41, agent.id, { content: (body as { content: string }).content, edited_at: '2026-09-15T10:00:00Z', mentions: [8] }),
+      }));
+
+      const response = await request(app).patch('/conversations/4/messages/message-41').set('Authorization', auth())
+        .send({ content: 'Corrigé', mentionIds: [8] });
+
+      expect(response.status).toBe(200);
+      expectBffContract('patch', '/conversations/4/messages/message-41', response);
+      expect(messageApi.calls(MESSAGE_API.message, 'PATCH')[0]?.body).toEqual({ content: 'Corrigé', mentions: [8] });
+      expect(response.body.message).toMatchObject({
+        id: 'message-41', content: 'Corrigé', editedAt: '2026-09-15T10:00:00Z', direction: 'outgoing', mentions: [{ id: 'user-8', name: 'Sophie Leroy' }],
+      });
+    });
+
+    test.each([[400, 400], [403, 403], [404, 404]])('PATCH keeps a Message API %i', async (upstream, expected) => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id] } });
+      messageApi.on('patch', MESSAGE_API.message, textError(upstream, 'refused'));
+      const response = await request(app).patch('/conversations/4/messages/41').set('Authorization', auth()).send({ content: 'x' });
+      expect(response.status).toBe(expected);
+      expectBffContract('patch', '/conversations/4/messages/41', response);
+    });
+
+    test('DELETE /conversations/:id/messages/:messageId answers the tombstone read back from the changes', async () => {
+      mockMessageApi({ chats: [chatView(4)], members: { 4: [agent.id, sophie.id] } });
+      messageApi.on('delete', MESSAGE_API.message, { status: 204 });
+      messageApi.on('get', MESSAGE_API.chat, ({ url }) => {
+        expect(url.searchParams.get('since')).toEqual(expect.any(String));
+        return { body: chatResult(chatView(4), [messageView(41, agent.id, { content: '', deleted: true, created_at: '2026-09-15T08:00:00Z' })]) };
+      });
+
+      const response = await request(app).delete('/conversations/4/messages/41').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('delete', '/conversations/4/messages/41', response);
+      expect(response.body.message).toMatchObject({ id: 'message-41', deleted: true, content: '', sentAt: '2026-09-15T08:00:00Z', authorName: 'Agent Test' });
+    });
+
+    test('DELETE of a message still answers a tombstone when the read back fails', async () => {
+      mockMessageApi({ chats: [chatView(4)], members: { 4: [agent.id] } });
+      messageApi.on('delete', MESSAGE_API.message, { status: 204 });
+      messageApi.on('get', MESSAGE_API.chat, textError(500, 'boom'));
+
+      const response = await request(app).delete('/conversations/4/messages/41').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toMatchObject({ id: 'message-41', deleted: true, content: '', reactions: [] });
+    });
+
+    test('POST and DELETE /reactions answer every reaction with the caller\'s own and the names', async () => {
+      mockMessageApi({ chats: [chatView(4)], members: { 4: [agent.id, sophie.id] } });
+      messageApi.on('post', MESSAGE_API.reactions, { body: { reactions: [{ emoji: '👍', count: 2, user_ids: [sophie.id, agent.id] }] } });
+      messageApi.on('delete', MESSAGE_API.reactions, { body: { reactions: [{ emoji: '👍', count: 1, user_ids: [sophie.id] }] } });
+
+      const added = await request(app).post('/conversations/4/messages/41/reactions').set('Authorization', auth()).send({ emoji: '👍' });
+      const removed = await request(app).delete('/conversations/4/messages/41/reactions').query({ emoji: '👍' }).set('Authorization', auth());
+
+      expect(added.status).toBe(200);
+      expectBffContract('post', '/conversations/4/messages/41/reactions', added);
+      expect(added.body).toEqual({ reactions: [{ emoji: '👍', count: 2, reactedByMe: true, userNames: ['Sophie Leroy', 'Agent Test'] }] });
+      expect(messageApi.calls(MESSAGE_API.reactions, 'POST')[0]?.body).toEqual({ emoji: '👍' });
+      expect(removed.body).toEqual({ reactions: [{ emoji: '👍', count: 1, reactedByMe: false, userNames: ['Sophie Leroy'] }] });
+      expect(messageApi.calls(MESSAGE_API.reactions, 'DELETE')[0]?.url.searchParams.get('emoji')).toBe('👍');
+    });
+
+    test('a reaction refuses whitespace and over-long emojis before calling Message API', async () => {
+      for (const emoji of ['a b', '😀'.repeat(33), '']) {
+        const response = await request(app).post('/conversations/4/messages/41/reactions').set('Authorization', auth()).send({ emoji });
+        expect(response.status).toBe(400);
+      }
+      expect(messageApi.requests).toEqual([]);
+    });
+
+    test('GET /conversations/:id/members lists the members, the group administrator and canManage', async () => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] } });
+      messageApi.on('get', MESSAGE_API.users, { body: chatUsers([agent.id, sophie.id], false, { 7: ['Agent', 'Test'], 8: ['Sophie', 'Leroy'] }, [agent.id]) });
+
+      const response = await request(app).get('/conversations/4/members').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/conversations/4/members', response);
+      expect(response.body).toEqual({
+        members: [{ id: 'user-7', name: 'Agent Test', isAdmin: true }, { id: 'user-8', name: 'Sophie Leroy', isAdmin: false }],
+        canManage: true,
+      });
+    });
+
+    test('canManage: a plain member of a group cannot manage it, a platform Admin can, nobody in a direct chat', async () => {
+      mockMessageApi({ chats: [chatView(4), directChatView(5, sophie.id, 'Sophie Leroy')], messages: { 4: [], 5: [] }, members: { 4: [agent.id, sophie.id], 5: [agent.id, sophie.id] } });
+      const plain = await request(app).get('/conversations/4/members').set('Authorization', `Bearer ${sessionToken(agent.id, undefined, undefined, { role: 'User' })}`);
+      const admin = await request(app).get('/conversations/4/members').set('Authorization', `Bearer ${sessionToken(agent.id, undefined, undefined, { role: 'Admin' })}`);
+      const direct = await request(app).get('/conversations/5/members').set('Authorization', `Bearer ${sessionToken(agent.id, undefined, undefined, { role: 'Admin' })}`);
+      expect([plain.body.canManage, admin.body.canManage, direct.body.canManage]).toEqual([false, true, false]);
+    });
+
+    test('POST /conversations/:id/members adds the agents and answers the members and the system note', async () => {
+      const members = [agent.id, sophie.id];
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: members } });
+      messageApi.on('post', MESSAGE_API.users, ({ body }) => {
+        const added = (body as { users_id: number[] }).users_id;
+        members.push(...added);
+        return { body: { added, chat_id: 4, system_message: systemNoteView(60, agent.id, 'members_added', added) } };
+      });
+
+      const response = await request(app).post('/conversations/4/members').set('Authorization', auth()).send({ userIds: ['user-9'] });
+
+      expect(response.status).toBe(200);
+      expectBffContract('post', '/conversations/4/members', response);
+      expect(messageApi.calls(MESSAGE_API.users, 'POST')[0]?.body).toEqual({ users_id: [9] });
+      expect(response.body.members.map((member: { id: string }) => member.id)).toEqual(['user-7', 'user-8', 'user-9']);
+      expect(response.body.systemMessage).toMatchObject({
+        id: 'message-60', kind: 'system', systemEvent: { action: 'members_added', actorName: 'Agent Test', userIds: ['user-9'], userNames: ['Thomas Bernard'] },
+      });
+    });
+
+    test.each([403, 409])('POST /conversations/:id/members keeps a Message API %i', async (status) => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id] } });
+      messageApi.on('post', MESSAGE_API.users, textError(status, 'refused'));
+      const response = await request(app).post('/conversations/4/members').set('Authorization', auth()).send({ userIds: [9] });
+      expect(response.status).toBe(status);
+      expectBffContract('post', '/conversations/4/members', response);
+    });
+
+    test('DELETE /conversations/:id/members/:userId removes the member and finds the system note it wrote', async () => {
+      const members = [agent.id, sophie.id, thomas.id];
+      mockMessageApi({
+        chats: [chatView(4)],
+        messages: { 4: [messageView(61, sophie.id), systemNoteView(62, agent.id, 'member_removed', [thomas.id])] },
+        members: { 4: members },
+      });
+      messageApi.on('delete', MESSAGE_API.member, () => { members.pop(); return { status: 204 }; });
+
+      const response = await request(app).delete('/conversations/4/members/user-9').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('delete', '/conversations/4/members/user-9', response);
+      expect(response.body.members).toHaveLength(2);
+      expect(response.body.systemMessage).toMatchObject({ id: 'message-62', systemEvent: { action: 'member_removed', userNames: ['Thomas Bernard'] } });
+    });
+
+    test('DELETE /conversations/:id/members/:userId refuses the caller and maps a non-member to 404', async () => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id] } });
+      messageApi.on('delete', MESSAGE_API.member, textError(400, 'Not a member.'));
+      const self = await request(app).delete('/conversations/4/members/7').set('Authorization', auth());
+      const other = await request(app).delete('/conversations/4/members/9').set('Authorization', auth());
+      expectApiError(self, 400, 'BAD_REQUEST');
+      expectApiError(other, 404, 'NOT_FOUND');
+      expect(messageApi.calls(MESSAGE_API.member, 'DELETE')).toHaveLength(1);
+    });
+
+    test('POST /conversations/:id/leave removes the caller and answers 204', async () => {
+      mockMessageApi({ chats: [chatView(4)], members: { 4: [agent.id] } });
+      const response = await request(app).post('/conversations/4/leave').set('Authorization', auth());
+      expect(response.status).toBe(204);
+      expect(messageApi.calls(MESSAGE_API.member, 'DELETE').map((call) => call.url.pathname)).toEqual([messageApiUrls.getRemoveUserFromChatUrl(4, agent.id)]);
+    });
+
+    test('GET /conversations/:id/search answers messages with excerpt and highlights, people, and files', async () => {
+      mockMessageApi({ chats: [chatView(4)], members: { 4: [agent.id, sophie.id] } });
+      messageApi.on('get', MESSAGE_API.search, ({ url }) => {
+        const type = url.searchParams.get('type');
+        if (type === 'people') return { body: { type: 'people', items: [{ id: 8, first_name: 'Sophie', last_name: 'Leroy' }], has_more: false, total: 1 } };
+        if (type === 'files') return { body: { type: 'files', items: [], has_more: false, total: 0 } };
+        return { body: { type: 'messages', items: [{ id: 41, sender_id: sophie.id, created_at: '2026-09-15T09:00:00Z', content: 'Le Permis et le permis' }], has_more: true, total: 3 } };
+      });
+
+      const messages = await request(app).get('/conversations/4/search').query({ q: 'permis', limit: 1 }).set('Authorization', auth());
+      const people = await request(app).get('/conversations/4/search').query({ q: 'sop', type: 'people' }).set('Authorization', auth());
+      const files = await request(app).get('/conversations/4/search').query({ q: 'x', type: 'files' }).set('Authorization', auth());
+
+      expectBffContract('get', '/conversations/4/search', messages);
+      expect(messages.body).toEqual({
+        type: 'messages', hasMore: true, total: 3,
+        items: [{
+          messageId: 'message-41', authorId: 'user-8', authorName: 'Sophie Leroy', createdAt: '2026-09-15T09:00:00Z',
+          excerpt: 'Le Permis et le permis', highlights: [{ start: 3, length: 6 }, { start: 16, length: 6 }],
+        }],
+      });
+      expect(messageApi.calls(MESSAGE_API.search)[0]?.url.search).toBe('?q=permis&type=messages&limit=1');
+      expect(people.body).toEqual({ type: 'people', items: [{ id: 'user-8', name: 'Sophie Leroy' }], hasMore: false, total: 1 });
+      expect(files.body).toEqual({ type: 'files', items: [], hasMore: false, total: 0 });
+    });
+
+    test('GET /conversations/:id/search refuses a blank query before calling Message API', async () => {
+      const response = await request(app).get('/conversations/4/search').query({ q: '  ' }).set('Authorization', auth());
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expect(messageApi.requests).toEqual([]);
+    });
+
+    test('GET /conversations/:id/mention-suggestions: other members by name without accents, groups, everyone', async () => {
+      mockMessageApi({ chats: [chatView(4)], members: { 4: [agent.id, sophie.id, thomas.id] } });
+      messageApi.on('get', MESSAGE_API.mentionGroups, { body: { groups: [{ id: 3, name: 'Équipe Sophie' }] } });
+
+      const response = await request(app).get('/conversations/4/mention-suggestions').query({ q: 'SOPHIE' }).set('Authorization', auth());
+      const empty = await request(app).get('/conversations/4/mention-suggestions').set('Authorization', auth());
+      const tout = await request(app).get('/conversations/4/mention-suggestions').query({ q: 'tout le' }).set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/conversations/4/mention-suggestions', response);
+      expect(response.body).toEqual({ everyone: false, groups: [{ id: 'group-3', name: 'Équipe Sophie' }], people: [{ id: 'user-8', name: 'Sophie Leroy' }] });
+      expect(messageApi.calls(MESSAGE_API.mentionGroups)[0]?.url.search).toBe('?q=SOPHIE');
+      expect(empty.body.everyone).toBe(true);
+      expect(empty.body.people.map((person: { id: string }) => person.id)).toEqual(['user-8', 'user-9']);
+      expect(tout.body.everyone).toBe(true);
+    });
+
+    test('GET /link-suggestions filters the business references by title and adds the front URLs', async () => {
+      projectApi.on('get', PROJECT_API.projects, { body: projectsResult([projectListItem(12, { name: 'Médiathèque' }), projectListItem(13, { name: 'Voirie' })]) });
+      projectApi.on('get', PROJECT_API.tasks, ({ pathParams }) => ({
+        body: tasksResult(pathParams.projectId === '12' ? [taskView(5, { title: 'Devis médiathèque' })] : []),
+      }));
+      calendarApi.on('get', CALENDAR_API.calendar, { body: calendarResult([eventView(7, { name: 'Inauguration mediatheque' })]) });
+      process.env.PROJECT_FRONT_URL = 'https://projets.mairie360.test';
+      process.env.CALENDAR_FRONT_URL = 'not a url';
+      try {
+        const response = await request(app).get('/link-suggestions').query({ q: 'mediathe' })
+          .set('Authorization', `Bearer ${sessionToken(agent.id, undefined, undefined, { role: 'Admin' })}`);
+
+        expect(response.status).toBe(200);
+        expectBffContract('get', '/link-suggestions', response);
+        expect(response.body).toEqual({
+          items: [
+            { id: 'project-12', kind: 'project', title: 'Médiathèque', detail: 'Projet', url: 'https://projets.mairie360.test/?project=12' },
+            { id: 'task-5', kind: 'task', title: 'Devis médiathèque', detail: 'Tâche · Médiathèque', url: 'https://projets.mairie360.test/?project=12&task=5' },
+            { id: 'event-7', kind: 'event', title: 'Inauguration mediatheque', detail: expect.stringMatching(/^Calendrier · /) },
+          ],
+          sources: { projects: 'available', calendar: 'available' },
+        });
+      } finally {
+        delete process.env.PROJECT_FRONT_URL;
+        delete process.env.CALENDAR_FRONT_URL;
+      }
+    });
+
+    test('GET /link-suggestions reports a failing source unavailable and requires a session', async () => {
+      projectApi.on('get', PROJECT_API.projects, textError(500, 'boom'));
+      calendarApi.on('get', CALENDAR_API.calendar, { body: calendarResult([]) });
+      const response = await request(app).get('/link-suggestions').set('Authorization', auth());
+      const anonymous = await request(app).get('/link-suggestions');
+      expect(response.body).toEqual({ items: [], sources: { projects: 'unavailable', calendar: 'available' } });
+      expect(anonymous.status).toBe(401);
     });
   });
 

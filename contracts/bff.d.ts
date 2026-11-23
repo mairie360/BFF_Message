@@ -498,6 +498,132 @@ export interface paths {
                                      */
                                     excerpt: string;
                                 };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
                             }[];
                         };
                     };
@@ -1106,6 +1232,132 @@ export interface paths {
                                      */
                                     excerpt: string;
                                 };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
                             }[];
                             /**
                              * @description Whether older messages remain
@@ -1573,6 +1825,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/link-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What the caller may link a message to after #
+         * @description The projects, tasks and events the caller may read whose title contains `q` (case- and accent-insensitive, at most 50), with the id to send in `links` and the page of the object in its front. A source that fails is reported `unavailable` and contributes nothing. Rate limited per session like `GET /business-references`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description What the agent typed after `#` (at most 100 characters), matched case- and accent-insensitively against the titles. Absent or empty: every suggestion. */
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The suggestions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Projects, tasks and events the caller may read whose title matches `q` */
+                            items: {
+                                /**
+                                 * @description Id to send in `links` (`project-<n>`, `task-<n>` or `event-<n>`)
+                                 * @example project-12
+                                 */
+                                id: string;
+                                /**
+                                 * @description Kind of business object: a project, a task or a calendar event
+                                 * @example project
+                                 * @enum {string}
+                                 */
+                                kind: "project" | "task" | "event";
+                                /**
+                                 * @description Title of the object
+                                 * @example Rénovation de la médiathèque
+                                 */
+                                title: string;
+                                /**
+                                 * @description What the object is, to display under its title
+                                 * @example Projet
+                                 */
+                                detail?: string;
+                                /**
+                                 * @description Page of the object in its front (`<PROJECT_FRONT_URL>/?project=<id>`, `?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`), absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF
+                                 * @example https://projets.mairie360.fr/projects/12
+                                 */
+                                url?: string;
+                            }[];
+                            /** @description Whether Project API and Calendar API answered: an unavailable source contributes no item */
+                            sources: {
+                                /** @enum {string} */
+                                projects: "available" | "unavailable";
+                                /** @enum {string} */
+                                calendar: "available" | "unavailable";
+                            };
+                        };
+                    };
+                };
+                /** @description Invalid query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Too many requests from this caller: retry after the delay given by `Retry-After` */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -1652,6 +2010,1318 @@ export interface paths {
                     };
                 };
                 /** @description Core API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversationId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the members of a conversation
+         * @description Every member with their name and whether they administer the group (its creator, while a member), and whether the caller may add and remove members (`canManage`).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The members of the conversation */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The members of the conversation, the caller included */
+                            members: {
+                                /**
+                                 * @description Id of the agent (`user-<n>`)
+                                 * @example user-3
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Full name of the agent
+                                 * @example Contact Sample
+                                 */
+                                name: string;
+                                /**
+                                 * @description Department of the agent, when known
+                                 * @example Urbanisme
+                                 */
+                                department?: string;
+                                /**
+                                 * @description Whether the agent administers the group: its creator, as long as they stay a member
+                                 * @example false
+                                 */
+                                isAdmin: boolean;
+                            }[];
+                            /**
+                             * @description Whether the caller may add and remove members: a group conversation, and the caller is its administrator or a platform administrator
+                             * @example true
+                             */
+                            canManage: boolean;
+                        };
+                    };
+                };
+                /** @description Invalid conversation id */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add members to a group conversation
+         * @description The administrator of the group (or a platform administrator) adds agents. The conversation records a system note (`members_added`), answered as `systemMessage`; every member gets a `members_changed` stream event.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Agents to add (`user-<n>` or integer), 1 to 50, none already a member
+                         * @example [
+                         *       10
+                         *     ]
+                         */
+                        userIds: (number | string)[];
+                    };
+                };
+            };
+            responses: {
+                /** @description The members after the change and the system note */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The members of the conversation, the caller included */
+                            members: {
+                                /**
+                                 * @description Id of the agent (`user-<n>`)
+                                 * @example user-3
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Full name of the agent
+                                 * @example Contact Sample
+                                 */
+                                name: string;
+                                /**
+                                 * @description Department of the agent, when known
+                                 * @example Urbanisme
+                                 */
+                                department?: string;
+                                /**
+                                 * @description Whether the agent administers the group: its creator, as long as they stay a member
+                                 * @example false
+                                 */
+                                isAdmin: boolean;
+                            }[];
+                            /**
+                             * @description Whether the caller may add and remove members: a group conversation, and the caller is its administrator or a platform administrator
+                             * @example true
+                             */
+                            canManage: boolean;
+                            /** @description The system note the change wrote in the conversation (`kind: system`); absent when it could not be read back */
+                            systemMessage?: {
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                conversationId: string | number;
+                                /**
+                                 * @description Content of the message
+                                 * @example Hello everyone!
+                                 */
+                                content: string;
+                                /**
+                                 * @description Date and time the message was sent (ISO format)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                sentAt: string;
+                                /**
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
+                                 */
+                                authorId?: string | number;
+                                /**
+                                 * @description Name of the author of the message
+                                 * @example Alice Dupont
+                                 */
+                                authorName?: string;
+                                /**
+                                 * @description Direction of the message, incoming or outgoing
+                                 * @example incoming
+                                 * @enum {string}
+                                 */
+                                direction?: "incoming" | "outgoing";
+                                /**
+                                 * @description Attachments of the message
+                                 * @example []
+                                 */
+                                attachments?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the attachment
+                                     * @example document.pdf
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Size of the attachment in bytes
+                                     * @example 102400
+                                     */
+                                    size?: number;
+                                    /**
+                                     * @description MIME type of the attachment
+                                     * @example application/pdf
+                                     */
+                                    type?: string;
+                                    /**
+                                     * Format: uri
+                                     * @description URL to reach the attachment
+                                     * @example https://example.com/document.pdf
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Mentions in the message
+                                 * @example []
+                                 */
+                                mentions?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the mention
+                                     * @example Alice Dupont
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Type of conversation tied to the mention
+                                     * @example direct
+                                     * @enum {string}
+                                     */
+                                    kind?: "direct" | "group";
+                                    /**
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
+                                     */
+                                    description?: string;
+                                }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Any news about the building permit?
+                                     */
+                                    excerpt: string;
+                                };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Invalid conversation id or body (details lists the invalid fields), or an unknown agent */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The caller does not administer the group */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An agent is already a member, or the conversation is a direct one (its participants never change) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversationId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member from a group conversation
+         * @description The administrator of the group (or a platform administrator) removes another member; the caller leaves with `POST /conversations/{conversationId}/leave`. The conversation records a system note (`member_removed`), answered as `systemMessage`; the members and the removed agent get a `members_changed` stream event.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                    /** @description Id (user-<id> or integer) */
+                    userId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The members after the change and the system note */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The members of the conversation, the caller included */
+                            members: {
+                                /**
+                                 * @description Id of the agent (`user-<n>`)
+                                 * @example user-3
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Full name of the agent
+                                 * @example Contact Sample
+                                 */
+                                name: string;
+                                /**
+                                 * @description Department of the agent, when known
+                                 * @example Urbanisme
+                                 */
+                                department?: string;
+                                /**
+                                 * @description Whether the agent administers the group: its creator, as long as they stay a member
+                                 * @example false
+                                 */
+                                isAdmin: boolean;
+                            }[];
+                            /**
+                             * @description Whether the caller may add and remove members: a group conversation, and the caller is its administrator or a platform administrator
+                             * @example true
+                             */
+                            canManage: boolean;
+                            /** @description The system note the change wrote in the conversation (`kind: system`); absent when it could not be read back */
+                            systemMessage?: {
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                conversationId: string | number;
+                                /**
+                                 * @description Content of the message
+                                 * @example Hello everyone!
+                                 */
+                                content: string;
+                                /**
+                                 * @description Date and time the message was sent (ISO format)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                sentAt: string;
+                                /**
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
+                                 */
+                                authorId?: string | number;
+                                /**
+                                 * @description Name of the author of the message
+                                 * @example Alice Dupont
+                                 */
+                                authorName?: string;
+                                /**
+                                 * @description Direction of the message, incoming or outgoing
+                                 * @example incoming
+                                 * @enum {string}
+                                 */
+                                direction?: "incoming" | "outgoing";
+                                /**
+                                 * @description Attachments of the message
+                                 * @example []
+                                 */
+                                attachments?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the attachment
+                                     * @example document.pdf
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Size of the attachment in bytes
+                                     * @example 102400
+                                     */
+                                    size?: number;
+                                    /**
+                                     * @description MIME type of the attachment
+                                     * @example application/pdf
+                                     */
+                                    type?: string;
+                                    /**
+                                     * Format: uri
+                                     * @description URL to reach the attachment
+                                     * @example https://example.com/document.pdf
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Mentions in the message
+                                 * @example []
+                                 */
+                                mentions?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the mention
+                                     * @example Alice Dupont
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Type of conversation tied to the mention
+                                     * @example direct
+                                     * @enum {string}
+                                     */
+                                    kind?: "direct" | "group";
+                                    /**
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
+                                     */
+                                    description?: string;
+                                }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Any news about the building permit?
+                                     */
+                                    excerpt: string;
+                                };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Invalid ids, or `userId` is the caller (use the leave route) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The caller does not administer the group, or the conversation is a direct one */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, the caller is not one of its members, or the agent is not a member */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversationId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave a conversation
+         * @description The caller leaves a group (a system note `member_left` is recorded, the group is deleted with its last member) or hides a direct conversation from their list (it comes back with the next message).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The caller left the conversation */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid conversation id */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The caller may not leave this conversation */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversationId}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search a conversation
+         * @description One page of the messages whose content contains `q` (newest first, with an excerpt and the position of each match, and the message id to scroll to), of the members whose name contains it (`type=people`), or of the files (`type=files`: always empty, attachments are not supported yet).
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Text to find, case-insensitive: in the content of the messages, or in the first name, last name or full name of the members. 1 to 150 characters, no control character. */
+                    q: string;
+                    /** @description `messages` (default), `files` (always empty: attachments are not supported yet) or `people` */
+                    type?: "messages" | "files" | "people";
+                    /** @description Results per page, 1 to 50. Default 20. */
+                    limit?: number;
+                    /** @description Results to skip: the previous `offset` plus `limit` while `hasMore`. Default 0. */
+                    offset?: number | null;
+                };
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description One page of results */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description What was searched
+                             * @example messages
+                             * @enum {string}
+                             */
+                            type: "messages" | "files" | "people";
+                            /** @description One page of results, newest message first or by name: `SearchMessageItem` for `messages`, `SearchPersonItem` for `people`, always empty for `files` */
+                            items: ({
+                                /**
+                                 * @description Id of the message (`message-<n>`), to scroll to it
+                                 * @example message-1001
+                                 */
+                                messageId: string | number;
+                                /**
+                                 * @description Id of the author (`user-<n>`), absent once the account is deleted
+                                 * @example user-3
+                                 */
+                                authorId?: string | number;
+                                /**
+                                 * @description Name of the author when they are a current member
+                                 * @example Contact Sample
+                                 */
+                                authorName?: string;
+                                /**
+                                 * @description Date and time the message was sent (ISO format)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                createdAt: string;
+                                /**
+                                 * @description The content of the message, cut around the first match when it is long (`…` marks a cut)
+                                 * @example Any news about the building permit?
+                                 */
+                                excerpt: string;
+                                /** @description Every match of `q` in `excerpt`, case-insensitive, in order */
+                                highlights: {
+                                    /**
+                                     * @description Index of the match in `excerpt` (UTF-16 code units, as JavaScript counts them)
+                                     * @example 22
+                                     */
+                                    start: number;
+                                    /**
+                                     * @description Length of the match (UTF-16 code units)
+                                     * @example 6
+                                     */
+                                    length: number;
+                                }[];
+                            } | {
+                                /**
+                                 * @description Id of the member (`user-<n>`)
+                                 * @example user-3
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Full name of the member
+                                 * @example Contact Sample
+                                 */
+                                name: string;
+                            })[];
+                            /**
+                             * @description Whether more results follow (next page: `offset` + `limit`)
+                             * @example false
+                             */
+                            hasMore: boolean;
+                            /**
+                             * @description Number of results of the whole search
+                             * @example 1
+                             */
+                            total: number;
+                        };
+                    };
+                };
+                /** @description Invalid conversation id or query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversationId}/mention-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What the caller may mention after @
+         * @description The other members whose name contains `q` (case- and accent-insensitive), the groups a member belongs to whose name contains it (at most 20), and whether to offer a mention of everyone.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description What the agent typed after `@` (at most 64 characters). Absent or empty: every suggestion. */
+                    q?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The suggestions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label
+                             * @example true
+                             */
+                            everyone: boolean;
+                            /** @description Groups a member of the conversation belongs to whose name contains `q` (at most 20) */
+                            groups: {
+                                /**
+                                 * @description Id of the group (`group-<n>`), for `groupMentionIds`
+                                 * @example group-4
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Name of the group
+                                 * @example Service urbanisme
+                                 */
+                                name: string;
+                            }[];
+                            /** @description Members of the conversation but the caller whose name contains `q` (case- and accent-insensitive) */
+                            people: {
+                                /**
+                                 * @description Id of the member (`user-<n>`), for `mentionIds`
+                                 * @example user-3
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Full name of the member
+                                 * @example Contact Sample
+                                 */
+                                name: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Invalid conversation id or query (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -1896,6 +3566,132 @@ export interface paths {
                                      */
                                     excerpt: string;
                                 };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
                             }[];
                             /**
                              * @description Whether older messages remain
@@ -1988,8 +3784,28 @@ export interface paths {
                         content: string;
                         /** @description Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped. */
                         attachmentIds?: (number | string)[];
-                        /** @description Ids of the mentions in the message */
+                        /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
                         mentionIds?: (number | string)[];
+                        /**
+                         * @description Whether the message mentions every member of the conversation (`@everyone`)
+                         * @example false
+                         */
+                        mentionEveryone?: boolean;
+                        /** @description Groups the message mentions (`group-<n>` or integer, from `GET /conversations/{conversationId}/mention-suggestions`), at most 50: groups a member of the conversation belongs to (400 otherwise) */
+                        groupMentionIds?: (number | string)[];
+                        /** @description Projects, tasks and events the message links to, at most 50: objects the author may read (400 otherwise) */
+                        links?: {
+                            /**
+                             * @description The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read
+                             * @example project-12
+                             */
+                            id: string;
+                        }[];
+                        /**
+                         * @description Id of the message this one answers (`message-<n>` or integer), in the same conversation: the answer then carries `citation` and `quoted`
+                         * @example 1001
+                         */
+                        replyTo?: number | string;
                     };
                 };
             };
@@ -2126,6 +3942,132 @@ export interface paths {
                                      */
                                     excerpt: string;
                                 };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
                             };
                             /** @description Details of the conversation of the sent message */
                             conversation?: {
@@ -2196,7 +4138,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Invalid conversation id or body (details lists the invalid fields) */
+                /** @description Invalid conversation id or body (details lists the invalid fields), or Message API refused a tag: a mention of a non-member, a group no member belongs to, an object the caller may not read, or `replyTo` a message of another conversation */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2207,6 +4149,15 @@ export interface paths {
                 };
                 /** @description Missing or invalid session */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The caller is a platform administrator who is not a member of the conversation */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2253,6 +4204,1002 @@ export interface paths {
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversationId}/messages/{messageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a message
+         * @description Deletes a message (its author, or a platform administrator moderating): it stays in the history as a tombstone, answered here with `deleted: true`, an empty content and no tag nor reaction. The other members get a `MSG_DELETED` stream event.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                    /** @description Id (message-<id> or integer) */
+                    messageId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The deleted message (tombstone) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The deleted message: `deleted: true`, empty content, no tag nor reaction */
+                            message: {
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                conversationId: string | number;
+                                /**
+                                 * @description Content of the message
+                                 * @example Hello everyone!
+                                 */
+                                content: string;
+                                /**
+                                 * @description Date and time the message was sent (ISO format)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                sentAt: string;
+                                /**
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
+                                 */
+                                authorId?: string | number;
+                                /**
+                                 * @description Name of the author of the message
+                                 * @example Alice Dupont
+                                 */
+                                authorName?: string;
+                                /**
+                                 * @description Direction of the message, incoming or outgoing
+                                 * @example incoming
+                                 * @enum {string}
+                                 */
+                                direction?: "incoming" | "outgoing";
+                                /**
+                                 * @description Attachments of the message
+                                 * @example []
+                                 */
+                                attachments?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the attachment
+                                     * @example document.pdf
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Size of the attachment in bytes
+                                     * @example 102400
+                                     */
+                                    size?: number;
+                                    /**
+                                     * @description MIME type of the attachment
+                                     * @example application/pdf
+                                     */
+                                    type?: string;
+                                    /**
+                                     * Format: uri
+                                     * @description URL to reach the attachment
+                                     * @example https://example.com/document.pdf
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Mentions in the message
+                                 * @example []
+                                 */
+                                mentions?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the mention
+                                     * @example Alice Dupont
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Type of conversation tied to the mention
+                                     * @example direct
+                                     * @enum {string}
+                                     */
+                                    kind?: "direct" | "group";
+                                    /**
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
+                                     */
+                                    description?: string;
+                                }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Any news about the building permit?
+                                     */
+                                    excerpt: string;
+                                };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Invalid ids, or the message is a system note */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The message was written by another member and the caller is not an administrator */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation or message, a message already deleted, or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Edit a message
+         * @description The author edits the content of their message (administrators included: nobody edits someone else's message). Each tag field present (`mentionIds`, `mentionEveryone`, `groupMentionIds`, `links`) replaces those tags; an absent one keeps them. The answer carries `editedAt`. The other members get a `MSG_EDITED` stream event, and a newly mentioned member a `mentioned` one.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                    /** @description Id (message-<id> or integer) */
+                    messageId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description New content of the message
+                         * @example The meeting is moved to 3 pm.
+                         */
+                        content: string;
+                        /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
+                        mentionIds?: (number | string)[];
+                        /**
+                         * @description Whether the message mentions every member of the conversation (`@everyone`)
+                         * @example false
+                         */
+                        mentionEveryone?: boolean;
+                        /** @description Groups the message mentions (`group-<n>` or integer, from `GET /conversations/{conversationId}/mention-suggestions`), at most 50: groups a member of the conversation belongs to (400 otherwise) */
+                        groupMentionIds?: (number | string)[];
+                        /** @description Projects, tasks and events the message links to, at most 50: objects the author may read (400 otherwise) */
+                        links?: {
+                            /**
+                             * @description The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read
+                             * @example project-12
+                             */
+                            id: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description The message as it now reads */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The message as it now reads */
+                            message: {
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                id: string | number;
+                                /**
+                                 * @description Unique id, either a string or a number
+                                 * @example 12345
+                                 */
+                                conversationId: string | number;
+                                /**
+                                 * @description Content of the message
+                                 * @example Hello everyone!
+                                 */
+                                content: string;
+                                /**
+                                 * @description Date and time the message was sent (ISO format)
+                                 * @example 2026-06-23T12:32:00Z
+                                 */
+                                sentAt: string;
+                                /**
+                                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                                 * @example user-12
+                                 */
+                                authorId?: string | number;
+                                /**
+                                 * @description Name of the author of the message
+                                 * @example Alice Dupont
+                                 */
+                                authorName?: string;
+                                /**
+                                 * @description Direction of the message, incoming or outgoing
+                                 * @example incoming
+                                 * @enum {string}
+                                 */
+                                direction?: "incoming" | "outgoing";
+                                /**
+                                 * @description Attachments of the message
+                                 * @example []
+                                 */
+                                attachments?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the attachment
+                                     * @example document.pdf
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Size of the attachment in bytes
+                                     * @example 102400
+                                     */
+                                    size?: number;
+                                    /**
+                                     * @description MIME type of the attachment
+                                     * @example application/pdf
+                                     */
+                                    type?: string;
+                                    /**
+                                     * Format: uri
+                                     * @description URL to reach the attachment
+                                     * @example https://example.com/document.pdf
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Mentions in the message
+                                 * @example []
+                                 */
+                                mentions?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the mention
+                                     * @example Alice Dupont
+                                     */
+                                    name: string;
+                                    /**
+                                     * @description Type of conversation tied to the mention
+                                     * @example direct
+                                     * @enum {string}
+                                     */
+                                    kind?: "direct" | "group";
+                                    /**
+                                     * @description Description of the mention
+                                     * @example Mention of a user in a message
+                                     */
+                                    description?: string;
+                                }[];
+                                /**
+                                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                                 * @example message-117
+                                 */
+                                citation?: string | number;
+                                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                                quoted?: {
+                                    /**
+                                     * @description Unique id, either a string or a number
+                                     * @example 12345
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                                     * @example user-12
+                                     */
+                                    authorId?: string | number;
+                                    /**
+                                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                                     * @example Alice Dupont
+                                     */
+                                    authorName?: string;
+                                    /**
+                                     * @description First 100 characters of the quoted message
+                                     * @example Any news about the building permit?
+                                     */
+                                    excerpt: string;
+                                };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Invalid ids or body (details lists the invalid fields), a tag Message API refused, or the message is a system note */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The message was written by someone else */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation or message (or a deleted one), or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/conversations/{conversationId}/messages/{messageId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * React to a message
+         * @description Adds the caller's reaction with `emoji` (nothing changes when it is already there) and answers every reaction of the message. Members only. The other members get a `message_reacted` stream event.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                    /** @description Id (message-<id> or integer) */
+                    messageId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description The emoji: 1 to 32 characters, no whitespace nor control character
+                         * @example 👍
+                         */
+                        emoji: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The reactions of the message */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Every reaction to the message after the change */
+                            reactions: {
+                                /**
+                                 * @description The emoji
+                                 * @example 👍
+                                 */
+                                emoji: string;
+                                /**
+                                 * @description Number of agents who reacted with it
+                                 * @example 2
+                                 */
+                                count: number;
+                                /**
+                                 * @description Whether the caller is one of them
+                                 * @example true
+                                 */
+                                reactedByMe: boolean;
+                                /**
+                                 * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                 * @example [
+                                 *       "Alice Dupont",
+                                 *       "Contact Sample"
+                                 *     ]
+                                 */
+                                userNames: string[];
+                            }[];
+                        };
+                    };
+                };
+                /** @description Invalid ids or emoji (details lists the invalid fields), or the message is a system note */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The caller is a platform administrator who is not a member of the conversation */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation or message (or a deleted one), or the caller is not one of its members */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Remove a reaction to a message
+         * @description Removes the caller's reaction with `emoji` and answers the reactions left. Members only.
+         */
+        delete: {
+            parameters: {
+                query: {
+                    /** @description The emoji: 1 to 32 characters, no whitespace nor control character */
+                    emoji: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Id (conversation-<id> or integer) */
+                    conversationId: number | string;
+                    /** @description Id (message-<id> or integer) */
+                    messageId: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The reactions left on the message */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Every reaction to the message after the change */
+                            reactions: {
+                                /**
+                                 * @description The emoji
+                                 * @example 👍
+                                 */
+                                emoji: string;
+                                /**
+                                 * @description Number of agents who reacted with it
+                                 * @example 2
+                                 */
+                                count: number;
+                                /**
+                                 * @description Whether the caller is one of them
+                                 * @example true
+                                 */
+                                reactedByMe: boolean;
+                                /**
+                                 * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                 * @example [
+                                 *       "Alice Dupont",
+                                 *       "Contact Sample"
+                                 *     ]
+                                 */
+                                userNames: string[];
+                            }[];
+                        };
+                    };
+                };
+                /** @description Invalid ids or emoji (details lists the invalid fields) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The caller is a platform administrator who is not a member of the conversation */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown conversation or message, or the caller had not reacted with this emoji */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is unavailable or failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2490,6 +5437,132 @@ export interface paths {
                                      */
                                     excerpt: string;
                                 };
+                                /**
+                                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                                 * @example user
+                                 * @enum {string}
+                                 */
+                                kind: "user" | "system";
+                                /** @description System notes only (`kind: system`): the membership change the note records */
+                                systemEvent?: {
+                                    /**
+                                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                                     * @example members_added
+                                     * @enum {string}
+                                     */
+                                    action: "members_added" | "member_removed" | "member_left";
+                                    /**
+                                     * @description Id of the agent who made the change (`user-<n>`)
+                                     * @example user-1
+                                     */
+                                    actorId: string | number;
+                                    /**
+                                     * @description Name of the actor, absent when the directory does not know the account any more
+                                     * @example Alice Dupont
+                                     */
+                                    actorName?: string;
+                                    /**
+                                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                                     * @example [
+                                     *       "user-3"
+                                     *     ]
+                                     */
+                                    userIds: (string | number)[];
+                                    /**
+                                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                                     * @example [
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                };
+                                /**
+                                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                                 * @example 2026-06-23T12:40:00Z
+                                 */
+                                editedAt?: string;
+                                /**
+                                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                                 * @example false
+                                 */
+                                deleted: boolean;
+                                /**
+                                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                                 * @example false
+                                 */
+                                mentionsEveryone: boolean;
+                                /**
+                                 * @description Groups the message mentions
+                                 * @example []
+                                 */
+                                groupMentions: {
+                                    /**
+                                     * @description Id of the group (`group-<n>`)
+                                     * @example group-4
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                                     * @example Service urbanisme
+                                     */
+                                    name?: string;
+                                }[];
+                                /**
+                                 * @description Projects, tasks and events the message links to (`#`)
+                                 * @example []
+                                 */
+                                links: {
+                                    /**
+                                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                                     * @example project-12
+                                     */
+                                    id: string | number;
+                                    /**
+                                     * @description Kind of business object: a project, a task or a calendar event
+                                     * @example project
+                                     * @enum {string}
+                                     */
+                                    kind: "project" | "task" | "event";
+                                    /**
+                                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                                     * @example Rénovation de la médiathèque
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                                     * @example https://projets.mairie360.fr/projects/12
+                                     */
+                                    url?: string;
+                                }[];
+                                /**
+                                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                                 * @example []
+                                 */
+                                reactions: {
+                                    /**
+                                     * @description The emoji
+                                     * @example 👍
+                                     */
+                                    emoji: string;
+                                    /**
+                                     * @description Number of agents who reacted with it
+                                     * @example 2
+                                     */
+                                    count: number;
+                                    /**
+                                     * @description Whether the caller is one of them
+                                     * @example true
+                                     */
+                                    reactedByMe: boolean;
+                                    /**
+                                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                                     * @example [
+                                     *       "Alice Dupont",
+                                     *       "Contact Sample"
+                                     *     ]
+                                     */
+                                    userNames: string[];
+                                }[];
                             };
                         };
                     };
@@ -2880,6 +5953,132 @@ export interface components {
                  */
                 excerpt: string;
             };
+            /**
+             * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+             * @example user
+             * @enum {string}
+             */
+            kind: "user" | "system";
+            /** @description System notes only (`kind: system`): the membership change the note records */
+            systemEvent?: {
+                /**
+                 * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                 * @example members_added
+                 * @enum {string}
+                 */
+                action: "members_added" | "member_removed" | "member_left";
+                /**
+                 * @description Id of the agent who made the change (`user-<n>`)
+                 * @example user-1
+                 */
+                actorId: string | number;
+                /**
+                 * @description Name of the actor, absent when the directory does not know the account any more
+                 * @example Alice Dupont
+                 */
+                actorName?: string;
+                /**
+                 * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                 * @example [
+                 *       "user-3"
+                 *     ]
+                 */
+                userIds: (string | number)[];
+                /**
+                 * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                 * @example [
+                 *       "Contact Sample"
+                 *     ]
+                 */
+                userNames: string[];
+            };
+            /**
+             * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+             * @example 2026-06-23T12:40:00Z
+             */
+            editedAt?: string;
+            /**
+             * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+             * @example false
+             */
+            deleted: boolean;
+            /**
+             * @description Whether the message mentions every member of the conversation (`@everyone`)
+             * @example false
+             */
+            mentionsEveryone: boolean;
+            /**
+             * @description Groups the message mentions
+             * @example []
+             */
+            groupMentions: {
+                /**
+                 * @description Id of the group (`group-<n>`)
+                 * @example group-4
+                 */
+                id: string | number;
+                /**
+                 * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                 * @example Service urbanisme
+                 */
+                name?: string;
+            }[];
+            /**
+             * @description Projects, tasks and events the message links to (`#`)
+             * @example []
+             */
+            links: {
+                /**
+                 * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                 * @example project-12
+                 */
+                id: string | number;
+                /**
+                 * @description Kind of business object: a project, a task or a calendar event
+                 * @example project
+                 * @enum {string}
+                 */
+                kind: "project" | "task" | "event";
+                /**
+                 * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                 * @example Rénovation de la médiathèque
+                 */
+                title?: string;
+                /**
+                 * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                 * @example https://projets.mairie360.fr/projects/12
+                 */
+                url?: string;
+            }[];
+            /**
+             * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+             * @example []
+             */
+            reactions: {
+                /**
+                 * @description The emoji
+                 * @example 👍
+                 */
+                emoji: string;
+                /**
+                 * @description Number of agents who reacted with it
+                 * @example 2
+                 */
+                count: number;
+                /**
+                 * @description Whether the caller is one of them
+                 * @example true
+                 */
+                reactedByMe: boolean;
+                /**
+                 * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                 * @example [
+                 *       "Alice Dupont",
+                 *       "Contact Sample"
+                 *     ]
+                 */
+                userNames: string[];
+            }[];
         };
         /** @description An attachment */
         AttachmentDtoSchema: {
@@ -3201,6 +6400,132 @@ export interface components {
                      */
                     excerpt: string;
                 };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
             }[];
             /**
              * @description Whether older messages remain
@@ -3384,6 +6709,132 @@ export interface components {
                      */
                     excerpt: string;
                 };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
             };
             /** @description Details of the conversation of the sent message */
             conversation?: {
@@ -3645,6 +7096,132 @@ export interface components {
                      */
                     excerpt: string;
                 };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
             };
         };
         /** @description Response holding the details of the created group */
@@ -4035,6 +7612,132 @@ export interface components {
                      */
                     excerpt: string;
                 };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
             }[];
         };
         /** @description Response holding the current user */
@@ -4073,8 +7776,28 @@ export interface components {
             content: string;
             /** @description Attachment ids. Attachments are not supported yet (`POST /attachments` answers 503): only an empty list is accepted, anything else is refused with 400 instead of being silently dropped. */
             attachmentIds?: (number | string)[];
-            /** @description Ids of the mentions in the message */
+            /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
             mentionIds?: (number | string)[];
+            /**
+             * @description Whether the message mentions every member of the conversation (`@everyone`)
+             * @example false
+             */
+            mentionEveryone?: boolean;
+            /** @description Groups the message mentions (`group-<n>` or integer, from `GET /conversations/{conversationId}/mention-suggestions`), at most 50: groups a member of the conversation belongs to (400 otherwise) */
+            groupMentionIds?: (number | string)[];
+            /** @description Projects, tasks and events the message links to, at most 50: objects the author may read (400 otherwise) */
+            links?: {
+                /**
+                 * @description The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read
+                 * @example project-12
+                 */
+                id: string;
+            }[];
+            /**
+             * @description Id of the message this one answers (`message-<n>` or integer), in the same conversation: the answer then carries `citation` and `quoted`
+             * @example 1001
+             */
+            replyTo?: number | string;
         };
         /** @description Request body to create a new direct message */
         NewDirectMessageBody: {
@@ -4172,6 +7895,1219 @@ export interface components {
              */
             conversationId: number | string;
         };
+        /** @description Request body to edit a message: each tag field present replaces the tags of that kind, an absent one keeps them */
+        EditMessageBody: {
+            /**
+             * @description New content of the message
+             * @example The meeting is moved to 3 pm.
+             */
+            content: string;
+            /** @description Members the message mentions (`user-<n>` or integer), at most 50: members of the conversation only (400 otherwise) */
+            mentionIds?: (number | string)[];
+            /**
+             * @description Whether the message mentions every member of the conversation (`@everyone`)
+             * @example false
+             */
+            mentionEveryone?: boolean;
+            /** @description Groups the message mentions (`group-<n>` or integer, from `GET /conversations/{conversationId}/mention-suggestions`), at most 50: groups a member of the conversation belongs to (400 otherwise) */
+            groupMentionIds?: (number | string)[];
+            /** @description Projects, tasks and events the message links to, at most 50: objects the author may read (400 otherwise) */
+            links?: {
+                /**
+                 * @description The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read
+                 * @example project-12
+                 */
+                id: string;
+            }[];
+        };
+        /** @description Request body to react to a message */
+        ReactionBody: {
+            /**
+             * @description The emoji: 1 to 32 characters, no whitespace nor control character
+             * @example 👍
+             */
+            emoji: string;
+        };
+        /** @description Request body to add members to a group conversation */
+        AddMembersBody: {
+            /**
+             * @description Agents to add (`user-<n>` or integer), 1 to 50, none already a member
+             * @example [
+             *       10
+             *     ]
+             */
+            userIds: (number | string)[];
+        };
+        /** @description Response holding the edited message */
+        EditMessageResponse: {
+            /** @description The message as it now reads */
+            message: {
+                /**
+                 * @description Unique id, either a string or a number
+                 * @example 12345
+                 */
+                id: string | number;
+                /**
+                 * @description Unique id, either a string or a number
+                 * @example 12345
+                 */
+                conversationId: string | number;
+                /**
+                 * @description Content of the message
+                 * @example Hello everyone!
+                 */
+                content: string;
+                /**
+                 * @description Date and time the message was sent (ISO format)
+                 * @example 2026-06-23T12:32:00Z
+                 */
+                sentAt: string;
+                /**
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
+                 */
+                authorId?: string | number;
+                /**
+                 * @description Name of the author of the message
+                 * @example Alice Dupont
+                 */
+                authorName?: string;
+                /**
+                 * @description Direction of the message, incoming or outgoing
+                 * @example incoming
+                 * @enum {string}
+                 */
+                direction?: "incoming" | "outgoing";
+                /**
+                 * @description Attachments of the message
+                 * @example []
+                 */
+                attachments?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the attachment
+                     * @example document.pdf
+                     */
+                    name: string;
+                    /**
+                     * @description Size of the attachment in bytes
+                     * @example 102400
+                     */
+                    size?: number;
+                    /**
+                     * @description MIME type of the attachment
+                     * @example application/pdf
+                     */
+                    type?: string;
+                    /**
+                     * Format: uri
+                     * @description URL to reach the attachment
+                     * @example https://example.com/document.pdf
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Mentions in the message
+                 * @example []
+                 */
+                mentions?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the mention
+                     * @example Alice Dupont
+                     */
+                    name: string;
+                    /**
+                     * @description Type of conversation tied to the mention
+                     * @example direct
+                     * @enum {string}
+                     */
+                    kind?: "direct" | "group";
+                    /**
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
+                     */
+                    description?: string;
+                }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Any news about the building permit?
+                     */
+                    excerpt: string;
+                };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
+            };
+        };
+        /** @description Response holding the deleted message (tombstone) */
+        DeleteMessageResponse: {
+            /** @description The deleted message: `deleted: true`, empty content, no tag nor reaction */
+            message: {
+                /**
+                 * @description Unique id, either a string or a number
+                 * @example 12345
+                 */
+                id: string | number;
+                /**
+                 * @description Unique id, either a string or a number
+                 * @example 12345
+                 */
+                conversationId: string | number;
+                /**
+                 * @description Content of the message
+                 * @example Hello everyone!
+                 */
+                content: string;
+                /**
+                 * @description Date and time the message was sent (ISO format)
+                 * @example 2026-06-23T12:32:00Z
+                 */
+                sentAt: string;
+                /**
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
+                 */
+                authorId?: string | number;
+                /**
+                 * @description Name of the author of the message
+                 * @example Alice Dupont
+                 */
+                authorName?: string;
+                /**
+                 * @description Direction of the message, incoming or outgoing
+                 * @example incoming
+                 * @enum {string}
+                 */
+                direction?: "incoming" | "outgoing";
+                /**
+                 * @description Attachments of the message
+                 * @example []
+                 */
+                attachments?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the attachment
+                     * @example document.pdf
+                     */
+                    name: string;
+                    /**
+                     * @description Size of the attachment in bytes
+                     * @example 102400
+                     */
+                    size?: number;
+                    /**
+                     * @description MIME type of the attachment
+                     * @example application/pdf
+                     */
+                    type?: string;
+                    /**
+                     * Format: uri
+                     * @description URL to reach the attachment
+                     * @example https://example.com/document.pdf
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Mentions in the message
+                 * @example []
+                 */
+                mentions?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the mention
+                     * @example Alice Dupont
+                     */
+                    name: string;
+                    /**
+                     * @description Type of conversation tied to the mention
+                     * @example direct
+                     * @enum {string}
+                     */
+                    kind?: "direct" | "group";
+                    /**
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
+                     */
+                    description?: string;
+                }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Any news about the building permit?
+                     */
+                    excerpt: string;
+                };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
+            };
+        };
+        /** @description Response holding the reactions of a message */
+        ReactionsResponse: {
+            /** @description Every reaction to the message after the change */
+            reactions: {
+                /**
+                 * @description The emoji
+                 * @example 👍
+                 */
+                emoji: string;
+                /**
+                 * @description Number of agents who reacted with it
+                 * @example 2
+                 */
+                count: number;
+                /**
+                 * @description Whether the caller is one of them
+                 * @example true
+                 */
+                reactedByMe: boolean;
+                /**
+                 * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                 * @example [
+                 *       "Alice Dupont",
+                 *       "Contact Sample"
+                 *     ]
+                 */
+                userNames: string[];
+            }[];
+        };
+        /** @description A member of a conversation */
+        MemberDtoSchema: {
+            /**
+             * @description Id of the agent (`user-<n>`)
+             * @example user-3
+             */
+            id: string | number;
+            /**
+             * @description Full name of the agent
+             * @example Contact Sample
+             */
+            name: string;
+            /**
+             * @description Department of the agent, when known
+             * @example Urbanisme
+             */
+            department?: string;
+            /**
+             * @description Whether the agent administers the group: its creator, as long as they stay a member
+             * @example false
+             */
+            isAdmin: boolean;
+        };
+        /** @description The members of a conversation */
+        MembersResponse: {
+            /** @description The members of the conversation, the caller included */
+            members: {
+                /**
+                 * @description Id of the agent (`user-<n>`)
+                 * @example user-3
+                 */
+                id: string | number;
+                /**
+                 * @description Full name of the agent
+                 * @example Contact Sample
+                 */
+                name: string;
+                /**
+                 * @description Department of the agent, when known
+                 * @example Urbanisme
+                 */
+                department?: string;
+                /**
+                 * @description Whether the agent administers the group: its creator, as long as they stay a member
+                 * @example false
+                 */
+                isAdmin: boolean;
+            }[];
+            /**
+             * @description Whether the caller may add and remove members: a group conversation, and the caller is its administrator or a platform administrator
+             * @example true
+             */
+            canManage: boolean;
+        };
+        /** @description The members of a conversation after a change, and the system note recording it */
+        MembersChangeResponse: {
+            /** @description The members of the conversation, the caller included */
+            members: {
+                /**
+                 * @description Id of the agent (`user-<n>`)
+                 * @example user-3
+                 */
+                id: string | number;
+                /**
+                 * @description Full name of the agent
+                 * @example Contact Sample
+                 */
+                name: string;
+                /**
+                 * @description Department of the agent, when known
+                 * @example Urbanisme
+                 */
+                department?: string;
+                /**
+                 * @description Whether the agent administers the group: its creator, as long as they stay a member
+                 * @example false
+                 */
+                isAdmin: boolean;
+            }[];
+            /**
+             * @description Whether the caller may add and remove members: a group conversation, and the caller is its administrator or a platform administrator
+             * @example true
+             */
+            canManage: boolean;
+            /** @description The system note the change wrote in the conversation (`kind: system`); absent when it could not be read back */
+            systemMessage?: {
+                /**
+                 * @description Unique id, either a string or a number
+                 * @example 12345
+                 */
+                id: string | number;
+                /**
+                 * @description Unique id, either a string or a number
+                 * @example 12345
+                 */
+                conversationId: string | number;
+                /**
+                 * @description Content of the message
+                 * @example Hello everyone!
+                 */
+                content: string;
+                /**
+                 * @description Date and time the message was sent (ISO format)
+                 * @example 2026-06-23T12:32:00Z
+                 */
+                sentAt: string;
+                /**
+                 * @description Id of the author (`user-<n>`), absent once the author's account is deleted
+                 * @example user-12
+                 */
+                authorId?: string | number;
+                /**
+                 * @description Name of the author of the message
+                 * @example Alice Dupont
+                 */
+                authorName?: string;
+                /**
+                 * @description Direction of the message, incoming or outgoing
+                 * @example incoming
+                 * @enum {string}
+                 */
+                direction?: "incoming" | "outgoing";
+                /**
+                 * @description Attachments of the message
+                 * @example []
+                 */
+                attachments?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the attachment
+                     * @example document.pdf
+                     */
+                    name: string;
+                    /**
+                     * @description Size of the attachment in bytes
+                     * @example 102400
+                     */
+                    size?: number;
+                    /**
+                     * @description MIME type of the attachment
+                     * @example application/pdf
+                     */
+                    type?: string;
+                    /**
+                     * Format: uri
+                     * @description URL to reach the attachment
+                     * @example https://example.com/document.pdf
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Mentions in the message
+                 * @example []
+                 */
+                mentions?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the mention
+                     * @example Alice Dupont
+                     */
+                    name: string;
+                    /**
+                     * @description Type of conversation tied to the mention
+                     * @example direct
+                     * @enum {string}
+                     */
+                    kind?: "direct" | "group";
+                    /**
+                     * @description Description of the mention
+                     * @example Mention of a user in a message
+                     */
+                    description?: string;
+                }[];
+                /**
+                 * @description Id of the message this one answers (`message-<n>`), absent when it answers none or once that message is deleted
+                 * @example message-117
+                 */
+                citation?: string | number;
+                /** @description The message `citation` points to (author and excerpt), also when it is older than the loaded page */
+                quoted?: {
+                    /**
+                     * @description Unique id, either a string or a number
+                     * @example 12345
+                     */
+                    id: string | number;
+                    /**
+                     * @description Id of the author of the quoted message (`user-<n>`), absent once the account is deleted
+                     * @example user-12
+                     */
+                    authorId?: string | number;
+                    /**
+                     * @description Name of the author of the quoted message when they are a current member of the conversation
+                     * @example Alice Dupont
+                     */
+                    authorName?: string;
+                    /**
+                     * @description First 100 characters of the quoted message
+                     * @example Any news about the building permit?
+                     */
+                    excerpt: string;
+                };
+                /**
+                 * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
+                 * @example user
+                 * @enum {string}
+                 */
+                kind: "user" | "system";
+                /** @description System notes only (`kind: system`): the membership change the note records */
+                systemEvent?: {
+                    /**
+                     * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+                     * @example members_added
+                     * @enum {string}
+                     */
+                    action: "members_added" | "member_removed" | "member_left";
+                    /**
+                     * @description Id of the agent who made the change (`user-<n>`)
+                     * @example user-1
+                     */
+                    actorId: string | number;
+                    /**
+                     * @description Name of the actor, absent when the directory does not know the account any more
+                     * @example Alice Dupont
+                     */
+                    actorName?: string;
+                    /**
+                     * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+                     * @example [
+                     *       "user-3"
+                     *     ]
+                     */
+                    userIds: (string | number)[];
+                    /**
+                     * @description Names of `userIds`, in the same order, for the agents the directory still knows
+                     * @example [
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                };
+                /**
+                 * @description Date and time of the last edit of the content (ISO format); absent when the message was never edited
+                 * @example 2026-06-23T12:40:00Z
+                 */
+                editedAt?: string;
+                /**
+                 * @description Whether the message was deleted (tombstone): its content is then empty, and it carries no tag nor reaction
+                 * @example false
+                 */
+                deleted: boolean;
+                /**
+                 * @description Whether the message mentions every member of the conversation (`@everyone`)
+                 * @example false
+                 */
+                mentionsEveryone: boolean;
+                /**
+                 * @description Groups the message mentions
+                 * @example []
+                 */
+                groupMentions: {
+                    /**
+                     * @description Id of the group (`group-<n>`)
+                     * @example group-4
+                     */
+                    id: string | number;
+                    /**
+                     * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+                     * @example Service urbanisme
+                     */
+                    name?: string;
+                }[];
+                /**
+                 * @description Projects, tasks and events the message links to (`#`)
+                 * @example []
+                 */
+                links: {
+                    /**
+                     * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+                     * @example project-12
+                     */
+                    id: string | number;
+                    /**
+                     * @description Kind of business object: a project, a task or a calendar event
+                     * @example project
+                     * @enum {string}
+                     */
+                    kind: "project" | "task" | "event";
+                    /**
+                     * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+                     * @example Rénovation de la médiathèque
+                     */
+                    title?: string;
+                    /**
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+                     * @example https://projets.mairie360.fr/projects/12
+                     */
+                    url?: string;
+                }[];
+                /**
+                 * @description Reactions to the message, one entry per emoji, in the order of their first reaction
+                 * @example []
+                 */
+                reactions: {
+                    /**
+                     * @description The emoji
+                     * @example 👍
+                     */
+                    emoji: string;
+                    /**
+                     * @description Number of agents who reacted with it
+                     * @example 2
+                     */
+                    count: number;
+                    /**
+                     * @description Whether the caller is one of them
+                     * @example true
+                     */
+                    reactedByMe: boolean;
+                    /**
+                     * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+                     * @example [
+                     *       "Alice Dupont",
+                     *       "Contact Sample"
+                     *     ]
+                     */
+                    userNames: string[];
+                }[];
+            };
+        };
+        /** @description A message found by a search */
+        SearchMessageItem: {
+            /**
+             * @description Id of the message (`message-<n>`), to scroll to it
+             * @example message-1001
+             */
+            messageId: string | number;
+            /**
+             * @description Id of the author (`user-<n>`), absent once the account is deleted
+             * @example user-3
+             */
+            authorId?: string | number;
+            /**
+             * @description Name of the author when they are a current member
+             * @example Contact Sample
+             */
+            authorName?: string;
+            /**
+             * @description Date and time the message was sent (ISO format)
+             * @example 2026-06-23T12:32:00Z
+             */
+            createdAt: string;
+            /**
+             * @description The content of the message, cut around the first match when it is long (`…` marks a cut)
+             * @example Any news about the building permit?
+             */
+            excerpt: string;
+            /** @description Every match of `q` in `excerpt`, case-insensitive, in order */
+            highlights: {
+                /**
+                 * @description Index of the match in `excerpt` (UTF-16 code units, as JavaScript counts them)
+                 * @example 22
+                 */
+                start: number;
+                /**
+                 * @description Length of the match (UTF-16 code units)
+                 * @example 6
+                 */
+                length: number;
+            }[];
+        };
+        /** @description A member found by a search */
+        SearchPersonItem: {
+            /**
+             * @description Id of the member (`user-<n>`)
+             * @example user-3
+             */
+            id: string | number;
+            /**
+             * @description Full name of the member
+             * @example Contact Sample
+             */
+            name: string;
+        };
+        /** @description One page of the results of a search in a conversation */
+        ConversationSearchResponse: {
+            /**
+             * @description What was searched
+             * @example messages
+             * @enum {string}
+             */
+            type: "messages" | "files" | "people";
+            /** @description One page of results, newest message first or by name: `SearchMessageItem` for `messages`, `SearchPersonItem` for `people`, always empty for `files` */
+            items: ({
+                /**
+                 * @description Id of the message (`message-<n>`), to scroll to it
+                 * @example message-1001
+                 */
+                messageId: string | number;
+                /**
+                 * @description Id of the author (`user-<n>`), absent once the account is deleted
+                 * @example user-3
+                 */
+                authorId?: string | number;
+                /**
+                 * @description Name of the author when they are a current member
+                 * @example Contact Sample
+                 */
+                authorName?: string;
+                /**
+                 * @description Date and time the message was sent (ISO format)
+                 * @example 2026-06-23T12:32:00Z
+                 */
+                createdAt: string;
+                /**
+                 * @description The content of the message, cut around the first match when it is long (`…` marks a cut)
+                 * @example Any news about the building permit?
+                 */
+                excerpt: string;
+                /** @description Every match of `q` in `excerpt`, case-insensitive, in order */
+                highlights: {
+                    /**
+                     * @description Index of the match in `excerpt` (UTF-16 code units, as JavaScript counts them)
+                     * @example 22
+                     */
+                    start: number;
+                    /**
+                     * @description Length of the match (UTF-16 code units)
+                     * @example 6
+                     */
+                    length: number;
+                }[];
+            } | {
+                /**
+                 * @description Id of the member (`user-<n>`)
+                 * @example user-3
+                 */
+                id: string | number;
+                /**
+                 * @description Full name of the member
+                 * @example Contact Sample
+                 */
+                name: string;
+            })[];
+            /**
+             * @description Whether more results follow (next page: `offset` + `limit`)
+             * @example false
+             */
+            hasMore: boolean;
+            /**
+             * @description Number of results of the whole search
+             * @example 1
+             */
+            total: number;
+        };
+        /** @description What an agent may mention after `@` in a conversation */
+        MentionSuggestionsResponse: {
+            /**
+             * @description Whether to suggest mentioning everyone: `q` is empty or the start of `everyone` or of its French label
+             * @example true
+             */
+            everyone: boolean;
+            /** @description Groups a member of the conversation belongs to whose name contains `q` (at most 20) */
+            groups: {
+                /**
+                 * @description Id of the group (`group-<n>`), for `groupMentionIds`
+                 * @example group-4
+                 */
+                id: string | number;
+                /**
+                 * @description Name of the group
+                 * @example Service urbanisme
+                 */
+                name: string;
+            }[];
+            /** @description Members of the conversation but the caller whose name contains `q` (case- and accent-insensitive) */
+            people: {
+                /**
+                 * @description Id of the member (`user-<n>`), for `mentionIds`
+                 * @example user-3
+                 */
+                id: string | number;
+                /**
+                 * @description Full name of the member
+                 * @example Contact Sample
+                 */
+                name: string;
+            }[];
+        };
+        /** @description What an agent may link a message to after `#` */
+        LinkSuggestionsResponse: {
+            /** @description Projects, tasks and events the caller may read whose title matches `q` */
+            items: {
+                /**
+                 * @description Id to send in `links` (`project-<n>`, `task-<n>` or `event-<n>`)
+                 * @example project-12
+                 */
+                id: string;
+                /**
+                 * @description Kind of business object: a project, a task or a calendar event
+                 * @example project
+                 * @enum {string}
+                 */
+                kind: "project" | "task" | "event";
+                /**
+                 * @description Title of the object
+                 * @example Rénovation de la médiathèque
+                 */
+                title: string;
+                /**
+                 * @description What the object is, to display under its title
+                 * @example Projet
+                 */
+                detail?: string;
+                /**
+                 * @description Page of the object in its front (`<PROJECT_FRONT_URL>/?project=<id>`, `?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`), absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF
+                 * @example https://projets.mairie360.fr/projects/12
+                 */
+                url?: string;
+            }[];
+            /** @description Whether Project API and Calendar API answered: an unavailable source contributes no item */
+            sources: {
+                /** @enum {string} */
+                projects: "available" | "unavailable";
+                /** @enum {string} */
+                calendar: "available" | "unavailable";
+            };
+        };
+        /** @description The reactions to a message with one emoji */
+        ReactionDtoSchema: {
+            /**
+             * @description The emoji
+             * @example 👍
+             */
+            emoji: string;
+            /**
+             * @description Number of agents who reacted with it
+             * @example 2
+             */
+            count: number;
+            /**
+             * @description Whether the caller is one of them
+             * @example true
+             */
+            reactedByMe: boolean;
+            /**
+             * @description Names of the agents who reacted with it, in the order of their reaction, for the agents the directory still knows
+             * @example [
+             *       "Alice Dupont",
+             *       "Contact Sample"
+             *     ]
+             */
+            userNames: string[];
+        };
+        /** @description A project, task or event a message links to */
+        MessageLinkDtoSchema: {
+            /**
+             * @description Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)
+             * @example project-12
+             */
+            id: string | number;
+            /**
+             * @description Kind of business object: a project, a task or a calendar event
+             * @example project
+             * @enum {string}
+             */
+            kind: "project" | "task" | "event";
+            /**
+             * @description Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote
+             * @example Rénovation de la médiathèque
+             */
+            title?: string;
+            /**
+             * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
+             * @example https://projets.mairie360.fr/projects/12
+             */
+            url?: string;
+        };
+        /** @description A group mentioned by a message */
+        GroupMentionDtoSchema: {
+            /**
+             * @description Id of the group (`group-<n>`)
+             * @example group-4
+             */
+            id: string | number;
+            /**
+             * @description Name of the group, absent when none of the members of the conversation belongs to it any more
+             * @example Service urbanisme
+             */
+            name?: string;
+        };
+        /** @description The membership change a system note records */
+        SystemEventDtoSchema: {
+            /**
+             * @description `members_added`: the actor added `userIds`; `member_removed`: the actor removed `userIds`; `member_left`: the actor left
+             * @example members_added
+             * @enum {string}
+             */
+            action: "members_added" | "member_removed" | "member_left";
+            /**
+             * @description Id of the agent who made the change (`user-<n>`)
+             * @example user-1
+             */
+            actorId: string | number;
+            /**
+             * @description Name of the actor, absent when the directory does not know the account any more
+             * @example Alice Dupont
+             */
+            actorName?: string;
+            /**
+             * @description Agents added or removed (`user-<n>`); the actor alone for `member_left`
+             * @example [
+             *       "user-3"
+             *     ]
+             */
+            userIds: (string | number)[];
+            /**
+             * @description Names of `userIds`, in the same order, for the agents the directory still knows
+             * @example [
+             *       "Contact Sample"
+             *     ]
+             */
+            userNames: string[];
+        };
         CheckApisResponse: {
             /** @enum {string} */
             status: "OK" | "Error";
@@ -4197,7 +9133,7 @@ export interface components {
         };
         MessageStreamEvent: {
             /**
-             * @description What happened, as Message API names it (`NEW_MSG`...)
+             * @description What happened: `NEW_MSG`, `MSG_EDITED`, `MSG_DELETED`, `CHAT_READ` as Message API names them, and (MAIR-1154) `message_reacted` (the reactions of `messageId` changed), `members_changed` (members were added, removed or left: reload the members; a removed agent gets it too) and `mentioned` (`messageId` mentions the caller, sent with `NEW_MSG` or `MSG_EDITED`)
              * @example NEW_MSG
              */
             type: string;
@@ -4206,6 +9142,11 @@ export interface components {
              * @example conversation-5
              */
             conversationId: string;
+            /**
+             * @description The message concerned (`message-<n>`), when the event is about one
+             * @example message-118
+             */
+            messageId?: string;
         };
     };
     responses: never;
