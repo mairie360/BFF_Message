@@ -31,8 +31,10 @@ echo "==> BFF under test: $IMAGE_REF"
 source ./stack_secrets.sh || exit 1
 JWT_ADMIN="$ADMIN_JWT"
 JWT_AGENT="$(sign_jwt 2 user 3600)" || exit 1
+# User 3: the outsider of the WebSocket journey (tests/websocket/journey.mjs).
+JWT_THIRD="$(sign_jwt 3 user 3600)" || exit 1
 JWT_FORGED="$(sign_jwt 1 admin 3600 "$(openssl genpkey -algorithm ed25519 2>/dev/null)")" || exit 1
-export JWT_ADMIN JWT_AGENT JWT_FORGED
+export JWT_ADMIN JWT_AGENT JWT_THIRD JWT_FORGED
 
 # The newman container (non-root) writes its junit report here; the CI job publishes it.
 rm -rf "$REPORT_DIR" && mkdir -p "$REPORT_DIR" && chmod a+rwx "$REPORT_DIR"
@@ -46,7 +48,7 @@ docker compose -f "$COMPOSE_FILE" down -v --remove-orphans > /dev/null 2>&1
 if ! docker compose -f "$COMPOSE_FILE" up -d; then
   echo "==> The stack did not start: a dependency failed. Logs:"
   docker compose -f "$COMPOSE_FILE" logs --tail 80
-  docker compose -f "$COMPOSE_FILE" down -v
+  docker compose -f "$COMPOSE_FILE" --profile journey down -v --remove-orphans
   exit 1
 fi
 
@@ -54,11 +56,19 @@ echo "==> [2/4] Waiting for the newman collection to finish..."
 docker compose -f "$COMPOSE_FILE" wait "$SERVICE_NAME"
 EXIT_CODE=$?
 
+# newman cannot open a WebSocket: the journey over GET /ws (frames relayed from Message API, ACL,
+# eviction) runs next, on the same stack, once the collection passed.
+if [ "$EXIT_CODE" -eq 0 ]; then
+  echo "==> [2/4] Running the WebSocket journey..."
+  docker compose -f "$COMPOSE_FILE" --profile journey run --rm ws-journey
+  EXIT_CODE=$?
+fi
+
 echo "==> [3/4] Report (logs)..."
 docker compose -f "$COMPOSE_FILE" logs "$SERVICE_NAME"
 
 echo "==> [4/4] Removing the containers..."
-docker compose -f "$COMPOSE_FILE" down -v
+docker compose -f "$COMPOSE_FILE" --profile journey down -v --remove-orphans
 
 echo "----------------------------------------"
 echo "Final exit code: $EXIT_CODE"

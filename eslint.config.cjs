@@ -20,6 +20,11 @@ module.exports = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // The WebSocket journey of the integration stack runs on plain Node (global WebSocket, fetch).
+    files: ['tests/websocket/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  {
     files: ['src/**/*.ts'], // ✅ On limite ESLint aux fichiers sources TypeScript
     languageOptions: {
       globals: {
