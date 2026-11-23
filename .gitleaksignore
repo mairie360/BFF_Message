@@ -1,0 +1,4 @@
+# The RFC 6455 sample Sec-WebSocket-Key of the hand-written handshakes of the
+# WebSocket relay tests, before they generated the key: a public example, not a secret.
+8c6b909d50e3cc2479aa3f4f34daf48cbffd7bec:tests/mair-658-websocket.test.ts:generic-api-key:252
+8c6b909d50e3cc2479aa3f4f34daf48cbffd7bec:tests/mair-658-websocket.test.ts:generic-api-key:320
