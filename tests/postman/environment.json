@@ -39,6 +39,12 @@
       "enabled": true
     },
     {
+      "key": "jwt_third",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
       "key": "jwt_forged",
       "value": "",
       "type": "default",
