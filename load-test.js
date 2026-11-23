@@ -1,5 +1,8 @@
 import http from 'k6/http';
+import ws from 'k6/ws';
+import exec from 'k6/execution';
 import { check, sleep } from 'k6';
+import { Counter, Trend } from 'k6/metrics';
 import { createCoverage } from '/coverage.js';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +23,11 @@ import { createCoverage } from '/coverage.js';
 //   at the end of the iteration.
 // - `reads` (up to 20 VUs): replays only the GET handlers, which read the fixtures seeded by
 //   init-test.sql (conversation 101, message 1001) and never depend on `state`.
+// - `websocket`: the real-time relay under load. Each iteration creates a group of the seeded user
+//   and the VU's own listener, holds one socket of GET /ws (WS_SESSION_MS) as the listener while the
+//   seeded user posts every WS_POST_EVERY_MS, then both leave the group: every post must come back
+//   through the BFF as a NEW_MSG frame, and `ws_frame_delivery` measures the time from the start of
+//   the POST to the frame.
 // Every operation gets a p(95) threshold, whose budget depends on its family (`budgetOf`).
 //
 // MAIR-474: the stack also runs init-perf.sql (Message_API's seed: 2 000 agents in 4 000 group chats and
@@ -38,8 +46,8 @@ const TOKENS = JSON.parse(open(__ENV.JWT_TOKENS_FILE || '/tokens.json'));
 const AGENTS = { first: 400001, count: 2000 };
 
 const PROFILES = {
-  ci: { readVus: 30, crudVus: 2, rushRate: 30 },
-  stress: { readVus: 100, crudVus: 4, rushRate: 100 },
+  ci: { readVus: 30, crudVus: 2, rushRate: 30, wsVus: 20 },
+  stress: { readVus: 100, crudVus: 4, rushRate: 100, wsVus: 200 },
 };
 const PROFILE = PROFILES[__ENV.K6_PROFILE || 'ci'];
 if (!PROFILE) throw new Error(`Unknown K6_PROFILE ${__ENV.K6_PROFILE}: ${Object.keys(PROFILES).join(', ')}`);
@@ -49,6 +57,22 @@ const USER_ID = __ENV.PERF_USER_ID || '2';
 const FIXTURE_CONVERSATION = 'conversation-101';
 const FIXTURE_MESSAGE = 'message-1001';
 const CONTACT_ID = 'user-3';
+
+// `websocket` scenario. Sockets held at once: one per VU.
+const WS_VUS = PROFILE.wsVus;
+// How long a VU keeps its socket open, and how often the seeded user posts in its group meanwhile.
+const WS_SESSION_MS = 20000;
+const WS_POST_EVERY_MS = 2000;
+// A frame still missing this long after the last post counts as lost.
+const WS_DRAIN_MS = 2000;
+// p(95) budget from the start of the POST to the NEW_MSG frame (the epic asks for under a second).
+const WS_DELIVERY_BUDGET_MS = 1000;
+// p(95) budget of the handshake, the BFF's session check and the upstream handshake included.
+const WS_CONNECT_BUDGET_MS = 500;
+// The listener of VU n (exec.vu.idInTest, unique in the run) is agent WS_AGENTS.first + n.
+const WS_AGENTS = { first: 401001 };
+const wsFrameDelivery = new Trend('ws_frame_delivery', true);
+const wsFramesLost = new Counter('ws_frames_lost');
 
 // State of the current iteration (module scope is per VU in k6).
 let state = {};
@@ -215,8 +239,7 @@ const handlers = {
     });
   },
   // MAIR-658: the WebSocket relay. k6/http cannot upgrade: the counted request is the plain GET, answered 400 by the BFF
-  // without calling Message API. The load over real sockets (k6/ws) comes with MAIR-661, once Message API's image
-  // serves /api/v1/ws.
+  // without calling Message API. The real sockets are the `websocket` scenario.
   'GET /ws': ({ request }) => {
     const agent = randomAgent();
     check(request({ headers: agent.headers, params: { responseCallback: NOT_A_HANDSHAKE_IS_EXPECTED } }), {
@@ -419,6 +442,13 @@ export const options = {
       vus: PROFILE.crudVus,
       duration: '3m20s',
     },
+    websocket: {
+      executor: 'constant-vus',
+      exec: 'websocket',
+      startTime: '30s', // under the read load
+      vus: WS_VUS,
+      duration: '2m',
+    },
     conversations_rush: {
       executor: 'constant-arrival-rate',
       exec: 'conversationsRush',
@@ -434,6 +464,11 @@ export const options = {
     ...coverage.thresholds,
     ...perOperationThresholds,
     'http_req_duration{op:conversations_rush}': ['p(95)<400'],
+    // The WebSocket: every post reached its socket, fast enough, and the handshakes stayed quick.
+    ws_frame_delivery: [`p(95)<${WS_DELIVERY_BUDGET_MS}`],
+    ws_frames_lost: ['count==0'],
+    'ws_connecting{scenario:websocket}': [`p(95)<${WS_CONNECT_BUDGET_MS}`],
+    'http_req_duration{op:ws_post}': ['p(95)<500'],
     dropped_iterations: ['count==0'], // the rush kept its rate
     // Strict (MAIR-474): one wrong status, one wrong row or one failed request fails the run.
     http_req_failed: ['rate==0'],
@@ -443,6 +478,78 @@ export const options = {
 
 export function setup() {
   return { user: { Authorization: `Bearer ${jwtOf(USER_ID)}` } };
+}
+
+/**
+ * A group of the seeded user and the VU's listener, one socket of GET /ws held WS_SESSION_MS by the
+ * listener while the seeded user posts in the group, then both leave it (deleted with its last
+ * member). A post is pending until its NEW_MSG frame arrives; one still pending WS_DRAIN_MS after the
+ * last post is lost. Frames are handled once the POST returned (one event loop per VU), so the
+ * delivery time is measured from the start of the POST. The listener is a member of seeded chats
+ * too: only the frames of this group are checked.
+ */
+export function websocket(data) {
+  const listener = { Authorization: `Bearer ${jwtOf(WS_AGENTS.first + exec.vu.idInTest)}` };
+  const created = http.post(
+    coverage.url('POST /groups'),
+    JSON.stringify({ name: unique('k6 websocket'), description: 'k6 websocket', memberIds: [`user-${WS_AGENTS.first + exec.vu.idInTest}`] }),
+    { headers: Object.assign({ 'Content-Type': 'application/json' }, data.user), tags: { op: 'fixture' } },
+  );
+  const conversationId = conversationIdOf(created);
+  if (!check(created, { 'ws group created': (r) => r.status === 201 && Boolean(conversationId) })) return;
+  const pending = {};
+  let posts = 0;
+  let closing = false;
+  let closedByServer = false;
+  let unexpected = 0;
+  const res = ws.connect(
+    coverage.url('GET /ws').replace(/^http/, 'ws'),
+    { headers: listener, tags: { op: 'ws_session' } },
+    (socket) => {
+      socket.on('message', (raw) => {
+        const frame = JSON.parse(raw);
+        if (frame.conversationId !== conversationId) return;
+        const startedAt = frame.type === 'NEW_MSG' ? pending[frame.messageId] : undefined;
+        if (startedAt === undefined) {
+          unexpected += 1;
+          return;
+        }
+        wsFrameDelivery.add(Date.now() - startedAt);
+        delete pending[frame.messageId];
+      });
+      socket.on('close', () => { closedByServer = !closing; });
+      const openedAt = Date.now();
+      socket.setInterval(() => {
+        // The last WS_DRAIN_MS only wait for the frames of the posts already sent.
+        if (Date.now() - openedAt >= WS_SESSION_MS) return;
+        const startedAt = Date.now();
+        const post = http.post(
+          coverage.url('POST /conversations/{conversationId}/messages', { conversationId }),
+          JSON.stringify({ content: `k6 websocket ${posts}` }),
+          // A fresh connection per post: between two iterations the keep-alive connection idles past
+          // Node's 5 s keepAliveTimeout, and reusing it as the server closes it resets the POST.
+          { headers: Object.assign({ 'Content-Type': 'application/json', Connection: 'close' }, data.user), tags: { op: 'ws_post' } },
+        );
+        posts += 1;
+        // An error envelope (502, 429…) has no `message`: the check below records it instead of throwing.
+        const body = json(post);
+        const id = body && body.message ? body.message.id : undefined;
+        if (check(post, { 'ws post 201': (r) => r.status === 201 && Boolean(id) })) pending[id] = startedAt;
+      }, WS_POST_EVERY_MS);
+      socket.setTimeout(() => { closing = true; socket.close(); }, WS_SESSION_MS + WS_DRAIN_MS);
+    },
+  );
+  for (const headers of [data.user, listener]) {
+    http.del(coverage.url('DELETE /conversations/{conversationId}', { conversationId }), null, { headers, tags: { op: 'fixture' } });
+  }
+  const lost = Object.keys(pending).length;
+  wsFramesLost.add(lost);
+  check(res, {
+    'ws upgraded': (r) => r && r.status === 101,
+    'ws stays open': () => !closedByServer,
+    'ws every post delivered': () => posts > 0 && lost === 0,
+    'ws no unknown signal of the group': () => unexpected === 0,
+  });
 }
 
 // Every GET handler, with a plain request() (no coverage accounting: `crud` owns the gate).

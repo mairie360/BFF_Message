@@ -247,3 +247,22 @@ services:
       --reporter-junit-export /reports/newman.xml
     networks:
       - backend
+
+  # The WebSocket journey (tests/websocket/journey.mjs), which newman cannot run. Not started by
+  # `up`: integration_test.sh runs it once the collection passed, on the same stack.
+  ws-journey:
+    image: node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
+    profiles: ["journey"]
+    depends_on:
+      bff-message:
+        condition: service_healthy
+    volumes:
+      - ./tests/websocket:/journey:ro
+    environment:
+      BASE_URL: http://bff-message:4003
+      JWT_ADMIN: ${JWT_ADMIN:?JWT_ADMIN must be set, run ./integration_test.sh}
+      JWT_AGENT: ${JWT_AGENT:?JWT_AGENT must be set, run ./integration_test.sh}
+      JWT_THIRD: ${JWT_THIRD:?JWT_THIRD must be set, run ./integration_test.sh}
+    command: ["node", "/journey/journey.mjs"]
+    networks:
+      - backend

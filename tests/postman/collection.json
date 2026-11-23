@@ -2233,7 +2233,15 @@
                   "    pm.expect(body.participants.map((p) => p.id).sort()).to.eql(['user-2', 'user-3']);",
                   "    pm.expect(body.conversation.memberCount).to.eql(2);",
                   "    pm.expect(body.conversation.department).to.eql('2 membres');",
-                  "    pm.expect(body.messages).to.have.lengthOf(1);",
+                  "    const written = body.messages.filter((m) => m.kind === 'user');",
+                  "    pm.expect(written).to.have.lengthOf(1);",
+                  "});",
+                  "pm.test(\"MAIR-661 Leaving the group records a member_left system note of the administrator\", function () {",
+                  "    const notes = pm.response.json().messages.filter((m) => m.kind === 'system');",
+                  "    pm.expect(notes).to.have.lengthOf(1);",
+                  "    pm.expect(notes[0].systemEvent.action).to.eql('member_left');",
+                  "    pm.expect(notes[0].systemEvent.actorId).to.eql('user-1');",
+                  "    pm.expect(notes[0].systemEvent.userIds).to.eql(['user-1']);",
                   "});"
                 ]
               }

@@ -107,7 +107,14 @@ client only once it is open (`401` when Message API answers 401/404, `502` other
 `1001`/`1000` are relayed and any other upstream end becomes `1013`; 15 s ping / 45 s pong timeout and
 `MESSAGE_WS_MAX_MS` (30 min ± 10 %) close with `1001`. The Express route `GET /ws` only answers `400` to a plain GET.
 `tests/mair-658-websocket.test.ts` runs it against a `ws` stand-in of Message API (orval cannot describe frames);
-newman only checks the refused handshakes and k6 the plain `400` until MAIR-661. The frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
+newman checks the refused handshakes (`401` with the error envelope, `400` without `Upgrade`). MAIR-661 adds the real
+sockets to the stacks: `tests/websocket/journey.mjs` (plain Node, global `WebSocket` with `Authorization`, `fetch`) is the
+`ws-journey` service of `docker-compose-integration.yml` (profile `journey`), run by `integration_test.sh` once newman
+passed (its exit code becomes the script's): Admin (A), users 2 (B) and 3 (C, signed as `JWT_THIRD`) connect, A posts
+in a new group with B: only B gets `NEW_MSG` with `conversationId` / `messageId`, once; B's 6th socket makes Message API
+evict the oldest, whose `4008` the BFF relays, and the 5 others get the next `NEW_MSG`. k6 has a `websocket` scenario
+(below). ZAP scans `/ws` (it cannot upgrade: the plain `GET` answers `400` or `401`, JSON envelopes); only `/stream`
+stays out of rule `100001`'s scope until the SSE is removed (its `text/event-stream` answer). The frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
 `docs/en/realtime-websocket.md` (decision: `docs/en/adr/0001-messaging-websocket.md`, French under `docs/fr/`), and
 `docs/en/technical.md` / `docs/fr/technical.md` here summarise the BFF's side.
 
@@ -246,7 +253,14 @@ of which user 2 is a member), never `state`. Every operation gets a `p(95)` thre
 family (`budgetOf`). In `crud`, handlers run path by path in contract order and, per path,
 get → put → post → delete → patch: `DELETE /conversations/{id}` runs before `POST /groups`, so it
 creates the group it deletes, and `cleanup()` deletes the group and direct conversation the
-iteration kept. `POST /attachments` is sent as a hand-built multipart string body.
+iteration kept. `POST /attachments` is sent as a hand-built multipart string body. The `websocket`
+scenario (MAIR-661, `wsVus` of the profile: 20 in `ci`, 200 in `stress`, for 2 min from 30 s) creates, each
+iteration, a group of user 2 and agent `401001 + exec.vu.idInTest` (unique per VU), whose socket of `GET /ws` stays
+open 20 s while user 2 posts in the group every 2 s (`op:ws_post`, 500 ms `p(95)`, `Connection: close`: a keep-alive
+connection idling past Node's 5 s `keepAliveTimeout` between iterations was reset), then both leave the group; the
+checks want the `101`, no server close, every post back as a `NEW_MSG` frame of that group and no unknown frame of
+it (frames of the agent's seeded chats are ignored); `ws_frame_delivery` (start of the `POST` → frame) has a 1 s `p(95)`, `ws_frames_lost == 0`,
+`ws_connecting{scenario:websocket}` a 500 ms `p(95)`.
 
 MAIR-474: both scripts source `stack_secrets.sh` (a fresh Ed25519 key pair per run, `ADMIN_JWT` for the ZAP replacer;
 k6 reads the EdDSA tokens `performance_test.sh` signs into `/tokens.json`, MAIR-680), drop the volumes before and after a run, exit 1 when a dependency does not start, and `performance_test.sh` pins the stack to `min(PERF_CPUS, nproc)` CPUs (4 by default). The session routes use bffs-lib `requireSession` (the BFF verifies the token with Core's public key `JWT_PUBLIC_KEY`, required at startup, MAIR-680). `.zap/rules.tsv` no longer ignores rule `100000` (server errors) except on `/attachments`, whose documented answer is 503 (MAIR-400), and rule `100001` (unexpected content type) is scoped out of `/stream` only, whose documented answer is `text/event-stream` (MAIR-525). `GET /contacts` refuses control characters in `search` (Core API answers 400 to them), and leaving a conversation the caller is not a member of answers 404. The perf seeder also runs `init-perf.sql`, Message_API's seed copied as is (agents `400001`-`402000`, 16 group chats each); the reads run as random agents and check their own profile, chats and messages; `conversations_rush` sends `GET /conversations` at a fixed rate; each `crud` VU sends its direct message to its own recipient (the BFF reuses the direct conversation that `cleanup()` leaves); thresholds are strict (`checks == 100%`, `http_req_failed == 0`, `dropped_iterations == 0`); `K6_PROFILE` is `ci` (default) or `stress`. `GET /conversations` used to read the members and directory names of every chat (about 33 upstream calls for an agent of 16 chats), which saturated the event loop under the rush (`GET /health` p95 of about 75 ms for a 50 ms budget): since MAIR-507 it is one call, `GET /health` has a p95 of about 7 ms and the rush p95 is about 22 ms. The reads also search by member name and page through the list, and the load handler of `GET /conversations/{conversationId}` checks the 8 members and 25 messages with their names.
