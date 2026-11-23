@@ -132,8 +132,10 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 - **Suggestions** : `GET …/mention-suggestions?q=` (autres membres, groupes des membres, `everyone` quand `q` est vide
   ou commence « tout le monde » / « everyone ») et `GET /link-suggestions?q=` (références métier filtrées par titre,
   sans casse ni accents, 50 au plus, limitées comme `/business-references`). L’`url` d’un lien est
-  `<PROJECT_FRONT_URL>/projects/<id>`, `<PROJECT_FRONT_URL>/tasks/<id>` ou `<CALENDAR_FRONT_URL>/events/<id>`, absente
-  quand la variable n’est pas définie.
+  la page de l’objet dans son front (MAIR-1166 : chaque front a une seule page, adressée par ses paramètres) :
+  `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<projet>&task=<id>` ou
+  `<CALENDAR_FRONT_URL>/?date=<AAAA-MM-JJ>&event=<id>` (le jour de son début, heure de Paris). Elle est absente quand la
+  variable n’est pas définie, ou quand Message API n’a pas donné le projet d’une tâche ou le début d’un événement.
 - **Flux** : les événements portent `messageId` quand Message API en donne un, et les nouveaux signaux s’appellent
   `message_reacted`, `members_changed` et `mentioned` (les précédents gardent `NEW_MSG`, `MSG_EDITED`...).
 
