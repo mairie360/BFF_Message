@@ -5620,6 +5620,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ws": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Real-time WebSocket of the caller's conversations
+         * @description Upgrades the connection to a **WebSocket** relaying Message API's (MAIR-658): one UTF-8 text frame per `MessageRealtimeEvent`, for the conversations the caller is a member of. It replaces `GET /stream`, kept until MAIR-662. The full contract (frames, close codes, limits, client behaviour) is Message_API `docs/en/realtime-websocket.md`.
+         *
+         *     Send a `GET` with `Upgrade: websocket` and `Authorization: Bearer <JWT>`; nothing goes in the URL. The session is checked before Message API is called, and the connection is upgraded only once Message API accepted it: a refusal is a real status (`401`, `502`, `503`) with the `ErrorResponse` body. A `GET` without `Upgrade` answers `400`.
+         *
+         *     The client sends no data: a data frame is dropped, a frame larger than 4 KiB closes with `1009`. The BFF pings every 15 seconds and closes with `1001` a client that answered none for 45 seconds, and after `MESSAGE_WS_MAX_MS` (30 minutes ± 10 % by default). Message API's `4001` (session ended: renew it before reconnecting), `4008` (evicted by a 6th connection: do not reconnect automatically) and `1001` are relayed; any other end of Message API's connection closes with `1013` (reconnect with backoff).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Switched to the WebSocket protocol; the body documented is the payload of **one** text frame */
+                101: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageRealtimeEvent"];
+                    };
+                };
+                /** @description Not a WebSocket handshake (no `Upgrade: websocket`, or an invalid `Sec-WebSocket-Key` / version) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid session, or Message API refused it */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An upstream API rate limit is reached: retry after the Retry-After header (seconds) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API refused the handshake otherwise or did not answer within 10 seconds */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Message API is not configured on the BFF */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stream": {
         parameters: {
             query?: never;
@@ -9130,6 +9218,29 @@ export interface components {
                 /** @enum {string} */
                 calendar: "available" | "unavailable";
             };
+        };
+        MessageRealtimeEvent: {
+            /**
+             * @description What happened: a message posted, edited or deleted by someone else, or the caller acknowledged the conversation (on another tab or device). Ignore an unknown type: new ones may be added.
+             * @example NEW_MSG
+             * @enum {string}
+             */
+            type: "NEW_MSG" | "MSG_EDITED" | "MSG_DELETED" | "CHAT_READ";
+            /**
+             * @description Conversation concerned
+             * @example conversation-5
+             */
+            conversationId: string;
+            /**
+             * @description Message concerned (for `CHAT_READ`, the last message read); absent from a signal of an older Message API replica
+             * @example message-118
+             */
+            messageId?: string;
+            /**
+             * @description Unread messages left in the conversation, on `CHAT_READ` only
+             * @example 0
+             */
+            unreadCount?: number;
         };
         MessageStreamEvent: {
             /**

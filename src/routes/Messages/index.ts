@@ -11,6 +11,7 @@ import linkSuggestionsRouter from './link_suggestions';
 import meRoutes from './me';
 import membersRoutes from './members';
 import messageRoutes from './message';
+import realtimeRoutes from './realtime';
 import streamRoutes from './stream';
 
 /**
@@ -28,6 +29,7 @@ export const SESSION_BOUND_PATHS = [
     '/me',
     '/messaging',
     '/stream',
+    '/ws',
 ];
 
 const router = Router();
@@ -43,6 +45,7 @@ router.use('/groups', groupsRoutes);
 router.use('/link-suggestions', linkSuggestionsRouter);
 router.use('/me', meRoutes);
 router.use('/stream', streamRoutes);
+router.use('/ws', realtimeRoutes);
 router.use('/', messageRoutes);
 
 export default router;

@@ -4310,6 +4310,182 @@
         }
       ],
       "description": "GET /stream relays Message API's SSE channel; the stack ends each stream after MESSAGE_STREAM_MAX_MS (1 s), so newman gets a complete answer."
+    },
+    {
+      "name": "Real-time WebSocket",
+      "description": "MAIR-658: GET /ws relays Message API's WebSocket. newman cannot open a WebSocket: these are the refused handshakes, answered before any upstream call; the relay itself is tested by tests/mair-658-websocket.test.ts.",
+      "item": [
+        {
+          "name": "The WebSocket handshake without a session is rejected before any upstream call",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Connection",
+                "value": "Upgrade",
+                "type": "text"
+              },
+              {
+                "key": "Upgrade",
+                "value": "websocket",
+                "type": "text"
+              },
+              {
+                "key": "Sec-WebSocket-Version",
+                "value": "13",
+                "type": "text"
+              },
+              {
+                "key": "Sec-WebSocket-Key",
+                "value": "dGhlIHNhbXBsZSBub25jZQ==",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ws",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ws"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401, the connection is not upgraded\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.headers.get('Upgrade')).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});",
+                  "pm.test(\"The code is UNAUTHORIZED\", function () {",
+                  "    pm.expect(pm.response.json().error.code).to.eql('UNAUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "The WebSocket handshake with a forged session is rejected",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Connection",
+                "value": "Upgrade",
+                "type": "text"
+              },
+              {
+                "key": "Upgrade",
+                "value": "websocket",
+                "type": "text"
+              },
+              {
+                "key": "Sec-WebSocket-Version",
+                "value": "13",
+                "type": "text"
+              },
+              {
+                "key": "Sec-WebSocket-Key",
+                "value": "dGhlIHNhbXBsZSBub25jZQ==",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_forged}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ws",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ws"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401, the connection is not upgraded\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.headers.get('Upgrade')).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "A plain GET /ws without Upgrade is not a handshake",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ws",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ws"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Body is the error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error, 'error').to.be.an('object');",
+                  "    pm.expect(body.error.code).to.be.a('string');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});",
+                  "pm.test(\"The code is BAD_REQUEST and the answer is not cacheable\", function () {",
+                  "    pm.expect(pm.response.json().error.code).to.eql('BAD_REQUEST');",
+                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
     }
   ]
 }

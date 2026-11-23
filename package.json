@@ -22,6 +22,7 @@
     "dotenv": "17.4.2",
     "express": "5.3.0",
     "swagger-ui-express": "5.0.1",
+    "ws": "8.22.1",
     "zod": "4.6.7"
   },
   "overrides": {
@@ -33,6 +34,7 @@
     "@types/jest": "30.0.0",
     "@types/supertest": "7.2.1",
     "@types/swagger-ui-express": "4.1.8",
+    "@types/ws": "8.18.2",
     "esbuild": "0.28.2",
     "eslint": "10.13.0",
     "globals": "17.13.0",

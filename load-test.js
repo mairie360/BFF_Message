@@ -129,6 +129,8 @@ function groupBody(name) {
 
 // Operations that are not available yet answer 503 by design: not counted in http_req_failed.
 const UNAVAILABLE_IS_EXPECTED = http.expectedStatuses(503);
+// GET /ws without Upgrade answers 400 by design (MAIR-658): created here, in the init context, like the one above.
+const NOT_A_HANDSHAKE_IS_EXPECTED = http.expectedStatuses(400);
 
 // POST /attachments takes multipart/form-data: the string body is sent as is by coverage.js.
 const BOUNDARY = 'k6-attachment-boundary';
@@ -210,6 +212,16 @@ const handlers = {
       'stream 200': (r) => r.status === 200,
       'stream is an event stream': (r) => r.status === 200 && String(r.headers['Content-Type']).startsWith('text/event-stream')
         && String(r.body).startsWith('retry: '),
+    });
+  },
+  // MAIR-658: the WebSocket relay. k6/http cannot upgrade: the counted request is the plain GET, answered 400 by the BFF
+  // without calling Message API. The load over real sockets (k6/ws) comes with MAIR-661, once Message API's image
+  // serves /api/v1/ws.
+  'GET /ws': ({ request }) => {
+    const agent = randomAgent();
+    check(request({ headers: agent.headers, params: { responseCallback: NOT_A_HANDSHAKE_IS_EXPECTED } }), {
+      'ws plain GET 400': (r) => r.status === 400,
+      'ws refusal is the error envelope': (r) => r.status === 400 && body(r).error.code === 'BAD_REQUEST',
     });
   },
   'GET /me': ({ request }) => {
@@ -437,10 +449,11 @@ export function setup() {
 export function reads(data) {
   for (const operation of readOperations) {
     const request = (call = {}) =>
-      http.get(coverage.url(operation.op, call.path, call.query), {
+      // `call.params` is kept like coverage.js does (responseCallback of GET /ws, MAIR-658).
+      http.get(coverage.url(operation.op, call.path, call.query), Object.assign({}, call.params, {
         headers: Object.assign({}, data.user, call.headers),
         tags: { op: operation.op },
-      });
+      }));
     handlers[operation.op]({ request, data, op: operation.op, method: operation.method, path: operation.path });
   }
   sleep(1);
