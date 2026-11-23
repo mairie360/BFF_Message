@@ -590,7 +590,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -1324,7 +1324,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -1879,7 +1879,7 @@ export interface paths {
                                  */
                                 detail?: string;
                                 /**
-                                 * @description Page of the object in its front, absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF
+                                 * @description Page of the object in its front (`<PROJECT_FRONT_URL>/?project=<id>`, `?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`), absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF
                                  * @example https://projets.mairie360.fr/projects/12
                                  */
                                 url?: string;
@@ -2426,7 +2426,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -2824,7 +2824,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -3658,7 +3658,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -4034,7 +4034,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -4461,7 +4461,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -4835,7 +4835,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -5529,7 +5529,7 @@ export interface paths {
                                      */
                                     title?: string;
                                     /**
-                                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                                      * @example https://projets.mairie360.fr/projects/12
                                      */
                                     url?: string;
@@ -6045,7 +6045,7 @@ export interface components {
                  */
                 title?: string;
                 /**
-                 * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                 * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                  * @example https://projets.mairie360.fr/projects/12
                  */
                 url?: string;
@@ -6492,7 +6492,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -6801,7 +6801,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -7188,7 +7188,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -7704,7 +7704,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -8157,7 +8157,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -8412,7 +8412,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -8778,7 +8778,7 @@ export interface components {
                      */
                     title?: string;
                     /**
-                     * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+                     * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
                      * @example https://projets.mairie360.fr/projects/12
                      */
                     url?: string;
@@ -8999,7 +8999,7 @@ export interface components {
                  */
                 detail?: string;
                 /**
-                 * @description Page of the object in its front, absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF
+                 * @description Page of the object in its front (`<PROJECT_FRONT_URL>/?project=<id>`, `?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`), absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF
                  * @example https://projets.mairie360.fr/projects/12
                  */
                 url?: string;
@@ -9057,7 +9057,7 @@ export interface components {
              */
             title?: string;
             /**
-             * @description Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF
+             * @description Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give
              * @example https://projets.mairie360.fr/projects/12
              */
             url?: string;

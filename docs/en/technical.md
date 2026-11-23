@@ -132,8 +132,10 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 - **Suggestions**: `GET …/mention-suggestions?q=` (other members, groups of the members, `everyone` when `q` is empty
   or starts « tout le monde » / « everyone ») and `GET /link-suggestions?q=` (the business references filtered by
   title, case- and accent-insensitive, at most 50, rate limited like `/business-references`). The `url` of a link is
-  `<PROJECT_FRONT_URL>/projects/<id>`, `<PROJECT_FRONT_URL>/tasks/<id>` or `<CALENDAR_FRONT_URL>/events/<id>`, absent
-  when the variable is unset.
+  the page of the object in its front (MAIR-1166: each front has one page addressed by its query):
+  `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>` or
+  `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>` (the day of its start, Paris time). It is absent when the variable
+  is unset, or when Message API gave no project for a task or no start for an event.
 - **Stream**: the events carry `messageId` when Message API gives one, and the new signals are named
   `message_reacted`, `members_changed` and `mentioned` (the earlier ones keep `NEW_MSG`, `MSG_EDITED`...).
 

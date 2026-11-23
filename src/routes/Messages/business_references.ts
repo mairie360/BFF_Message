@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { calendarApi, projectApi } from '../../clients/businessApiClients';
 import { readCallerRoles } from '../../clients/coreClient';
 import { errorResponses, registry } from '../../openapi-registry';
+import type { LinkTarget } from './message_helpers';
 const router = Router();
 export const BusinessReferencesSchema = registry.register('BusinessReferencesResponse', z.object({
   references: z.array(z.object({ id: z.string(), title: z.string(), kind: z.enum(['project', 'task', 'event']), description: z.string().optional() })),
@@ -37,7 +38,10 @@ export type BusinessReference = {
   title: string;
   kind: BusinessReferenceKind;
   description?: string;
+  /** What the front page of the object needs besides its id (MAIR-1166): a task's project, an event's start. Not answered. */
+  target?: LinkTarget;
 };
+
 
 /** Timeout of each call to Project API / Calendar API, in ms. */
 const BUSINESS_API_TIMEOUT_MS = 8_000;
@@ -81,6 +85,7 @@ export async function loadProjectReferences(req: Request): Promise<BusinessRefer
       title: task.title,
       kind: "task" as const,
       description: `Tâche · ${project.name}`,
+      target: { projectId: project.id },
     })));
 
   return [
@@ -118,6 +123,7 @@ export async function loadCalendarReferences(req: Request): Promise<BusinessRefe
     title: event.name,
     kind: "event" as const,
     description: `Calendrier · ${utcToWallClock(event.start).date}`,
+    target: { start: event.start },
   }));
 }
 
@@ -150,9 +156,10 @@ router.get('/', requireSession, createBusinessReferencesRateLimiter(), async (re
     loadProjectReferences(request),
     loadCalendarReferences(request),
   ]);
+  // `target` only builds the link URLs of `GET /link-suggestions`: the contract answers the four fields.
   const references = results.flatMap((result) =>
     result.status === "fulfilled" ? result.value : [],
-  );
+  ).map(({ target: _target, ...reference }) => reference);
 
   return response.json(
     {

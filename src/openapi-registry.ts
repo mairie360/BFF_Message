@@ -252,7 +252,7 @@ export const MessageLinkDtoSchema = z.object({
     example: 'Rénovation de la médiathèque',
   }),
   url: z.string().optional().openapi({
-    description: 'Page of the object in its front (`PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL`), absent when that front is not configured on the BFF',
+    description: 'Page of the object in its front: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`; absent when that front is not configured on the BFF, or for a task whose project / an event whose start Message API did not give',
     example: 'https://projets.mairie360.fr/projects/12',
   }),
 }).openapi({
@@ -845,7 +845,7 @@ export const LinkSuggestionsResponse = z.object({
     title: z.string().openapi({ description: 'Title of the object', example: 'Rénovation de la médiathèque' }),
     detail: z.string().optional().openapi({ description: 'What the object is, to display under its title', example: 'Projet' }),
     url: z.string().optional().openapi({
-      description: 'Page of the object in its front, absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF',
+      description: 'Page of the object in its front (`<PROJECT_FRONT_URL>/?project=<id>`, `?project=<project>&task=<id>`, `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>`), absent when `PROJECT_FRONT_URL` / `CALENDAR_FRONT_URL` is not set on the BFF',
       example: 'https://projets.mairie360.fr/projects/12',
     }),
   })).openapi({ description: 'Projects, tasks and events the caller may read whose title matches `q`' }),
