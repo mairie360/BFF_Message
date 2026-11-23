@@ -1,4 +1,6 @@
-import { asCaller, callUpstream, hasRole, HttpError, sessionRole, sessionUserId, upstreamStatus } from '@mairie360/bffs-lib';
+import {
+  asCaller, callUpstream, hasRole, HttpError, sessionRole, sessionUserId, upstreamStatus, utcToWallClock,
+} from '@mairie360/bffs-lib';
 import type { z } from 'zod';
 import type { CallContext } from '../../clients/context';
 import messageClient from '../../clients/messageClient';
@@ -297,17 +299,39 @@ function frontUrl(variable: 'PROJECT_FRONT_URL' | 'CALENDAR_FRONT_URL'): string 
   }
 }
 
+/** A task opens in the Projects front with its project, an event in the Calendar front on its day (MAIR-1166). */
+export type LinkTarget = { projectId?: number; start?: string };
+
 /**
- * Page of a business object in its front: `<PROJECT_FRONT_URL>/projects/<id>`, `<PROJECT_FRONT_URL>/tasks/<id>`,
- * `<CALENDAR_FRONT_URL>/events/<id>`; `undefined` when that front is not configured.
+ * Page of a business object in its front (MAIR-1166). The Projects and Calendar fronts have one page,
+ * addressed by its query: `<PROJECT_FRONT_URL>/?project=<id>`, `<PROJECT_FRONT_URL>/?project=<project>&task=<id>`
+ * (a task needs its project) and `<CALENDAR_FRONT_URL>/?date=<YYYY-MM-DD>&event=<id>` (the day of its start, in the
+ * instance time zone; the front ignores `event` without `date`). `undefined` when that front is not configured or
+ * the task's project / the event's start is unknown.
  */
-export function businessObjectUrl(kind: LinkKind, id: number): string | undefined {
+export function businessObjectUrl(kind: LinkKind, id: number, target: LinkTarget = {}): string | undefined {
   const base = frontUrl(kind === 'event' ? 'CALENDAR_FRONT_URL' : 'PROJECT_FRONT_URL');
-  return base === undefined ? undefined : `${base}/${kind}s/${id}`;
+  if (base === undefined) return undefined;
+  const query = new URLSearchParams();
+  if (kind === 'project') {
+    query.set('project', String(id));
+  } else if (kind === 'task') {
+    if (target.projectId === undefined) return undefined;
+    query.set('project', String(target.projectId));
+    query.set('task', String(id));
+  } else {
+    if (target.start === undefined) return undefined;
+    query.set('date', utcToWallClock(target.start).date);
+    query.set('event', String(id));
+  }
+  return `${base}/?${query.toString()}`;
 }
 
 function mapLink(link: MessageLinkView): BffMessageLink {
-  const url = businessObjectUrl(link.kind, link.id);
+  const url = businessObjectUrl(link.kind, link.id, {
+    ...(link.project_id != null ? { projectId: link.project_id } : {}),
+    ...(link.start != null ? { start: link.start } : {}),
+  });
   return { id: `${link.kind}-${link.id}`, kind: link.kind, ...(url ? { url } : {}) };
 }
 

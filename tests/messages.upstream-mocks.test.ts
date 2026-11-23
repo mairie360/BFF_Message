@@ -1182,7 +1182,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         chats: [chatView(4, 'Équipe communication', 0, 2)],
         messages: { 4: [
           messageView(41, sophie.id, {
-            mentions: [agent.id, 99], mentions_everyone: true, group_mentions: [3], links: [{ kind: 'project', id: 12 }, { kind: 'event', id: 5 }],
+            mentions: [agent.id, 99], mentions_everyone: true, group_mentions: [3], links: [{ kind: 'project', id: 12 }, { kind: 'task', id: 6, project_id: 12 }, { kind: 'task', id: 8 }, { kind: 'event', id: 5, start: '2026-09-30T22:30:00Z' }],
             reactions: [{ emoji: '👍', count: 2, user_ids: [agent.id, thomas.id] }], edited_at: '2026-09-15T09:05:00Z',
           }),
           systemNoteView(42, agent.id, 'member_removed', [thomas.id]),
@@ -1191,6 +1191,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       });
       messageApi.on('get', MESSAGE_API.mentionGroups, { body: { groups: [{ id: 3, name: 'Urbanisme' }] } });
       process.env.PROJECT_FRONT_URL = 'https://projets.mairie360.test/';
+      process.env.CALENDAR_FRONT_URL = 'https://agenda.mairie360.test';
       try {
         const response = await request(app).get('/conversations/4').set('Authorization', auth());
 
@@ -1201,7 +1202,13 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
           kind: 'user', editedAt: '2026-09-15T09:05:00Z', deleted: false, mentionsEveryone: true,
           mentions: [{ id: 'user-7', name: 'Agent Test' }],
           groupMentions: [{ id: 'group-3', name: 'Urbanisme' }],
-          links: [{ id: 'project-12', kind: 'project', url: 'https://projets.mairie360.test/projects/12' }, { id: 'event-5', kind: 'event' }],
+          // MAIR-1166: the pages of the fronts; a task without its project gets no URL, an event opens on its Paris day.
+          links: [
+            { id: 'project-12', kind: 'project', url: 'https://projets.mairie360.test/?project=12' },
+            { id: 'task-6', kind: 'task', url: 'https://projets.mairie360.test/?project=12&task=6' },
+            { id: 'task-8', kind: 'task' },
+            { id: 'event-5', kind: 'event', url: 'https://agenda.mairie360.test/?date=2026-10-01&event=5' },
+          ],
           reactions: [{ emoji: '👍', count: 2, reactedByMe: true, userNames: ['Agent Test', 'Thomas Bernard'] }],
         });
         expect(note).toMatchObject({
@@ -1212,6 +1219,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         expect(coreApi.requests.map((call) => call.url.searchParams.get('ids'))).toEqual(['99,9']);
       } finally {
         delete process.env.PROJECT_FRONT_URL;
+        delete process.env.CALENDAR_FRONT_URL;
       }
     });
 
@@ -1468,8 +1476,8 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         expectBffContract('get', '/link-suggestions', response);
         expect(response.body).toEqual({
           items: [
-            { id: 'project-12', kind: 'project', title: 'Médiathèque', detail: 'Projet', url: 'https://projets.mairie360.test/projects/12' },
-            { id: 'task-5', kind: 'task', title: 'Devis médiathèque', detail: 'Tâche · Médiathèque', url: 'https://projets.mairie360.test/tasks/5' },
+            { id: 'project-12', kind: 'project', title: 'Médiathèque', detail: 'Projet', url: 'https://projets.mairie360.test/?project=12' },
+            { id: 'task-5', kind: 'task', title: 'Devis médiathèque', detail: 'Tâche · Médiathèque', url: 'https://projets.mairie360.test/?project=12&task=5' },
             { id: 'event-7', kind: 'event', title: 'Inauguration mediatheque', detail: expect.stringMatching(/^Calendrier · /) },
           ],
           sources: { projects: 'available', calendar: 'available' },

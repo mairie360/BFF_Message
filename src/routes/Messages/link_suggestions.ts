@@ -42,7 +42,7 @@ type LinkSuggestion = z.infer<typeof LinkSuggestionsResponse>['items'][number];
 export function toLinkSuggestion(reference: BusinessReference): LinkSuggestion | null {
   const id = Number(/(\d+)$/.exec(reference.id)?.[1]);
   if (!Number.isSafeInteger(id)) return null;
-  const url = businessObjectUrl(reference.kind, id);
+  const url = businessObjectUrl(reference.kind, id, reference.target);
   return {
     id: `${reference.kind}-${id}`,
     kind: reference.kind,
