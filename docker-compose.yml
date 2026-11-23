@@ -106,6 +106,9 @@ services:
       # The APIs, never another BFF (MAIR-525).
       PROJECT_API_URL: ${PROJECT_API_URL:-http://host.docker.internal:3001}
       CALENDAR_API_URL: ${CALENDAR_API_URL:-http://host.docker.internal:3002}
+      # Pages the links of the messages open (MAIR-1166): the Projects and Calendar fronts of the host (their dev ports).
+      PROJECT_FRONT_URL: ${PROJECT_FRONT_URL:-http://localhost:5001}
+      CALENDAR_FRONT_URL: ${CALENDAR_FRONT_URL:-http://localhost:5002}
       # Same development secret as the APIs of the local stacks: the BFF verifies the session tokens with it
       # (bffs-lib requireSession, MAIR-474) and refuses to start without it.
       JWT_SECRET: b"secret"
