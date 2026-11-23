@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import http, { type IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { once } from 'node:events';
@@ -17,6 +18,8 @@ import {
 // cannot describe frames, so its handshake and frames are the ones of the contract document.
 
 const { agent, sophie } = users;
+/** A fresh `Sec-WebSocket-Key` (16 random bytes, base64) for the hand-written handshakes. */
+const handshakeKey = (): string => randomBytes(16).toString('base64');
 const bffContract = OpenApiContract.load(path.join(__dirname, '..', 'contracts', 'openapi.json'));
 /** Short intervals, so liveness and lifetime are tested in milliseconds. */
 const FAST = { pingIntervalMs: 100, pongTimeoutMs: 350, handshakeTimeoutMs: 500, maxLifetimeMs: 60_000 };
@@ -249,7 +252,7 @@ describe('MAIR-658 close codes and lifetime', () => {
 
   test('isWebSocketHandshake requires GET, Upgrade, version 13 and a well-formed key', () => {
     const headers = {
-      upgrade: 'websocket', 'sec-websocket-version': '13', 'sec-websocket-key': 'dGhlIHNhbXBsZSBub25jZQ==',
+      upgrade: 'websocket', 'sec-websocket-version': '13', 'sec-websocket-key': handshakeKey(),
     };
     const req = (overrides: Record<string, string | undefined>, method = 'GET') =>
       ({ method, headers: { ...headers, ...overrides } }) as unknown as IncomingMessage;
@@ -317,7 +320,7 @@ describe('MAIR-658 GET /ws handshake', () => {
         path: '/ws',
         headers: {
           Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Version': '8',
-          'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==', Authorization: authorizationFor(agent.id),
+          'Sec-WebSocket-Key': handshakeKey(), Authorization: authorizationFor(agent.id),
         },
       });
       req.on('response', (res) => resolve(String(res.statusCode)));

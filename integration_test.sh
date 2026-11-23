@@ -31,7 +31,8 @@ echo "==> BFF under test: $IMAGE_REF"
 source ./stack_secrets.sh || exit 1
 JWT_ADMIN="$ADMIN_JWT"
 JWT_AGENT="$(sign_jwt 2 user 3600)" || exit 1
-# User 3: the outsider of the WebSocket journey (tests/websocket/journey.mjs).
+# User 3 (seeded contact): the second member of the messaging V2 journey (MAIR-1154) and the outsider
+# of the WebSocket journey (tests/websocket/journey.mjs).
 JWT_THIRD="$(sign_jwt 3 user 3600)" || exit 1
 JWT_FORGED="$(sign_jwt 1 admin 3600 "$(openssl genpkey -algorithm ed25519 2>/dev/null)")" || exit 1
 export JWT_ADMIN JWT_AGENT JWT_THIRD JWT_FORGED

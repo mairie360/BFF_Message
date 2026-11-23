@@ -239,6 +239,7 @@ services:
       --env-var baseUrl=http://bff-message:4003
       --env-var jwt_admin=${JWT_ADMIN:?JWT_ADMIN must be set, run ./integration_test.sh}
       --env-var jwt_agent=${JWT_AGENT:?JWT_AGENT must be set, run ./integration_test.sh}
+      --env-var jwt_third=${JWT_THIRD:?JWT_THIRD must be set, run ./integration_test.sh}
       --env-var jwt_forged=${JWT_FORGED:?JWT_FORGED must be set, run ./integration_test.sh}
       --timeout-request 30000
       --bail

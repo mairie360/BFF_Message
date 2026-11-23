@@ -15,6 +15,7 @@ Business domain: Instant messaging.
 - Initial loading of the user, contacts, conversations and active conversation messages.
 - Send direct or conversation messages, create groups and delete conversations.
 - Contact search and project, task and event references through `/business-references`.
+- Messaging V2 (MAIR-1154): reply, edit and delete a message, reactions, members of a group (list, add, remove, leave) with their system notes, search in a conversation, `@` and `#` suggestions, and their real-time events.
 
 ## Typical workflow
 
