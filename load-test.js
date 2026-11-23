@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import ws from 'k6/ws';
+import exec from 'k6/execution';
 import { check, sleep } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 import { createCoverage } from '/coverage.js';
@@ -22,10 +23,11 @@ import { createCoverage } from '/coverage.js';
 //   at the end of the iteration.
 // - `reads` (up to 20 VUs): replays only the GET handlers, which read the fixtures seeded by
 //   init-test.sql (conversation 101, message 1001) and never depend on `state`.
-// - `websocket`: the real-time relay under load. Each VU is the listener of its own group (created in
-//   setup() by the seeded user, who posts in it) and holds one socket of GET /ws (WS_SESSION_MS) while
-//   that user posts every WS_POST_EVERY_MS: every post must come back through the BFF as a NEW_MSG
-//   frame, and `ws_frame_delivery` measures the time from the start of the POST to the frame.
+// - `websocket`: the real-time relay under load. Each iteration creates a group of the seeded user
+//   and the VU's own listener, holds one socket of GET /ws (WS_SESSION_MS) as the listener while the
+//   seeded user posts every WS_POST_EVERY_MS, then both leave the group: every post must come back
+//   through the BFF as a NEW_MSG frame, and `ws_frame_delivery` measures the time from the start of
+//   the POST to the frame.
 // Every operation gets a p(95) threshold, whose budget depends on its family (`budgetOf`).
 //
 // MAIR-474: the stack also runs init-perf.sql (Message_API's seed: 2 000 agents in 4 000 group chats and
@@ -67,7 +69,7 @@ const WS_DRAIN_MS = 2000;
 const WS_DELIVERY_BUDGET_MS = 1000;
 // p(95) budget of the handshake, the BFF's session check and the upstream handshake included.
 const WS_CONNECT_BUDGET_MS = 500;
-// The listener of VU n is agent WS_AGENTS.first + n.
+// The listener of VU n (exec.vu.idInTest, unique in the run) is agent WS_AGENTS.first + n.
 const WS_AGENTS = { first: 401001 };
 const wsFrameDelivery = new Trend('ws_frame_delivery', true);
 const wsFramesLost = new Counter('ws_frames_lost');
@@ -379,44 +381,27 @@ export const options = {
   },
 };
 
-const wsListener = (vu) => ({ Authorization: `Bearer ${jwtOf(WS_AGENTS.first + vu)}` });
-
 export function setup() {
-  const user = { Authorization: `Bearer ${jwtOf(USER_ID)}` };
-  // One group per VU of the `websocket` scenario: the seeded user, who posts, and its listener.
-  const wsGroups = {};
-  for (let vu = 1; vu <= WS_VUS; vu += 1) {
-    const created = http.post(
-      coverage.url('POST /groups'),
-      JSON.stringify({ name: `k6 websocket ${vu}`, description: 'k6 websocket', memberIds: [`user-${WS_AGENTS.first + vu}`] }),
-      { headers: Object.assign({ 'Content-Type': 'application/json' }, user), tags: { op: 'fixture' } },
-    );
-    const id = conversationIdOf(created);
-    if (created.status !== 201 || !id) throw new Error(`setup: POST /groups answered ${created.status}: ${created.body}`);
-    wsGroups[vu] = id;
-  }
-  return { user, wsGroups };
-}
-
-// The websocket groups are deleted once their two members left.
-export function teardown(data) {
-  for (const [vu, conversationId] of Object.entries(data.wsGroups)) {
-    for (const headers of [data.user, wsListener(Number(vu))]) {
-      http.del(coverage.url('DELETE /conversations/{conversationId}', { conversationId }), null, { headers, tags: { op: 'fixture' } });
-    }
-  }
+  return { user: { Authorization: `Bearer ${jwtOf(USER_ID)}` } };
 }
 
 /**
- * One socket of GET /ws held WS_SESSION_MS by the listener of the VU's group while the seeded user
- * posts in it. A post is pending until its NEW_MSG frame arrives; one still pending WS_DRAIN_MS
- * after the last post is lost. Frames are handled once the POST returned (one event loop per VU),
- * so the delivery time is measured from the start of the POST.
+ * A group of the seeded user and the VU's listener, one socket of GET /ws held WS_SESSION_MS by the
+ * listener while the seeded user posts in the group, then both leave it (deleted with its last
+ * member). A post is pending until its NEW_MSG frame arrives; one still pending WS_DRAIN_MS after the
+ * last post is lost. Frames are handled once the POST returned (one event loop per VU), so the
+ * delivery time is measured from the start of the POST. The listener is a member of seeded chats
+ * too: only the frames of this group are checked.
  */
 export function websocket(data) {
-  // Scenario VU numbers start at 1 and stay within WS_VUS (constant-vus).
-  const vu = ((__VU - 1) % WS_VUS) + 1;
-  const conversationId = data.wsGroups[vu];
+  const listener = { Authorization: `Bearer ${jwtOf(WS_AGENTS.first + exec.vu.idInTest)}` };
+  const created = http.post(
+    coverage.url('POST /groups'),
+    JSON.stringify({ name: unique('k6 websocket'), description: 'k6 websocket', memberIds: [`user-${WS_AGENTS.first + exec.vu.idInTest}`] }),
+    { headers: Object.assign({ 'Content-Type': 'application/json' }, data.user), tags: { op: 'fixture' } },
+  );
+  const conversationId = conversationIdOf(created);
+  if (!check(created, { 'ws group created': (r) => r.status === 201 && Boolean(conversationId) })) return;
   const pending = {};
   let posts = 0;
   let closing = false;
@@ -424,11 +409,12 @@ export function websocket(data) {
   let unexpected = 0;
   const res = ws.connect(
     coverage.url('GET /ws').replace(/^http/, 'ws'),
-    { headers: wsListener(vu), tags: { op: 'ws_session' } },
+    { headers: listener, tags: { op: 'ws_session' } },
     (socket) => {
       socket.on('message', (raw) => {
         const frame = JSON.parse(raw);
-        const startedAt = frame.type === 'NEW_MSG' && frame.conversationId === conversationId ? pending[frame.messageId] : undefined;
+        if (frame.conversationId !== conversationId) return;
+        const startedAt = frame.type === 'NEW_MSG' ? pending[frame.messageId] : undefined;
         if (startedAt === undefined) {
           unexpected += 1;
           return;
@@ -445,7 +431,9 @@ export function websocket(data) {
         const post = http.post(
           coverage.url('POST /conversations/{conversationId}/messages', { conversationId }),
           JSON.stringify({ content: `k6 websocket ${posts}` }),
-          { headers: Object.assign({ 'Content-Type': 'application/json' }, data.user), tags: { op: 'ws_post' } },
+          // A fresh connection per post: between two iterations the keep-alive connection idles past
+          // Node's 5 s keepAliveTimeout, and reusing it as the server closes it resets the POST.
+          { headers: Object.assign({ 'Content-Type': 'application/json', Connection: 'close' }, data.user), tags: { op: 'ws_post' } },
         );
         posts += 1;
         const id = (json(post) || { message: {} }).message.id;
@@ -454,13 +442,16 @@ export function websocket(data) {
       socket.setTimeout(() => { closing = true; socket.close(); }, WS_SESSION_MS + WS_DRAIN_MS);
     },
   );
+  for (const headers of [data.user, listener]) {
+    http.del(coverage.url('DELETE /conversations/{conversationId}', { conversationId }), null, { headers, tags: { op: 'fixture' } });
+  }
   const lost = Object.keys(pending).length;
   wsFramesLost.add(lost);
   check(res, {
     'ws upgraded': (r) => r && r.status === 101,
     'ws stays open': () => !closedByServer,
     'ws every post delivered': () => posts > 0 && lost === 0,
-    'ws only the group signals': () => unexpected === 0,
+    'ws no unknown signal of the group': () => unexpected === 0,
   });
 }
 

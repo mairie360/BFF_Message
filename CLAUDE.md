@@ -254,11 +254,12 @@ family (`budgetOf`). In `crud`, handlers run path by path in contract order and,
 get → put → post → delete → patch: `DELETE /conversations/{id}` runs before `POST /groups`, so it
 creates the group it deletes, and `cleanup()` deletes the group and direct conversation the
 iteration kept. `POST /attachments` is sent as a hand-built multipart string body. The `websocket`
-scenario (MAIR-661, `wsVus` of the profile: 20 in `ci`, 200 in `stress`, for 2 min from 30 s) gives each VU
-its own group created in `setup()` by user 2 with agent `401001 + n` (both leave it in `teardown()`): the agent
-holds one socket of `GET /ws` for 20 s while user 2 posts in the group every 2 s (`op:ws_post`, 500 ms `p(95)`);
-the checks want the `101`, no server close, every post back as a `NEW_MSG` frame of that group and no other
-frame; `ws_frame_delivery` (start of the `POST` → frame) has a 1 s `p(95)`, `ws_frames_lost == 0`,
+scenario (MAIR-661, `wsVus` of the profile: 20 in `ci`, 200 in `stress`, for 2 min from 30 s) creates, each
+iteration, a group of user 2 and agent `401001 + exec.vu.idInTest` (unique per VU), whose socket of `GET /ws` stays
+open 20 s while user 2 posts in the group every 2 s (`op:ws_post`, 500 ms `p(95)`, `Connection: close`: a keep-alive
+connection idling past Node's 5 s `keepAliveTimeout` between iterations was reset), then both leave the group; the
+checks want the `101`, no server close, every post back as a `NEW_MSG` frame of that group and no unknown frame of
+it (frames of the agent's seeded chats are ignored); `ws_frame_delivery` (start of the `POST` → frame) has a 1 s `p(95)`, `ws_frames_lost == 0`,
 `ws_connecting{scenario:websocket}` a 500 ms `p(95)`.
 
 MAIR-474: both scripts source `stack_secrets.sh` (a fresh Ed25519 key pair per run, `ADMIN_JWT` for the ZAP replacer;
