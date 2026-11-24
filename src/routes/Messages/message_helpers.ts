@@ -5,6 +5,7 @@ import type { z } from 'zod';
 import type { CallContext } from '../../clients/context';
 import messageClient from '../../clients/messageClient';
 import { getContactUser, listContacts, listContactsByIds, readCallerRoles } from '../../clients/coreClient';
+import { linkKey, readLinkTitles } from './link_titles';
 import type {
   ChatView,
   GetChatParams,
@@ -257,11 +258,12 @@ function mapChatToConversation(chat: ChatSummary, lastMessage?: Pick<MessageView
 
 /**
  * Names a message refers to (MAIR-1154): agents by Core API id (the members of the conversation, completed with the
- * directory for the former members a page refers to) and groups by id (the groups of the members).
+ * directory for the former members a page refers to), groups by id (the groups of the members), and the titles of the
+ * projects, tasks and events the messages link to, by `linkKey` (those the caller may read).
  */
-export type NameBook = { users: Map<number, string>; groups: Map<number, string> };
+export type NameBook = { users: Map<number, string>; groups: Map<number, string>; links: Map<string, string> };
 
-const emptyNames = (): NameBook => ({ users: new Map(), groups: new Map() });
+const emptyNames = (): NameBook => ({ users: new Map(), groups: new Map(), links: new Map() });
 
 function fullName(user: { first_name?: string | null; last_name?: string | null }): string {
   return [user.first_name, user.last_name].filter((part): part is string => Boolean(part?.trim())).join(' ');
@@ -327,12 +329,13 @@ export function businessObjectUrl(kind: LinkKind, id: number, target: LinkTarget
   return `${base}/?${query.toString()}`;
 }
 
-function mapLink(link: MessageLinkView): BffMessageLink {
+function mapLink(link: MessageLinkView, titles: Map<string, string>): BffMessageLink {
   const url = businessObjectUrl(link.kind, link.id, {
     ...(link.project_id != null ? { projectId: link.project_id } : {}),
     ...(link.start != null ? { start: link.start } : {}),
   });
-  return { id: `${link.kind}-${link.id}`, kind: link.kind, ...(url ? { url } : {}) };
+  const title = titles.get(linkKey(link));
+  return { id: `${link.kind}-${link.id}`, kind: link.kind, ...(title ? { title } : {}), ...(url ? { url } : {}) };
 }
 
 /** Reactions with the caller's own and the names of who reacted (the names the book knows). */
@@ -408,7 +411,7 @@ function mapMessageToDto(
       const name = names.groups.get(id);
       return { id: publicGroupId(id), ...(name ? { name } : {}) };
     }),
-    links: (message.links ?? []).map(mapLink),
+    links: (message.links ?? []).map((link) => mapLink(link, names.links)),
     reactions: mapReactions(message.reactions ?? [], currentUserId, names),
   };
 }
@@ -416,22 +419,25 @@ function mapMessageToDto(
 /**
  * The names `messages` refer to: the members' (`users`), completed with ONE directory read for the other agents they
  * name (former members), and the groups of the members when a message mentions one (ONE Message API read). Both reads
- * only happen when needed, and a failure only leaves the names out: a page is never refused for a name.
+ * only happen when needed, and a failure only leaves the names out: a page is never refused for a name. The titles of
+ * the linked objects are read in the same wave (`readLinkTitles`, one read per distinct object, never rejects).
  */
 async function nameBook(chatId: number, users: ChatUser[], messages: UpstreamMessage[], context: CallContext): Promise<NameBook> {
   const known = memberNames(users);
   const missing = [...new Set(messages.flatMap(referencedUserIds))].filter((id) => !known.has(id));
   const groupIds = new Set(messages.flatMap((message) => message.group_mentions ?? []));
   const quiet: CallContext = { req: context.req, declared: [] };
-  const [directory, groups] = await Promise.all([
+  const links = messages.flatMap((message) => (message.deleted ? [] : message.links ?? []));
+  const [directory, groups, titles] = await Promise.all([
     missing.length === 0 ? [] : listContactsByIds(missing, quiet).catch(() => []),
     groupIds.size === 0 ? [] : listMentionGroups(chatId, undefined, quiet).catch(() => []),
+    links.length === 0 ? new Map<string, string>() : readLinkTitles(context.req, links),
   ]);
   for (const user of directory) {
     const name = fullName(user);
     if (name && !known.has(user.id)) known.set(user.id, name);
   }
-  return { users: known, groups: new Map(groups.map((group) => [group.id, group.name])) };
+  return { users: known, groups: new Map(groups.map((group) => [group.id, group.name])), links: titles };
 }
 
 /** The groups at least one member of the chat belongs to, whose name contains `q` (at most 20, Message API). */
@@ -853,7 +859,7 @@ export async function deleteMessage(
   ]);
   const tombstone: UpstreamMessage = changes?.messages.find((message) => message.id === id)
     ?? { id, content: '', created_at: new Date().toISOString(), deleted: true };
-  const names = { users: memberNames(users), groups: new Map<number, string>() };
+  const names = { users: memberNames(users), groups: new Map<number, string>(), links: new Map<string, string>() };
   return { message: mapMessageToDto(publicChatId(chatId), { ...tombstone, deleted: true }, callerId(context), names) };
 }
 

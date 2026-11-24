@@ -9,10 +9,12 @@ import type {
 import { getCoreAPIMairie360 } from '@mairie360/core-api-openapi/endpoints/coreAPIMairie360';
 import type { DirectoryUser, DirectoryUsersResultView } from '@mairie360/core-api-openapi/model';
 import { getCalendarAPIMairie360 } from '@mairie360/calendar-api-openapi/endpoints/calendarAPIMairie360';
-import { EventCategory, EventVisibility, type EventView, type GetCalendarResultView } from '@mairie360/calendar-api-openapi/model';
+import {
+  ApprovalStatus, EventCategory, EventVisibility, type EventView, type GetCalendarResultView, type GetEventResultView,
+} from '@mairie360/calendar-api-openapi/model';
 import { getProjectAPIMairie360 } from '@mairie360/project-api-openapi/endpoints/projectAPIMairie360';
 import {
-  type GetProjectsResultView, type GetTasksResultView, type ProjectListItemView, ProjectStatus, TaskPriority, TaskStatus, type TaskView,
+  type GetProjectResultView, type GetProjectsResultView, type GetTasksResultView, type ProjectListItemView, ProjectStatus, TaskPriority, TaskStatus, type TaskView,
 } from '@mairie360/project-api-openapi/model';
 import type { ContactUser } from '../../src/clients/coreClient';
 
@@ -154,6 +156,14 @@ export function taskView(id: number, overrides: Partial<TaskView> = {}): TaskVie
 
 export const tasksResult = (tasks: TaskView[]): GetTasksResultView => ({ tasks, total: tasks.length });
 
+/** One project of `GET /api/v1/projects/{projectId}` (detail view): the BFF reads its `name` as the title of a link. */
+export function projectResult(id: number, name = `Projet ${id}`): GetProjectResultView {
+  return {
+    project: { id, name, description: '', priority: TaskPriority.Medium, status: ProjectStatus.Active },
+    tasks: [], tasks_archived: 0, tasks_total: 0, users: [], users_total: 0,
+  };
+}
+
 // --- Calendar API (@mairie360/calendar-api-openapi), read directly since MAIR-525 ---
 
 /** An event of `GET /api/v1/calendar` (list view, with its members since MAIR-524). `start` / `end` are UTC instants. */
@@ -166,6 +176,15 @@ export function eventView(id: number, overrides: Partial<EventView> = {}): Event
 }
 
 export const calendarResult = (events: EventView[]): GetCalendarResultView => ({ events });
+
+/** One event of `GET /api/v1/events/{eventId}` (detail view): the BFF reads its `name` as the title of a link. */
+export function eventResult(id: number, name = `Événement ${id}`): GetEventResultView {
+  return {
+    id, name, approval_status: ApprovalStatus.approved, category: EventCategory.meeting, visibility: EventVisibility.Public,
+    events_start_time: '2026-09-08T08:00:00Z', events_end_time: '2026-09-08T09:00:00Z', members: [],
+    permissions: { can_delete: false, can_edit: false, can_validate: false },
+  };
+}
 
 /** The historical shared secret (MAIR-680): the BFF no longer gets it, so a token signed with it must be refused. */
 export const JWT_SECRET = 'message-contract-test-secret';

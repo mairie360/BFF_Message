@@ -19,7 +19,7 @@ import { OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract } from './support/orval-contract';
 import {
   authorizationFor, calendarApiUrls, calendarResult, eventView, chatResult, chatUsers, chatView, chatsResult, coreApiUrls,
-  directChatView, acknowledgeReadResult, createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectApiUrls,
+  directChatView, acknowledgeReadResult, createChatResult, directoryUsers, messageApiUrls, messageView, postMessageResult, projectApiUrls, projectResult, eventResult,
   projectListItem, projectsResult, sessionToken, systemNoteView, taskView, tasksResult, tokenFor, users,
 } from './support/upstream-fixtures';
 import { MAX_PROJECT_DETAILS, PROJECTS_PAGE_LIMIT } from '../src/routes/Messages/business_references';
@@ -50,8 +50,11 @@ const MESSAGE_API = {
   health: '/health',
 } as const;
 const CORE_API = { directory: '/api/v1/user/', me: '/api/v1/user/me/', health: '/health' } as const;
-const PROJECT_API = { projects: '/api/v1/projects/', tasks: '/api/v1/projects/{projectId}/tasks/' } as const;
-const CALENDAR_API = { calendar: '/api/v1/calendar' } as const;
+const PROJECT_API = {
+  projects: '/api/v1/projects/', tasks: '/api/v1/projects/{projectId}/tasks/',
+  project: '/api/v1/projects/{projectId}/', task: '/api/v1/projects/{projectId}/tasks/{taskId}/',
+} as const;
+const CALENDAR_API = { calendar: '/api/v1/calendar', event: '/api/v1/events/{eventId}/' } as const;
 
 let app: Express;
 
@@ -596,6 +599,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
     });
 
     test('MAIR-1181 POST /direct-messages forwards the links of a message sent from a project with the post', async () => {
+      projectApi.on('get', PROJECT_API.project, { body: projectResult(12, 'Médiathèque') });
       mockMessageApi({
         chats: [directChatView(21, sophie.id, 'Sophie Leroy')], messages: { 21: [] }, members: { 21: [agent.id, sophie.id] },
         directChatId: 21, postedMessageId: 50,
@@ -610,7 +614,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expect(messageApi.calls(MESSAGE_API.direct).map((call) => call.body)).toEqual([{ contact_id: sophie.id }]);
       expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => [call.url.pathname, call.body]))
         .toEqual([[messageApiUrls.getPostMessageUrl(21), { content: 'Peux-tu relire ce projet ?', links: [{ kind: 'project', id: 12 }] }]]);
-      expect(response.body.message).toMatchObject({ id: 'message-50', conversationId: 'conversation-21', links: [{ id: 'project-12', kind: 'project' }] });
+      expect(response.body.message).toMatchObject({ id: 'message-50', conversationId: 'conversation-21', links: [{ id: 'project-12', kind: 'project', title: 'Médiathèque' }] });
     });
 
     test('MAIR-1181 POST /direct-messages refuses an invalid link before calling Message API', async () => {
@@ -1231,6 +1235,9 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         members: { 4: [agent.id, sophie.id] },
       });
       messageApi.on('get', MESSAGE_API.mentionGroups, { body: { groups: [{ id: 3, name: 'Urbanisme' }] } });
+      projectApi.on('get', PROJECT_API.project, { body: projectResult(12, 'Médiathèque') });
+      projectApi.on('get', PROJECT_API.task, { body: taskView(6, { title: 'Devis toiture' }) });
+      calendarApi.on('get', CALENDAR_API.event, { status: 404, raw: 'not found', contentType: 'text/plain', outOfContract: true });
       process.env.PROJECT_FRONT_URL = 'https://projets.mairie360.test/';
       process.env.CALENDAR_FRONT_URL = 'https://agenda.mairie360.test';
       try {
@@ -1245,13 +1252,17 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
           groupMentions: [{ id: 'group-3', name: 'Urbanisme' }],
           // MAIR-1166: the pages of the fronts; a task without its project gets no URL, an event opens on its Paris day.
           links: [
-            { id: 'project-12', kind: 'project', url: 'https://projets.mairie360.test/?project=12' },
-            { id: 'task-6', kind: 'task', url: 'https://projets.mairie360.test/?project=12&task=6' },
+            { id: 'project-12', kind: 'project', title: 'Médiathèque', url: 'https://projets.mairie360.test/?project=12' },
+            { id: 'task-6', kind: 'task', title: 'Devis toiture', url: 'https://projets.mairie360.test/?project=12&task=6' },
             { id: 'task-8', kind: 'task' },
             { id: 'event-5', kind: 'event', url: 'https://agenda.mairie360.test/?date=2026-10-01&event=5' },
           ],
           reactions: [{ emoji: '👍', count: 2, reactedByMe: true, userNames: ['Agent Test', 'Thomas Bernard'] }],
         });
+        // The event (404) keeps its link without a title; the task without its project is not read.
+        expect(tagged.links[2]).not.toHaveProperty('title');
+        expect(tagged.links[3]).not.toHaveProperty('title');
+        expect(projectApi.calls(PROJECT_API.task).map((call) => call.pathParams)).toEqual([{ projectId: '12', taskId: '6' }]);
         expect(note).toMatchObject({
           kind: 'system', content: '',
           systemEvent: { action: 'member_removed', actorId: 'user-7', actorName: 'Agent Test', userIds: ['user-9'], userNames: ['Thomas Bernard'] },
@@ -1264,9 +1275,61 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       }
     });
 
+    test('mair_1202 the links of a page carry the title of each object the caller may read, read once and in one wave', async () => {
+      mockMessageApi({
+        chats: [chatView(4, 'Équipe communication', 0, 2)],
+        messages: { 4: [
+          messageView(41, sophie.id, { links: [{ kind: 'project', id: 12 }, { kind: 'task', id: 6, project_id: 12 }, { kind: 'event', id: 5 }] }),
+          messageView(42, agent.id, { links: [{ kind: 'project', id: 12 }, { kind: 'project', id: 13 }] }),
+          messageView(43, agent.id, { deleted: true, content: '', links: [{ kind: 'project', id: 14 }] }),
+        ] },
+        members: { 4: [agent.id, sophie.id] },
+      });
+      projectApi.on('get', PROJECT_API.project, ({ pathParams }) => (pathParams.projectId === '12'
+        ? { body: projectResult(12, 'Médiathèque') }
+        : { status: 403, raw: 'forbidden', contentType: 'text/plain', outOfContract: true }));
+      projectApi.on('get', PROJECT_API.task, { body: taskView(6, { title: 'Devis toiture' }) });
+      calendarApi.on('get', CALENDAR_API.event, { body: eventResult(5, 'Conseil municipal') });
+
+      const response = await request(app).get('/conversations/4/messages').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/conversations/4/messages', response);
+      const [first, second] = response.body.messages;
+      expect(first.links).toEqual([
+        { id: 'project-12', kind: 'project', title: 'Médiathèque' },
+        { id: 'task-6', kind: 'task', title: 'Devis toiture' },
+        { id: 'event-5', kind: 'event', title: 'Conseil municipal' },
+      ]);
+      // Project 13 is refused to the caller: its link stays, without a title, and the page answers.
+      expect(second.links).toEqual([{ id: 'project-12', kind: 'project', title: 'Médiathèque' }, { id: 'project-13', kind: 'project' }]);
+      // Project 12, linked twice, is read once; the link of a deleted message is not read.
+      expect(projectApi.calls(PROJECT_API.project).map((call) => call.pathParams.projectId).sort()).toEqual(['12', '13']);
+      expect(projectApi.calls(PROJECT_API.task)).toHaveLength(1);
+      expect(calendarApi.calls(CALENDAR_API.event)).toHaveLength(1);
+      expect([...projectApi.requests, ...calendarApi.requests].every((call) => call.headers.authorization === auth())).toBe(true);
+    });
+
+    test('mair_1202 a business API down leaves the links without a title and the page answers', async () => {
+      mockMessageApi({
+        chats: [chatView(4)],
+        messages: { 4: [messageView(41, sophie.id, { links: [{ kind: 'project', id: 12 }, { kind: 'event', id: 5 }] })] },
+        members: { 4: [agent.id, sophie.id] },
+      });
+      projectApi.on('get', PROJECT_API.project, { dropConnection: true });
+      calendarApi.on('get', CALENDAR_API.event, { status: 500, raw: 'boom', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).get('/conversations/4/messages').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/conversations/4/messages', response);
+      expect(response.body.messages[0].links).toEqual([{ id: 'project-12', kind: 'project' }, { id: 'event-5', kind: 'event' }]);
+    });
+
     test('POST /conversations/:id/messages forwards replyTo and the tags as Message API names them', async () => {
       mockMessageApi({ chats: [chatView(4)], messages: { 4: [] }, members: { 4: [agent.id, sophie.id] }, postedMessageId: 50 });
       messageApi.on('get', MESSAGE_API.mentionGroups, { body: { groups: [{ id: 3, name: 'Urbanisme' }] } });
+      projectApi.on('get', PROJECT_API.project, { body: projectResult(12, 'Médiathèque') });
 
       const response = await request(app).post('/conversations/conversation-4/messages').set('Authorization', auth()).send({
         content: 'Voir le projet', replyTo: 'message-41', mentionIds: ['user-8'], mentionEveryone: false,
@@ -1281,7 +1344,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       });
       expect(response.body.message).toMatchObject({
         id: 'message-50', citation: 'message-41', mentions: [{ id: 'user-8', name: 'Sophie Leroy' }],
-        groupMentions: [{ id: 'group-3', name: 'Urbanisme' }], links: [{ id: 'project-12', kind: 'project' }, { id: 'task-5', kind: 'task' }],
+        groupMentions: [{ id: 'group-3', name: 'Urbanisme' }], links: [{ id: 'project-12', kind: 'project', title: 'Médiathèque' }, { id: 'task-5', kind: 'task' }],
       });
     });
 

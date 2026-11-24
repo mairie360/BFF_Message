@@ -115,7 +115,9 @@ Inventaire extrait de `contracts/openapi.json`. Les paramètres entre accolades 
 - **Messages** : `kind` (`user` / `system`), `systemEvent` (notes système : `members_added`, `member_removed`,
   `member_left`, avec l’auteur, les agents concernés et leurs noms), `editedAt`, `deleted`, de vraies `mentions`
   (`{ id, name }`), `mentionsEveryone`, `groupMentions` (`{ id: 'group-<n>', name }`), `links`
-  (`{ id: 'project-<n>' | 'task-<n>' | 'event-<n>', kind, url? }`) et `reactions` (`{ emoji, count, reactedByMe, userNames }`).
+  (`{ id: 'project-<n>' | 'task-<n>' | 'event-<n>', kind, title?, url? }` : `title` est lu auprès de Project API /
+  Calendar API avec le jeton de l’appelant, une lecture par objet distinct de la réponse, 50 au plus, en une vague de 5 ;
+  absent quand l’appelant ne peut pas lire l’objet, qu’il n’existe plus ou que son API échoue) et `reactions` (`{ emoji, count, reactedByMe, userNames }`).
   Les noms viennent des membres de la conversation ; les agents qui n’en sont plus membres sont lus en UN appel à
   l’annuaire de Core API, et les groupes mentionnés en UN appel à Message API, seulement si nécessaire : un échec
   n’enlève que les noms.
