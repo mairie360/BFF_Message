@@ -67,17 +67,22 @@ export function jitteredLifetime(maxMs: number, random: () => number = Math.rand
   return Math.round(maxMs * (0.9 + 0.2 * random()));
 }
 
+/** Signal types relayed to the client; any other upstream type is dropped. */
+const SIGNAL_TYPES = ['NEW_MSG', 'MSG_EDITED', 'MSG_DELETED', 'CHAT_READ', 'MENTIONED'] as const;
+
 /** One frame of the WebSocket: something happened in a conversation. */
 export const MessageRealtimeEventSchema = registry.register('MessageRealtimeEvent', z.object({
-  type: z.enum(['NEW_MSG', 'MSG_EDITED', 'MSG_DELETED', 'CHAT_READ']).openapi({
-    description: 'What happened: a message posted, edited or deleted by someone else, or the caller acknowledged the '
-      + 'conversation (on another tab or device). Ignore an unknown type: new ones may be added.',
+  type: z.enum(SIGNAL_TYPES).openapi({
+    description: 'What happened: a message posted, edited or deleted by someone else, the caller acknowledged the '
+      + 'conversation (on another tab or device), or a message posted or edited by someone else mentions the caller '
+      + '(`MENTIONED`, by id, `@everyone` or a group, sent besides `NEW_MSG` / `MSG_EDITED`, always with `messageId`; '
+      + 'an edit only signals the members it newly mentions). Ignore an unknown type: new ones may be added.',
     example: 'NEW_MSG',
   }),
   conversationId: z.string().openapi({ description: 'Conversation concerned', example: 'conversation-5' }),
   messageId: z.string().optional().openapi({
-    description: 'Message concerned (for `CHAT_READ`, the last message read); absent from a signal of an older Message '
-      + 'API replica',
+    description: 'Message concerned (for `CHAT_READ`, the last message read; for `MENTIONED`, the message that mentions '
+      + 'the caller, always present); absent from a signal of an older Message API replica',
     example: 'message-118',
   }),
   unreadCount: z.number().int().nonnegative().optional().openapi({
@@ -89,7 +94,7 @@ export const MessageRealtimeEventSchema = registry.register('MessageRealtimeEven
 export type MessageRealtimeEvent = z.infer<typeof MessageRealtimeEventSchema>;
 
 const UpstreamSignal = z.object({
-  type: z.enum(['NEW_MSG', 'MSG_EDITED', 'MSG_DELETED', 'CHAT_READ']),
+  type: z.enum(SIGNAL_TYPES),
   chat_id: z.number().int().nonnegative(),
   message_id: z.number().int().nonnegative().optional(),
   unread_count: z.number().int().nonnegative().optional(),
@@ -97,7 +102,8 @@ const UpstreamSignal = z.object({
 
 /**
  * One text frame of Message API (`ChatSignal`) turned into the BFF's (`MessageRealtimeEvent`), or `null` to drop it:
- * only the four types of the contract are relayed, anything unparsable or unknown is dropped.
+ * only the five types of the contract are relayed, anything unparsable or unknown is dropped, and so is a
+ * `MENTIONED` without `message_id` (the client tells one mention from another by it).
  */
 export function translateFrame(frame: string): string | null {
   let signal: z.infer<typeof UpstreamSignal>;
@@ -106,6 +112,7 @@ export function translateFrame(frame: string): string | null {
   } catch {
     return null;
   }
+  if (signal.type === 'MENTIONED' && signal.message_id === undefined) return null;
   const event: MessageRealtimeEvent = { type: signal.type, conversationId: `conversation-${signal.chat_id}` };
   if (signal.message_id !== undefined) event.messageId = `message-${signal.message_id}`;
   if (signal.type === 'CHAT_READ' && signal.unread_count !== undefined) event.unreadCount = signal.unread_count;

@@ -4568,7 +4568,7 @@ export interface paths {
         head?: never;
         /**
          * Edit a message
-         * @description The author edits the content of their message (administrators included: nobody edits someone else's message). Each tag field present (`mentionIds`, `mentionEveryone`, `groupMentionIds`, `links`) replaces those tags; an absent one keeps them. The answer carries `editedAt`. The other members get a `MSG_EDITED` stream event, and a newly mentioned member a `mentioned` one.
+         * @description The author edits the content of their message (administrators included: nobody edits someone else's message). Each tag field present (`mentionIds`, `mentionEveryone`, `groupMentionIds`, `links`) replaces those tags; an absent one keeps them. The answer carries `editedAt`. The other members get a `MSG_EDITED` stream event, and a newly mentioned member a `MENTIONED` one.
          */
         patch: {
             parameters: {
@@ -9183,18 +9183,18 @@ export interface components {
         };
         MessageRealtimeEvent: {
             /**
-             * @description What happened: a message posted, edited or deleted by someone else, or the caller acknowledged the conversation (on another tab or device). Ignore an unknown type: new ones may be added.
+             * @description What happened: a message posted, edited or deleted by someone else, the caller acknowledged the conversation (on another tab or device), or a message posted or edited by someone else mentions the caller (`MENTIONED`, by id, `@everyone` or a group, sent besides `NEW_MSG` / `MSG_EDITED`, always with `messageId`; an edit only signals the members it newly mentions). Ignore an unknown type: new ones may be added.
              * @example NEW_MSG
              * @enum {string}
              */
-            type: "NEW_MSG" | "MSG_EDITED" | "MSG_DELETED" | "CHAT_READ";
+            type: "NEW_MSG" | "MSG_EDITED" | "MSG_DELETED" | "CHAT_READ" | "MENTIONED";
             /**
              * @description Conversation concerned
              * @example conversation-5
              */
             conversationId: string;
             /**
-             * @description Message concerned (for `CHAT_READ`, the last message read); absent from a signal of an older Message API replica
+             * @description Message concerned (for `CHAT_READ`, the last message read; for `MENTIONED`, the message that mentions the caller, always present); absent from a signal of an older Message API replica
              * @example message-118
              */
             messageId?: string;

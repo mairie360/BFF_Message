@@ -106,7 +106,7 @@ registry.registerPath({
     summary: 'Edit a message',
     description: 'The author edits the content of their message (administrators included: nobody edits someone else\'s message). '
         + 'Each tag field present (`mentionIds`, `mentionEveryone`, `groupMentionIds`, `links`) replaces those tags; an absent one keeps them. '
-        + 'The answer carries `editedAt`. The other members get a `MSG_EDITED` stream event, and a newly mentioned member a `mentioned` one.',
+        + 'The answer carries `editedAt`. The other members get a `MSG_EDITED` stream event, and a newly mentioned member a `MENTIONED` one.',
     request: {
         params: EditedMessageParams,
         body: { required: true, content: { 'application/json': { schema: EditMessageBody } } },

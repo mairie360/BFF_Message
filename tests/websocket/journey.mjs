@@ -7,9 +7,12 @@
 // 1. A, B and C connect: each handshake is upgraded.
 // 2. A creates a group with B, C stays outside. A posts: B receives NEW_MSG with the BFF's
 //    conversation and message ids, A (the author) and C (not a member) receive nothing.
-// 3. B opens 5 more connections: Message API evicts the oldest one and the BFF relays its 4008. A
+// 3. A posts a message mentioning B: B receives NEW_MSG then MENTIONED with the same ids, once each (Message API
+//    publishes them in that order),
+//    A (the author) and C (not a member) receive nothing. A edits it without a new mention: no MENTIONED.
+// 4. B opens 5 more connections: Message API evicts the oldest one and the BFF relays its 4008. A
 //    posts again: the 5 live connections of B all receive NEW_MSG.
-// 4. A and B leave the group (deleted with its last member) and every socket is closed.
+// 5. A and B leave the group (deleted with its last member) and every socket is closed.
 //
 // Exit code 0 when every check passed, 1 otherwise.
 
@@ -92,6 +95,10 @@ async function api(user, method, path, body) {
 
 const newMsg = (conversationId, messageId) => (frame) =>
   frame.type === 'NEW_MSG' && frame.conversationId === conversationId && frame.messageId === messageId;
+const mentioned = (conversationId, messageId) => (frame) =>
+  frame.type === 'MENTIONED' && frame.conversationId === conversationId && frame.messageId === messageId;
+const editedMsg = (conversationId, messageId) => (frame) =>
+  frame.type === 'MSG_EDITED' && frame.conversationId === conversationId && frame.messageId === messageId;
 
 async function main() {
   for (const [name, user] of Object.entries(USERS)) {
@@ -125,6 +132,42 @@ async function main() {
   check('B receives the signal once', b.frames.filter(newMsg(chat.id, message.id)).length === 1, JSON.stringify(b.frames));
   // A silent socket only proves the filtering while it is still open.
   check('A and C are still connected', [a, c].every(isOpen), `close codes ${a.closeCode} ${c.closeCode}`);
+
+  console.log('MAIR-1182 The mentioned member receives MENTIONED once, besides NEW_MSG');
+  [a, b, c].forEach((conn) => conn.frames.splice(0));
+  const { message: mention } = await api(USERS.A, 'POST', `/conversations/${chat.id}/messages`, {
+    content: 'Bonjour @B', mentionIds: [`user-${USERS.B.id}`],
+  });
+  const alerted = await waitFor(
+    b,
+    (conn) => conn.frames.some(newMsg(chat.id, mention.id)) && conn.frames.some(mentioned(chat.id, mention.id)),
+    DELIVERY_MS,
+  );
+  check('B receives NEW_MSG and MENTIONED {conversationId, messageId} of the message', alerted, JSON.stringify(b.frames));
+  const mentionFrame = b.frames.find(mentioned(chat.id, mention.id));
+  check(
+    'MENTIONED carries only type, conversationId and messageId',
+    mentionFrame !== undefined && Object.keys(mentionFrame).sort().join(',') === 'conversationId,messageId,type',
+    JSON.stringify(mentionFrame),
+  );
+  await sleep(SILENCE_MS);
+  check('B receives MENTIONED once', b.frames.filter(mentioned(chat.id, mention.id)).length === 1, JSON.stringify(b.frames));
+  check(
+    'B receives NEW_MSG before MENTIONED',
+    b.frames.findIndex(newMsg(chat.id, mention.id)) < b.frames.findIndex(mentioned(chat.id, mention.id)),
+    JSON.stringify(b.frames),
+  );
+  check('B receives NEW_MSG of the mention once', b.frames.filter(newMsg(chat.id, mention.id)).length === 1, JSON.stringify(b.frames));
+  check('A, the author, receives no MENTIONED', !a.frames.some((frame) => frame.type === 'MENTIONED'), JSON.stringify(a.frames));
+  check('C, not a member, receives nothing', c.frames.length === 0, JSON.stringify(c.frames));
+
+  console.log('MAIR-1182 An edit that keeps the same mention signals no new MENTIONED');
+  b.frames.splice(0);
+  await api(USERS.A, 'PATCH', `/conversations/${chat.id}/messages/${mention.id}`, { content: 'Bonjour encore @B' });
+  const edited = await waitFor(b, (conn) => conn.frames.some(editedMsg(chat.id, mention.id)), DELIVERY_MS);
+  check('B receives MSG_EDITED of the message', edited, JSON.stringify(b.frames));
+  await sleep(SILENCE_MS);
+  check('B receives no new MENTIONED for the edit', !b.frames.some((frame) => frame.type === 'MENTIONED'), JSON.stringify(b.frames));
 
   console.log(`MAIR-661 A ${MAX_CONNECTIONS + 1}th connection evicts the oldest with ${EVICTED}`);
   const others = [];
