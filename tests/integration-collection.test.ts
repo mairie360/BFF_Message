@@ -6,7 +6,7 @@ import { join } from 'node:path';
 // asserts nothing, fails here instead of silently shrinking the gate.
 
 type Script = { listen: string; script?: { exec?: string[] } };
-type Request = { method: string; url: { raw: string; host?: string[]; path?: string[] } };
+type Request = { method: string; header?: { key: string; value: string }[]; url: { raw: string; host?: string[]; path?: string[] } };
 type Item = { name: string; item?: Item[]; request?: Request; event?: Script[] };
 type Collection = { info: { name: string }; event?: Script[]; item: Item[] };
 type Environment = { values: Array<{ key: string; value: string }> };
@@ -18,8 +18,9 @@ const contract = JSON.parse(readFileSync(join(__dirname, '..', 'contracts', 'ope
   paths: Record<string, Record<string, unknown>>;
 };
 
-// Routes the collection calls on the BFF that are not operations of the contract (served by the app anyway).
-const OUTSIDE_CONTRACT = ['GET /openapi.json', 'GET /newman/unknown-route'];
+// Routes the collection calls on the BFF that are not operations of the contract (served by the app anyway, or removed
+// and checked to answer 404: the SSE stream).
+const OUTSIDE_CONTRACT = ['GET /openapi.json', 'GET /newman/unknown-route', 'GET /stream'];
 
 type Flat = { name: string; folder: string; request: Request; tests: string[] };
 
@@ -53,6 +54,14 @@ function operationOf(request: Request): string | undefined {
 }
 
 describe('newman integration collection (MAIR-262)', () => {
+  it('MAIR-662: checks that the removed SSE stream answers 404 with a session', () => {
+    const removed = onBff.filter(({ request }) => normalize(request.url.raw) === '/stream');
+    expect(removed).toHaveLength(1);
+    expect(removed[0].request.header?.some(({ key, value }) => key === 'Authorization' && value.startsWith('Bearer '))).toBe(true);
+    expect(removed[0].tests.join('\n')).toContain('have.status(404)');
+    expect(contract.paths['/stream']).toBeUndefined();
+  });
+
   it('holds requests grouped in folders', () => {
     expect(collection.info.name).toMatch(/integration/i);
     expect(requests.length).toBeGreaterThan(0);

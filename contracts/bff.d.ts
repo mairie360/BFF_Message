@@ -5629,7 +5629,7 @@ export interface paths {
         };
         /**
          * Real-time WebSocket of the caller's conversations
-         * @description Upgrades the connection to a **WebSocket** relaying Message API's (MAIR-658): one UTF-8 text frame per `MessageRealtimeEvent`, for the conversations the caller is a member of. It replaces `GET /stream`, kept until MAIR-662. The full contract (frames, close codes, limits, client behaviour) is Message_API `docs/en/realtime-websocket.md`.
+         * @description Upgrades the connection to a **WebSocket** relaying Message API's (MAIR-658): one UTF-8 text frame per `MessageRealtimeEvent`, for the conversations the caller is a member of. The full contract (frames, close codes, limits, client behaviour) is Message_API `docs/en/realtime-websocket.md`.
          *
          *     Send a `GET` with `Upgrade: websocket` and `Authorization: Bearer <JWT>`; nothing goes in the URL. The session is checked before Message API is called, and the connection is upgraded only once Message API accepted it: a refusal is a real status (`401`, `502`, `503`) with the `ErrorResponse` body. A `GET` without `Upgrade` answers `400`.
          *
@@ -5682,63 +5682,6 @@ export interface paths {
                 };
                 /** @description Message API refused the handshake otherwise or did not answer within 10 seconds */
                 502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Message API is not configured on the BFF */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Real-time stream of the caller's conversations
-         * @description An **SSE** channel (`text/event-stream`) relaying Message API's: each `data:` line holds a `MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the conversations the caller is a member of are signalled. The response starts at once with `retry: 3000` and a `: connected` comment, before Message API answers; a `: ping` comment comes every 15 seconds. When Message API refuses the session or fails, the stream sends one `event: stream_error` whose `data:` is an `ErrorResponse` (`UNAUTHORIZED`: sign in again instead of reconnecting; `BAD_GATEWAY`: reconnect later), then ends. The stream ends when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Stream established; the body documented is the payload of **one** event */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/event-stream": components["schemas"]["MessageStreamEvent"];
-                    };
-                };
-                /** @description Missing or invalid session (Message API refusing it is a `stream_error` event, the head is already sent) */
-                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -9241,23 +9184,6 @@ export interface components {
              * @example 0
              */
             unreadCount?: number;
-        };
-        MessageStreamEvent: {
-            /**
-             * @description What happened: `NEW_MSG`, `MSG_EDITED`, `MSG_DELETED`, `CHAT_READ` as Message API names them, and (MAIR-1154) `message_reacted` (the reactions of `messageId` changed), `members_changed` (members were added, removed or left: reload the members; a removed agent gets it too) and `mentioned` (`messageId` mentions the caller, sent with `NEW_MSG` or `MSG_EDITED`)
-             * @example NEW_MSG
-             */
-            type: string;
-            /**
-             * @description Conversation to reload
-             * @example conversation-5
-             */
-            conversationId: string;
-            /**
-             * @description The message concerned (`message-<n>`), when the event is about one
-             * @example message-118
-             */
-            messageId?: string;
         };
     };
     responses: never;

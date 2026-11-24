@@ -12,7 +12,6 @@ import meRoutes from './me';
 import membersRoutes from './members';
 import messageRoutes from './message';
 import realtimeRoutes from './realtime';
-import streamRoutes from './stream';
 
 /**
  * Every route below is session-bound: answers are never cached, and a request without an
@@ -28,7 +27,6 @@ export const SESSION_BOUND_PATHS = [
     '/link-suggestions',
     '/me',
     '/messaging',
-    '/stream',
     '/ws',
 ];
 
@@ -44,7 +42,6 @@ router.use('/conversations', membersRoutes);
 router.use('/groups', groupsRoutes);
 router.use('/link-suggestions', linkSuggestionsRouter);
 router.use('/me', meRoutes);
-router.use('/stream', streamRoutes);
 router.use('/ws', realtimeRoutes);
 router.use('/', messageRoutes);
 
