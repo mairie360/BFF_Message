@@ -99,7 +99,7 @@ SSE `GET /stream` is removed and answers `404`. `realtime.ts` (MAIR-658) relays 
 the sockets with `1001` on SIGTERM; a test server must call it too), runs the lib's `requireSession` on the handshake
 (`401` before any upstream call, `503` unconfigured), opens Message API's socket with the caller's token and upgrades the
 client only once it is open (`401` when Message API answers 401/404, `502` otherwise or after 10 s). Frames go through
-`translateFrame` (the 4 contract types only, `MessageRealtimeEvent`), client data frames are dropped, `4001`/`4008`/
+`translateFrame` (the 5 contract types only, `MessageRealtimeEvent`; `MENTIONED` is dropped without `message_id`), client data frames are dropped, `4001`/`4008`/
 `1001`/`1000` are relayed and any other upstream end becomes `1013`; 15 s ping / 45 s pong timeout and
 `MESSAGE_WS_MAX_MS` (30 min ± 10 %) close with `1001`. The Express route `GET /ws` only answers `400` to a plain GET.
 `tests/mair-658-websocket.test.ts` runs it against a `ws` stand-in of Message API (orval cannot describe frames);
@@ -107,7 +107,7 @@ newman checks the refused handshakes (`401` with the error envelope, `400` witho
 sockets to the stacks: `tests/websocket/journey.mjs` (plain Node, global `WebSocket` with `Authorization`, `fetch`) is the
 `ws-journey` service of `docker-compose-integration.yml` (profile `journey`), run by `integration_test.sh` once newman
 passed (its exit code becomes the script's): Admin (A), users 2 (B) and 3 (C, signed as `JWT_THIRD`) connect, A posts
-in a new group with B: only B gets `NEW_MSG` with `conversationId` / `messageId`, once; B's 6th socket makes Message API
+in a new group with B: only B gets `NEW_MSG` with `conversationId` / `messageId`, once; a post mentioning B gives B one `NEW_MSG` and one `MENTIONED` with the same ids, A nothing; B's 6th socket makes Message API
 evict the oldest, whose `4008` the BFF relays, and the 5 others get the next `NEW_MSG`. k6 has a `websocket` scenario
 (below). ZAP scans `/ws` (it cannot upgrade: the plain `GET` answers `400` or `401`, JSON envelopes). The frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
 `docs/en/realtime-websocket.md` (decision: `docs/en/adr/0001-messaging-websocket.md`, French under `docs/fr/`), and

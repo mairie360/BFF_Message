@@ -414,6 +414,47 @@ describe('MAIR-658 relay', () => {
   });
 });
 
+// ----- Mentions -----
+
+describe('MAIR-1182 mention signal', () => {
+  test('MAIR-1182 translates MENTIONED with the front ids', () => {
+    expect(JSON.parse(translateFrame('{"type":"MENTIONED","chat_id":5,"message_id":118}')!))
+      .toEqual({ type: 'MENTIONED', conversationId: 'conversation-5', messageId: 'message-118' });
+  });
+
+  test('MAIR-1182 drops a MENTIONED without message id and keeps no unread count', () => {
+    expect(translateFrame('{"type":"MENTIONED","chat_id":5}')).toBeNull();
+    expect(JSON.parse(translateFrame('{"type":"MENTIONED","chat_id":5,"message_id":118,"unread_count":2}')!))
+      .toEqual({ type: 'MENTIONED', conversationId: 'conversation-5', messageId: 'message-118' });
+  });
+
+  test('MAIR-1182 the published contract lists MENTIONED among the event types', () => {
+    const schemas = (bffContract as unknown as { document: { components: { schemas: Record<string, {
+      properties: { type: { enum: string[] } };
+    }> } } }).document.components.schemas;
+    expect(schemas.MessageRealtimeEvent.properties.type.enum)
+      .toEqual(['NEW_MSG', 'MSG_EDITED', 'MSG_DELETED', 'CHAT_READ', 'MENTIONED']);
+  });
+
+  /** Business journey: B is mentioned in A's message, so it gets the message signal then the mention, once each. */
+  test('MAIR-1182 relays NEW_MSG then MENTIONED of the same message to the mentioned member', async () => {
+    const { client, upstream } = await connected(authorizationFor(agent.id));
+    const events: unknown[] = [];
+    client.on('message', (data) => events.push(JSON.parse(String(data))));
+
+    upstream.send('{"type":"NEW_MSG","chat_id":101,"message_id":9002}');
+    upstream.send('{"type":"MENTIONED","chat_id":101}');
+    upstream.send('{"type":"MENTIONED","chat_id":101,"message_id":9002}');
+
+    await withTimeout((async () => { while (events.length < 2) await once(client, 'message'); })(), 2_000, '2 frames');
+    expect(events).toEqual([
+      { type: 'NEW_MSG', conversationId: 'conversation-101', messageId: 'message-9002' },
+      { type: 'MENTIONED', conversationId: 'conversation-101', messageId: 'message-9002' },
+    ]);
+    expect(await silent(client)).toBe(true);
+  });
+});
+
 // ----- Closure -----
 
 describe('MAIR-658 closure', () => {
