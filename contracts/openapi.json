@@ -3754,6 +3754,26 @@
             "pattern": "^[^<>]*$",
             "description": "Content of the direct message to send",
             "example": "Hi! How are you?"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^(?:project|task|event)-\\d{1,9}$",
+                  "description": "The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read",
+                  "example": "project-12"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "description": "A project, task or event to link the message to"
+            },
+            "maxItems": 50,
+            "description": "Projects, tasks and events the message links to (a message sent from a project page carries that project), at most 50: objects the author may read (400 otherwise)"
           }
         },
         "required": [
@@ -14252,6 +14272,7 @@
           "Messages"
         ],
         "summary": "Create a new direct message",
+        "description": "Finds or creates the caller's direct conversation with `recipientId` (one per pair), then posts the message in it with its optional `links`, checked like those of `POST /conversations/{conversationId}/messages`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -14280,6 +14301,26 @@
                     "pattern": "^[^<>]*$",
                     "description": "Content of the direct message to send",
                     "example": "Hi! How are you?"
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^(?:project|task|event)-\\d{1,9}$",
+                          "description": "The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read",
+                          "example": "project-12"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ],
+                      "description": "A project, task or event to link the message to"
+                    },
+                    "maxItems": 50,
+                    "description": "Projects, tasks and events the message links to (a message sent from a project page carries that project), at most 50: objects the author may read (400 otherwise)"
                   }
                 },
                 "required": [
@@ -14845,7 +14886,7 @@
             }
           },
           "400": {
-            "description": "Invalid body (details lists the invalid fields)",
+            "description": "Invalid body (details lists the invalid fields), or a link to an object the caller may not read",
             "content": {
               "application/json": {
                 "schema": {

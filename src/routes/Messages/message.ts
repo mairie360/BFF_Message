@@ -194,6 +194,8 @@ registry.registerPath({
     path: '/direct-messages',
     tags: ['Messages'],
     summary: 'Create a new direct message',
+    description: 'Finds or creates the caller\'s direct conversation with `recipientId` (one per pair), then posts the message in it '
+        + 'with its optional `links`, checked like those of `POST /conversations/{conversationId}/messages`.',
     request: {
         body: {
             required: true,
@@ -214,7 +216,7 @@ registry.registerPath({
             },
         },
         ...errorResponses({
-            400: 'Invalid body (details lists the invalid fields)',
+            400: 'Invalid body (details lists the invalid fields), or a link to an object the caller may not read',
             401: 'Missing or invalid session',
             502: 'Message API is unavailable or failed',
             503: 'Message API is not configured on the BFF',
@@ -262,7 +264,8 @@ router.delete('/conversations/:conversationId/messages/:messageId/reactions', as
 
 router.post('/direct-messages', async (req, res) => {
     const body = parseRequest(NewDirectMessageBody, req.body, 'body');
-    res.status(201).json(await createDirectMessage(body.recipientId, body.message, { req, declared: [400, 401] }));
+    const tags = body.links === undefined ? {} : { links: body.links };
+    res.status(201).json(await createDirectMessage(body.recipientId, body.message, { req, declared: [400, 401] }, tags));
 });
 
 export default router;

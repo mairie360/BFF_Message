@@ -625,6 +625,7 @@ export async function createDirectMessage(
   recipientId: string | number,
   message: string,
   context: CallContext,
+  tags: Pick<MessageTags, 'links'> = {},
 ): Promise<{ conversation: BffConversation; message: BffMessage }> {
   const recipientNumericId = parseNumericId(recipientId);
   if (recipientNumericId === null) {
@@ -644,7 +645,8 @@ export async function createDirectMessage(
     { declared: context.declared },
   );
 
-  return sendMessageToConversation(opened.data.id, message, context);
+  // The links ride on the post, so Message API checks that the author may read them exactly as in a conversation.
+  return sendMessageToConversation(opened.data.id, message, context, tags);
 }
 
 export async function createGroupConversation(

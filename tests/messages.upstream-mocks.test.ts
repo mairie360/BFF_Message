@@ -595,6 +595,47 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expect(response.body.message.conversationId).toBe(response.body.conversation.id);
     });
 
+    test('MAIR-1181 POST /direct-messages forwards the links of a message sent from a project with the post', async () => {
+      mockMessageApi({
+        chats: [directChatView(21, sophie.id, 'Sophie Leroy')], messages: { 21: [] }, members: { 21: [agent.id, sophie.id] },
+        directChatId: 21, postedMessageId: 50,
+      });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Peux-tu relire ce projet ?', links: [{ id: 'project-12' }] });
+
+      expect(response.status).toBe(201);
+      expectBffContract('post', '/direct-messages', response);
+      // The find-or-create stays link-free; the links ride on the post, where Message API checks the author may read them.
+      expect(messageApi.calls(MESSAGE_API.direct).map((call) => call.body)).toEqual([{ contact_id: sophie.id }]);
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => [call.url.pathname, call.body]))
+        .toEqual([[messageApiUrls.getPostMessageUrl(21), { content: 'Peux-tu relire ce projet ?', links: [{ kind: 'project', id: 12 }] }]]);
+      expect(response.body.message).toMatchObject({ id: 'message-50', conversationId: 'conversation-21', links: [{ id: 'project-12', kind: 'project' }] });
+    });
+
+    test('MAIR-1181 POST /direct-messages refuses an invalid link before calling Message API', async () => {
+      mockMessageApi({ chats: [], messages: {}, members: {}, directChatId: 21 });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Bonjour', links: [{ id: 'folder-1' }] });
+
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expectBffContract('post', '/direct-messages', response);
+      expect(messageApi.requests).toEqual([]);
+    });
+
+    test('MAIR-1181 POST /direct-messages keeps the 400 of Message API for a project the author may not read', async () => {
+      mockMessageApi({ chats: [directChatView(21, sophie.id, 'Sophie Leroy')], messages: { 21: [] }, members: { 21: [agent.id, sophie.id] }, directChatId: 21 });
+      messageApi.on('post', MESSAGE_API.messages, { status: 400, raw: 'link not readable', contentType: 'text/plain', outOfContract: true });
+
+      const response = await request(app).post('/direct-messages').set('Authorization', authorizationFor(agent.id))
+        .send({ recipientId: 'user-8', message: 'Bonjour', links: [{ id: 'project-99' }] });
+
+      expectApiError(response, 400, 'BAD_REQUEST');
+      expectBffContract('post', '/direct-messages', response);
+      expect(messageApi.calls(MESSAGE_API.messages, 'POST').map((call) => call.body)).toEqual([{ content: 'Bonjour', links: [{ kind: 'project', id: 99 }] }]);
+    });
+
     // MAIR-603: whatever form of id the client sent (public `conversation-<n>` or bare `<n>`), every message of
     // the answer carries the public id of its conversation, the value of `conversation.id`.
     test('MAIR-603 messages carry the public conversation id, also when the request used the numeric one', async () => {

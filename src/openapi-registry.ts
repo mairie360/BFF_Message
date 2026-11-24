@@ -575,6 +575,9 @@ export const NewDirectMessageBody = z.object({
     description: 'Content of the direct message to send',
     example: 'Hi! How are you?',
   }),
+  links: z.array(LinkInputSchema).max(MAX_MESSAGE_TAGS).optional().openapi({
+    description: 'Projects, tasks and events the message links to (a message sent from a project page carries that project), at most 50: objects the author may read (400 otherwise)',
+  }),
 }).openapi({
   description: 'Request body to create a new direct message',
 });

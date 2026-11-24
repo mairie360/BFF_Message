@@ -55,6 +55,12 @@ VALUES (1001, 101, 3, 'Message read by the ZAP scan'),
     (2002, 201, 1, 'Message deleted by the ZAP scan')
 ON CONFLICT (id) DO NOTHING;
 
+-- A project of the Admin (its owner may read it), linked by the message sent from a project page in the
+-- integration collection.
+INSERT INTO projects (id, title, owner_id)
+VALUES (9001, 'Integration linked project', 1)
+ON CONFLICT (id) DO NOTHING;
+
 -- Explicit ids do not advance the sequences: move them past the seeded rows so that the
 -- rows created during the tests (users, conversations, messages) do not collide.
 SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT max(id) FROM users));
