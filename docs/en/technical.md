@@ -39,6 +39,7 @@ CORE_API_URL=http://localhost:3000
 PROJECT_API_URL=http://localhost:3001
 CALENDAR_API_URL=http://localhost:3002
 # Core's Ed25519 public key (MAIR-680), required: paste the public key of the Core you run against.
+# bffs-lib >= 3 refuses HS256 tokens and ignores JWT_SECRET.
 JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n<base64 of Core's public key>\n-----END PUBLIC KEY-----"
 ```
 
