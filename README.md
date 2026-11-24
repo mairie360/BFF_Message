@@ -17,7 +17,7 @@ Les sections ci-dessous sont un aide-mémoire en anglais ; leur version françai
 
 ## Quick start
 
-Node.js 24 and read access to the GitHub Packages of `mairie360` (`NODE_AUTH_TOKEN`, `read:packages`) are needed for the private `@mairie360/*` packages.
+Node.js 26 and read access to the GitHub Packages of `mairie360` (`NODE_AUTH_TOKEN`, `read:packages`) are needed for the private `@mairie360/*` packages.
 
 ```bash
 export NODE_AUTH_TOKEN=<token with read:packages>
@@ -37,6 +37,7 @@ CORE_API_URL=http://localhost:3000
 PROJECT_API_URL=http://localhost:3001
 CALENDAR_API_URL=http://localhost:3002
 # Core's Ed25519 public key (MAIR-680), required: paste the public key of the Core you run against.
+# bffs-lib >= 3 refuses HS256 tokens and ignores JWT_SECRET.
 JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n<base64 of Core's public key>\n-----END PUBLIC KEY-----"
 ```
 

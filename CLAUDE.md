@@ -29,8 +29,8 @@ npm run contracts:check         # fails if contracts/ is stale (CI gate)
 
 `npm run build` type-checks with `tsc --noEmit` then bundles `dist/index.js` with esbuild
 (`scripts/build.mjs`): the `@mairie360/*` clients are published as TypeScript, so they are inlined
-while the other dependencies stay external. Node **24** everywhere: the contract job / CI (`.github/workflows/contracts.yml`,
-`cicd.yml` → `mairie360/CICD` reusable workflow, `node_version: "24.22.1"`) and the Docker images (`node:24.22.1-alpine`, pinned by digest). The production image runs `node dist/index.js` (bundle);
+while the other dependencies stay external. Node **26** everywhere: the contract job / CI (`.github/workflows/contracts.yml`,
+`cicd.yml` → `mairie360/CICD` reusable workflow, `node_version: "26.13.1"`) and the Docker images (`node:26.13.1-alpine`, pinned by digest). The production image runs `node dist/index.js` (bundle);
 the test stacks run the image named by `IMAGE_REF` (in CI, the image published by `release-dev`;
 locally, `bff-message:local` built from `development.Dockerfile` by the scripts).
 
@@ -58,8 +58,8 @@ router at `/`, `notFoundHandler` and `errorHandler()`. `src/index.ts` loads `.en
 the `accessToken` cookie into it; the BFF reads no cookie, no `x-session-token`). `src/routes/Messages/index.ts`
 mounts `noStore` + `requireSession` (`@mairie360/bffs-lib` >= 1.2.0, MAIR-474) on every session-bound prefix
 (`SESSION_BOUND_PATHS`), so a request without a token verified with Core's public key `JWT_PUBLIC_KEY` (EdDSA under
-Core's `kid`, `iss`, `aud`, numeric `sub`, not expired; MAIR-680, bffs-lib >= 2.7.0; HS256 only while `JWT_SECRET`
-is still set, transition) gets 401 before any upstream call. `assertStartupConfiguration()` (`src/index.ts`) refuses
+Core's `kid`, `iss`, `aud`, numeric `sub`, not expired; MAIR-680, bffs-lib >= 3.0.0 refuses HS256 and ignores
+`JWT_SECRET`) gets 401 before any upstream call. `assertStartupConfiguration()` (`src/index.ts`) refuses
 to start without a key or with a malformed one; the tests sign like Core (`tests/support/session-keys.ts`) and
 `tests/mair-680-eddsa-session.test.ts` pins the refusals. Route handlers hand their request to helpers (`CallContext`), which
 forward the caller's token on every upstream call (`asCaller`); there is no default/service token. The current
