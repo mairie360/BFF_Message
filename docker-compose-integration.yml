@@ -252,7 +252,7 @@ services:
   # The WebSocket journey (tests/websocket/journey.mjs), which newman cannot run. Not started by
   # `up`: integration_test.sh runs it once the collection passed, on the same stack.
   ws-journey:
-    image: node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
+    image: node:26-bookworm-slim@sha256:3fcc4609776fc12c0079831ca6020e250ca109b8d46243d504625d0af7efda93
     profiles: ["journey"]
     depends_on:
       bff-message:
