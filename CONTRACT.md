@@ -11,7 +11,6 @@ Les chemins sont relatifs au BFF. Les proxies web conservent méthode, paramètr
 | GET | `/health` | 200 OK |
 | GET | `/check_apis` | 200 / 502 CheckApisResponse |
 | GET | `/business-references` | 200 BusinessReferencesResponse |
-| GET | `/stream` | 200 flux SSE de `MessageStreamEvent` (MAIR-525) |
 | POST | `/attachments` | 503 Attachment upload not available yet (401 without a session) |
 | GET | `/messaging/bootstrap` | 200 Informations de démarrage pour l’utilisateur actuel |
 | GET | `/contacts` | 200 Liste des contacts |
@@ -43,8 +42,8 @@ Le générateur de types est fixé à `openapi-typescript@7.10.1`. Il est exécu
 
 ## Références métier
 
-`/business-references` est construit dans BFF Message depuis Project API et Calendar API (`PROJECT_API_URL`, `CALENDAR_API_URL`), jamais depuis un autre BFF (MAIR-525). `/stream` remplace le rechargement toutes les 2 s : le web service relaie la même réponse, le front la lit avec `fetch` en flux (pas d'`EventSource`), relit la conversation signalée et ne recharge toutes les 2 s que tant que le flux n'est pas connecté.
+`/business-references` est construit dans BFF Message depuis Project API et Calendar API (`PROJECT_API_URL`, `CALENDAR_API_URL`), jamais depuis un autre BFF (MAIR-525). Le temps réel passe par le WebSocket `/ws` : le front relit la conversation signalée et ne recharge toutes les 2 s que tant que le WebSocket n'est pas connecté.
 
 ## Temps réel WebSocket (MAIR-655)
 
-Le flux `/stream` est remplacé par un WebSocket `GET /ws` (MAIR-658, déclaré dans `contracts/openapi.json` avec le schéma `MessageRealtimeEvent` et les refus `400`, `401`, `502`, `503`), le SSE restant disponible jusqu'à sa validation puis son retrait (MAIR-662). Le contrat (poignée de main front → BFF → Message API, trames `MessageRealtimeEvent` `{ type, conversationId, messageId, unreadCount }`, codes de fermeture, limites, comportement du client) est figé dans `docs/fr/temps-reel-websocket.md` de Message_API (version anglaise de référence : `docs/en/realtime-websocket.md`, décision : `docs/en/adr/0001-messaging-websocket.md`). Le front n'ouvre `/ws` que via son propre serveur : le BFF reste privé et ne lit aucun cookie. Ce changement ne touche ni aux pièces jointes (`POST /attachments` répond toujours `503`, rien n'est stocké) ni aux groupes (créés et lus dans Message API, pas en mémoire du BFF).
+Le temps réel est le WebSocket `GET /ws` (MAIR-658, déclaré dans `contracts/openapi.json` avec le schéma `MessageRealtimeEvent` et les refus `400`, `401`, `502`, `503`) ; l'ancien flux SSE `GET /stream` est retiré et répond `404`. Le contrat (poignée de main front → BFF → Message API, trames `MessageRealtimeEvent` `{ type, conversationId, messageId, unreadCount }`, codes de fermeture, limites, comportement du client) est figé dans `docs/fr/temps-reel-websocket.md` de Message_API (version anglaise de référence : `docs/en/realtime-websocket.md`, décision : `docs/en/adr/0001-messaging-websocket.md`). Le front n'ouvre `/ws` que via son propre serveur : le BFF reste privé et ne lit aucun cookie. Ce changement ne touche ni aux pièces jointes (`POST /attachments` répond toujours `503`, rien n'est stocké) ni aux groupes (créés et lus dans Message API, pas en mémoire du BFF).

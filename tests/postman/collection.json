@@ -4233,46 +4233,10 @@
       "description": "Project API and Calendar API are not part of the stack (the references degrade per source); attachment upload is not available yet (MAIR-400)."
     },
     {
-      "name": "Real-time stream",
+      "name": "SSE stream removed",
       "item": [
         {
-          "name": "The stream without a session is rejected",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/stream",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "stream"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 401\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});",
-                  "pm.test(\"Body is the error envelope\", function () {",
-                  "    const body = pm.response.json();",
-                  "    pm.expect(body.error, 'error').to.be.an('object');",
-                  "    pm.expect(body.error.code).to.be.a('string');",
-                  "    pm.expect(body.error.message).to.be.a('string');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "The stream opens and ends after MESSAGE_STREAM_MAX_MS",
+          "name": "MAIR-662 the SSE stream is gone, even with a session",
           "request": {
             "method": "GET",
             "header": [
@@ -4298,17 +4262,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
+                  "// Real time is the /ws WebSocket only.",
+                  "pm.test(\"Status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
                   "});",
-                  "pm.test(\"Answer is not cacheable\", function () {",
-                  "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
-                  "});",
-                  "pm.test(\"An event stream, connected to Message API\", function () {",
-                  "    pm.expect(pm.response.headers.get('Content-Type')).to.match(/^text\\/event-stream/);",
-                  "    const body = pm.response.text();",
-                  "    pm.expect(body).to.match(/^retry: 3000\\n\\n: connected\\n\\n/);",
-                  "    pm.expect(body).to.not.include('stream_error');",
+                  "pm.test(\"Body is the error envelope, not an event stream\", function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json');",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error.code).to.equal('NOT_FOUND');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
                   "});"
                 ]
               }

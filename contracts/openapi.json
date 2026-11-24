@@ -6297,30 +6297,6 @@
           "type",
           "conversationId"
         ]
-      },
-      "MessageStreamEvent": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "description": "What happened: `NEW_MSG`, `MSG_EDITED`, `MSG_DELETED`, `CHAT_READ` as Message API names them, and (MAIR-1154) `message_reacted` (the reactions of `messageId` changed), `members_changed` (members were added, removed or left: reload the members; a removed agent gets it too) and `mentioned` (`messageId` mentions the caller, sent with `NEW_MSG` or `MSG_EDITED`)",
-            "example": "NEW_MSG"
-          },
-          "conversationId": {
-            "type": "string",
-            "description": "Conversation to reload",
-            "example": "conversation-5"
-          },
-          "messageId": {
-            "type": "string",
-            "description": "The message concerned (`message-<n>`), when the event is about one",
-            "example": "message-118"
-          }
-        },
-        "required": [
-          "type",
-          "conversationId"
-        ]
       }
     },
     "parameters": {}
@@ -14927,7 +14903,7 @@
           "Conversations"
         ],
         "summary": "Real-time WebSocket of the caller's conversations",
-        "description": "Upgrades the connection to a **WebSocket** relaying Message API's (MAIR-658): one UTF-8 text frame per `MessageRealtimeEvent`, for the conversations the caller is a member of. It replaces `GET /stream`, kept until MAIR-662. The full contract (frames, close codes, limits, client behaviour) is Message_API `docs/en/realtime-websocket.md`.\n\nSend a `GET` with `Upgrade: websocket` and `Authorization: Bearer <JWT>`; nothing goes in the URL. The session is checked before Message API is called, and the connection is upgraded only once Message API accepted it: a refusal is a real status (`401`, `502`, `503`) with the `ErrorResponse` body. A `GET` without `Upgrade` answers `400`.\n\nThe client sends no data: a data frame is dropped, a frame larger than 4 KiB closes with `1009`. The BFF pings every 15 seconds and closes with `1001` a client that answered none for 45 seconds, and after `MESSAGE_WS_MAX_MS` (30 minutes ± 10 % by default). Message API's `4001` (session ended: renew it before reconnecting), `4008` (evicted by a 6th connection: do not reconnect automatically) and `1001` are relayed; any other end of Message API's connection closes with `1013` (reconnect with backoff).",
+        "description": "Upgrades the connection to a **WebSocket** relaying Message API's (MAIR-658): one UTF-8 text frame per `MessageRealtimeEvent`, for the conversations the caller is a member of. The full contract (frames, close codes, limits, client behaviour) is Message_API `docs/en/realtime-websocket.md`.\n\nSend a `GET` with `Upgrade: websocket` and `Authorization: Bearer <JWT>`; nothing goes in the URL. The session is checked before Message API is called, and the connection is upgraded only once Message API accepted it: a refusal is a real status (`401`, `502`, `503`) with the `ErrorResponse` body. A `GET` without `Upgrade` answers `400`.\n\nThe client sends no data: a data frame is dropped, a frame larger than 4 KiB closes with `1009`. The BFF pings every 15 seconds and closes with `1001` a client that answered none for 45 seconds, and after `MESSAGE_WS_MAX_MS` (30 minutes ± 10 % by default). Message API's `4001` (session ended: renew it before reconnecting), `4008` (evicted by a 6th connection: do not reconnect automatically) and `1001` are relayed; any other end of Message API's connection closes with `1013` (reconnect with backoff).",
         "responses": {
           "101": {
             "description": "Switched to the WebSocket protocol; the body documented is the payload of **one** text frame",
@@ -14971,47 +14947,6 @@
           },
           "502": {
             "description": "Message API refused the handshake otherwise or did not answer within 10 seconds",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Message API is not configured on the BFF",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/stream": {
-      "get": {
-        "tags": [
-          "Conversations"
-        ],
-        "summary": "Real-time stream of the caller's conversations",
-        "description": "An **SSE** channel (`text/event-stream`) relaying Message API's: each `data:` line holds a `MessageStreamEvent` saying that something happened in a conversation, which the client then reloads. Only the conversations the caller is a member of are signalled. The response starts at once with `retry: 3000` and a `: connected` comment, before Message API answers; a `: ping` comment comes every 15 seconds. When Message API refuses the session or fails, the stream sends one `event: stream_error` whose `data:` is an `ErrorResponse` (`UNAUTHORIZED`: sign in again instead of reconnecting; `BAD_GATEWAY`: reconnect later), then ends. The stream ends when the session expires or is revoked, and after `MESSAGE_STREAM_MAX_MS` (5 minutes by default): the client reconnects (`retry: 3000`), sending back the last `id:` as `Last-Event-ID`, relayed to Message API.",
-        "responses": {
-          "200": {
-            "description": "Stream established; the body documented is the payload of **one** event",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageStreamEvent"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid session (Message API refusing it is a `stream_error` event, the head is already sent)",
             "content": {
               "application/json": {
                 "schema": {

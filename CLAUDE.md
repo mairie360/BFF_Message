@@ -93,12 +93,8 @@ generated `@mairie360/message-api-openapi` client; the helpers pass `asCaller('M
 `business_references.ts` calls Project API and Calendar API through their published clients
 (`src/clients/businessApiClients.ts`: `@mairie360/project-api-openapi`, `@mairie360/calendar-api-openapi`), keeps
 BFF Project's task visibility (lib `hasRole` + `PROJECT_TASK_MANAGER_ROLES`, role from `sessionRole` or roles from Core
-`getMe`) and degrades per-source (`sources: available | unavailable`). `stream.ts` (MAIR-525) relays Message API's
-SSE `GET /api/v1/stream` as `GET /stream`: signals translated to `{ type, conversationId }`, pings kept, `id:` /
-`Last-Event-ID` relayed, head + `retry:` + `: connected` sent before Message API answers (MAIR-561: its refusal or
-failure is then an `event: stream_error` carrying the `ErrorResponse`, not a status), ended after `MESSAGE_STREAM_MAX_MS` (1 s in the test stacks, so ZAP and k6 get a full
-answer; k6 covers it in `crud` only). The relay is moving to a WebSocket `GET /ws` (epic MAIR-655), SSE kept
-until MAIR-662. `realtime.ts` (MAIR-658) relays Message API's `GET /api/v1/ws`: Express cannot upgrade, so
+`getMe`) and degrades per-source (`sources: available | unavailable`). Real time is the WebSocket `GET /ws` (epic MAIR-655); the
+SSE `GET /stream` is removed and answers `404`. `realtime.ts` (MAIR-658) relays Message API's `GET /api/v1/ws`: Express cannot upgrade, so
 `attachRealtime(server)` handles the HTTP server's `upgrade` event (wired in `serve()`, `src/index.ts`, which also closes
 the sockets with `1001` on SIGTERM; a test server must call it too), runs the lib's `requireSession` on the handshake
 (`401` before any upstream call, `503` unconfigured), opens Message API's socket with the caller's token and upgrades the
@@ -113,8 +109,7 @@ sockets to the stacks: `tests/websocket/journey.mjs` (plain Node, global `WebSoc
 passed (its exit code becomes the script's): Admin (A), users 2 (B) and 3 (C, signed as `JWT_THIRD`) connect, A posts
 in a new group with B: only B gets `NEW_MSG` with `conversationId` / `messageId`, once; B's 6th socket makes Message API
 evict the oldest, whose `4008` the BFF relays, and the 5 others get the next `NEW_MSG`. k6 has a `websocket` scenario
-(below). ZAP scans `/ws` (it cannot upgrade: the plain `GET` answers `400` or `401`, JSON envelopes); only `/stream`
-stays out of rule `100001`'s scope until the SSE is removed (its `text/event-stream` answer). The frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
+(below). ZAP scans `/ws` (it cannot upgrade: the plain `GET` answers `400` or `401`, JSON envelopes). The frames, close codes, limits and the front ↔ BFF ↔ API handshake are frozen in Message_API's
 `docs/en/realtime-websocket.md` (decision: `docs/en/adr/0001-messaging-websocket.md`, French under `docs/fr/`), and
 `docs/en/technical.md` / `docs/fr/technical.md` here summarise the BFF's side.
 
@@ -210,8 +205,8 @@ The collection is split in two kinds of checks, both on the BFF's own routes:
   with the last one: 404 afterwards), the group conversation (created by the agent with the administrator and a
   contact, posted in, found by `search`, the list paged with `cursor`, read and acknowledged by the administrator,
   left by both), the business references degrading to `unavailable` without Project API and Calendar API, the
-  attachment upload (multipart, 401 then the documented 503 of MAIR-400) and `GET /stream` (an event stream ended by
-  the stack after `MESSAGE_STREAM_MAX_MS`, 1 s).
+  attachment upload (multipart, 401 then the documented 503 of MAIR-400) and `GET /stream`, removed with the SSE, answering
+  `404`.
 
 The seeded accounts have no known password and the Postman sandbox cannot sign EdDSA: `integration_test.sh` signs
 their JWTs with the run's key like Core and the compose file injects them (`jwt_admin`, `jwt_agent`, and
@@ -295,4 +290,4 @@ for that commit. `cicd.yml`, `promote-staging.yml` and `promote-prod.yml` pin th
 
 ## Shutdown
 
-`src/index.ts` wraps the server in the bffs-lib `gracefulShutdown`. On SIGTERM it drains the running requests, ends the SSE streams, flushes the telemetry and exits 0; after 10 s it exits 1. The image runs `tini` as PID 1 (`ENTRYPOINT`) so the signal reaches Node. The pod's `preStop` (5 s) and grace period (30 s) live in `Devops/Deploiment`. `tests/mair-682-graceful-shutdown.test.ts` starts the real entry point and sends it SIGTERM.
+`src/index.ts` wraps the server in the bffs-lib `gracefulShutdown`. On SIGTERM it drains the running requests, closes the WebSockets with `1001`, flushes the telemetry and exits 0; after 10 s it exits 1. The image runs `tini` as PID 1 (`ENTRYPOINT`) so the signal reaches Node. The pod's `preStop` (5 s) and grace period (30 s) live in `Devops/Deploiment`. `tests/mair-682-graceful-shutdown.test.ts` starts the real entry point and sends it SIGTERM.

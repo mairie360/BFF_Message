@@ -14,7 +14,6 @@ import { errorResponses, registry } from '../../openapi-registry';
  * `GET /api/v1/ws` as `GET /ws`, following the contract frozen by MAIR-656 (Message_API
  * `docs/en/realtime-websocket.md`). The session is verified before any upstream call, the client is upgraded only once
  * Message API accepted its own handshake, each frame is translated to the front's ids and anything else is dropped.
- * `GET /stream` (SSE) stays until MAIR-662.
  *
  * Express cannot upgrade a connection: `attachRealtime(server)` handles the `upgrade` event of the HTTP server, and
  * the router below only answers the plain `GET /ws` that is not a handshake.
@@ -140,8 +139,7 @@ registry.registerPath({
   tags: ['Conversations'],
   summary: 'Real-time WebSocket of the caller\'s conversations',
   description: 'Upgrades the connection to a **WebSocket** relaying Message API\'s (MAIR-658): one UTF-8 text frame per '
-    + '`MessageRealtimeEvent`, for the conversations the caller is a member of. It replaces `GET /stream`, kept until '
-    + 'MAIR-662. The full contract (frames, close codes, limits, client behaviour) is Message_API '
+    + '`MessageRealtimeEvent`, for the conversations the caller is a member of. The full contract (frames, close codes, limits, client behaviour) is Message_API '
     + '`docs/en/realtime-websocket.md`.\n\n'
     + 'Send a `GET` with `Upgrade: websocket` and `Authorization: Bearer <JWT>`; nothing goes in the URL. The session is '
     + 'checked before Message API is called, and the connection is upgraded only once Message API accepted it: a '

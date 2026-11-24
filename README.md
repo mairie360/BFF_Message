@@ -62,7 +62,6 @@ Generated contract: [`contracts/openapi.json`](contracts/openapi.json) (16 opera
 | `GET` | `/conversations/{conversationId}/messages` | List the messages of a conversation |
 | `POST` | `/conversations/{conversationId}/messages` | Create a new message in a conversation |
 | `POST` | `/direct-messages` | Create a new direct message |
-| `GET` | `/stream` | Real-time stream of the caller's conversations |
 
 ## Upstream contracts
 
