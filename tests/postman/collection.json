@@ -2381,6 +2381,311 @@
       "description": "The agent creates a group with the administrator and a contact, posts in it, the list is searched and paged, the administrator reads and acknowledges, then both leave."
     },
     {
+      "name": "MAIR-1181 Message sent from a project",
+      "description": "A first direct message sent from a project page carries the project as a business link, checked by Message API (the author must be allowed to read it).",
+      "item": [
+        {
+          "name": "MAIR-1181 The administrator writes to the agent from a project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/direct-messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "direct-messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"user-2\",\n  \"message\": \"About this project {{run_id}}\",\n  \"links\": [\n    {\n      \"id\": \"project-9001\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Saves the ids for the next requests\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('project_message_conversation_id', body.conversation.id);",
+                  "    pm.environment.set('project_message_id', body.message.id);",
+                  "});",
+                  "pm.test(\"The message carries the project link\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.conversation.kind).to.eql('direct');",
+                  "    pm.expect(body.message.conversationId).to.eql(body.conversation.id);",
+                  "    pm.expect(body.message.content).to.eql(`About this project ${pm.environment.get('run_id')}`);",
+                  "    pm.expect(body.message.links).to.have.lengthOf(1);",
+                  "    pm.expect(body.message.links[0].id).to.eql('project-9001');",
+                  "    pm.expect(body.message.links[0].kind).to.eql('project');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-1181 The agent reads the message with its project link",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{project_message_conversation_id}}/messages?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{project_message_conversation_id}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The last message links the project\", function () {",
+                  "    const body = pm.response.json();",
+                  "    const message = body.messages.find((item) => item.id === pm.environment.get('project_message_id'));",
+                  "    pm.expect(message, 'the message sent from the project').to.be.an('object');",
+                  "    pm.expect(message.direction).to.eql('incoming');",
+                  "    pm.expect(message.links.map((link) => link.id)).to.eql(['project-9001']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-1181 A link to a project nobody may read is refused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/direct-messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "direct-messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"user-2\",\n  \"message\": \"Unknown project {{run_id}}\",\n  \"links\": [\n    {\n      \"id\": \"project-999999999\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error.code).to.eql('BAD_REQUEST');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-1181 A link that is not a project, task or event is refused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/direct-messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "direct-messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"user-2\",\n  \"message\": \"Invalid link {{run_id}}\",\n  \"links\": [\n    {\n      \"id\": \"folder-1\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error envelope\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error.code).to.eql('BAD_REQUEST');",
+                  "    pm.expect(body.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-1181 The administrator leaves the conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{project_message_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{project_message_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-1181 The agent leaves too: the conversation is deleted",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_agent}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{project_message_conversation_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{project_message_conversation_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Messaging V2 (MAIR-1154)",
       "item": [
         {

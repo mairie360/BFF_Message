@@ -5214,7 +5214,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a new direct message */
+        /**
+         * Create a new direct message
+         * @description Finds or creates the caller's direct conversation with `recipientId` (one per pair), then posts the message in it with its optional `links`, checked like those of `POST /conversations/{conversationId}/messages`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -5235,6 +5238,14 @@ export interface paths {
                          * @example Hi! How are you?
                          */
                         message: string;
+                        /** @description Projects, tasks and events the message links to (a message sent from a project page carries that project), at most 50: objects the author may read (400 otherwise) */
+                        links?: {
+                            /**
+                             * @description The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read
+                             * @example project-12
+                             */
+                            id: string;
+                        }[];
                     };
                 };
             };
@@ -5567,7 +5578,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Invalid body (details lists the invalid fields) */
+                /** @description Invalid body (details lists the invalid fields), or a link to an object the caller may not read */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -7842,6 +7853,14 @@ export interface components {
              * @example Hi! How are you?
              */
             message: string;
+            /** @description Projects, tasks and events the message links to (a message sent from a project page carries that project), at most 50: objects the author may read (400 otherwise) */
+            links?: {
+                /**
+                 * @description The object (`project-<n>`, `task-<n>` or `event-<n>`, as `GET /link-suggestions` gives it), which the author must be allowed to read
+                 * @example project-12
+                 */
+                id: string;
+            }[];
         };
         /** @description Request body to create a new group */
         CreateGroupBody: {
