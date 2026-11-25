@@ -183,8 +183,7 @@ There is no `contracts:sync` here: the paired web service pulls the contract on 
 
 Jest tests mock the upstream APIs; `integration_test.sh` is the only test of the BFF on a real stack. It brings up
 `docker-compose-integration.yml` (the upstream services of the ZAP / k6 stacks: published Message API and Core API
-images, database + liquibase + `init-test.sql`, Redis; Project API and Calendar API stay absent, pointed at a closed
-port) and a `newman` service that replays `tests/postman/collection.json` with `tests/postman/environment.json`
+images, database + liquibase + `init-test.sql`, Redis, and Project API for the titles of linked projects; Calendar API stays absent, pointed at a closed port) and a `newman` service that replays `tests/postman/collection.json` with `tests/postman/environment.json`
 against the BFF, `--bail` on the first failing request; the exit code of newman is the exit code of the script. Like
 the other stacks it tests the image named by `IMAGE_REF` (`bff-message:local` built from `development.Dockerfile`
 when empty), sources `stack_secrets.sh` (fresh Ed25519 key pair per run, MAIR-680) and drops the volumes before and after. In CI
@@ -204,7 +203,7 @@ The collection is split in two kinds of checks, both on the BFF's own routes:
   history paged with `nextCursor` / `before`, acknowledged with and without a body, hidden by each side and deleted
   with the last one: 404 afterwards), the group conversation (created by the agent with the administrator and a
   contact, posted in, found by `search`, the list paged with `cursor`, read and acknowledged by the administrator,
-  left by both), the business references degrading to `unavailable` without Project API and Calendar API, the
+  left by both), the business references and `#` suggestions with Project API `available` and Calendar API `unavailable`, the title of a linked project read back by its owner and left out for an agent who may not read it, the
   attachment upload (multipart, 401 then the documented 503 of MAIR-400) and `GET /stream`, removed with the SSE, answering
   `404`.
 

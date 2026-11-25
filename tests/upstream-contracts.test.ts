@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { JsonSchema, OpenApiContract } from './support/openapi-contract';
 import { loadOrvalContract, resolveOrvalPackage } from './support/orval-contract';
 import {
-  calendarApiUrls, calendarResult, eventView, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult, directChatView,
+  calendarApiUrls, calendarResult, eventResult, eventView, projectResult, chatResult, acknowledgeReadResult, chatUsers, chatView, chatsResult, coreApiUrls, createChatResult, directChatView,
   directoryUsers, messageApiUrls, messageView, systemNoteView, postMessageResult, projectApiUrls, projectListItem, projectsResult, taskView, tasksResult, users,
 } from './support/upstream-fixtures';
 
@@ -52,6 +52,10 @@ const CONSUMED = [
   { contract: projectApi, operationId: 'getProjects', method: 'get', url: projectApiUrls.getGetProjectsUrl({ limit: 50 }) },
   { contract: projectApi, operationId: 'getProjectTasks', method: 'get', url: projectApiUrls.getGetProjectTasksUrl(1, { limit: 500 }) },
   { contract: calendarApi, operationId: 'getCalendar', method: 'get', url: calendarApiUrls.getGetCalendarUrl({ start: '2026-01-01T00:00:00Z', end: '2026-12-31T00:00:00Z' }) },
+  // The titles of the links of a message.
+  { contract: projectApi, operationId: 'getProject', method: 'get', url: projectApiUrls.getGetProjectUrl(12, { limit: 1 }) },
+  { contract: projectApi, operationId: 'getTask', method: 'get', url: projectApiUrls.getGetTaskUrl(12, 6) },
+  { contract: calendarApi, operationId: 'getEvent', method: 'get', url: calendarApiUrls.getGetEventUrl(5) },
 ] as const;
 
 function responseSchema(contract: OpenApiContract, method: string, url: string, status: number): JsonSchema {
@@ -137,6 +141,9 @@ describe('upstream fixtures conform to the upstream contracts', () => {
     ['Project API getProjects 200', projectApi, 'get', projectApiUrls.getGetProjectsUrl(), projectsResult([projectListItem(1), projectListItem(2, { tasks_total: 0 })])],
     ['Project API getProjectTasks 200', projectApi, 'get', projectApiUrls.getGetProjectTasksUrl(1), tasksResult([taskView(1), taskView(2, { assigned_to: 7 })])],
     ['Calendar API getCalendar 200', calendarApi, 'get', calendarApiUrls.getGetCalendarUrl({ start: '', end: '' }), calendarResult([eventView(1), eventView(2, { is_member: false })])],
+    ['Project API getProject 200', projectApi, 'get', projectApiUrls.getGetProjectUrl(12), projectResult(12, 'Médiathèque')],
+    ['Project API getTask 200', projectApi, 'get', projectApiUrls.getGetTaskUrl(12, 6), taskView(6)],
+    ['Calendar API getEvent 200', calendarApi, 'get', calendarApiUrls.getGetEventUrl(5), eventResult(5)],
   ] as const)('%s', (_name, contract, method, url, body) => {
     expect(contract.validate(responseSchema(contract, method, url, 200), body)).toEqual([]);
   });

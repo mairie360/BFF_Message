@@ -2441,6 +2441,10 @@
                   "    pm.expect(body.message.links).to.have.lengthOf(1);",
                   "    pm.expect(body.message.links[0].id).to.eql('project-9001');",
                   "    pm.expect(body.message.links[0].kind).to.eql('project');",
+                  "});",
+                  "pm.test(\"MAIR-1202 The link carries the title of the project the administrator may read\", function () {",
+                  "    const link = pm.response.json().message.links[0];",
+                  "    pm.expect(link.title).to.eql('Integration linked project');",
                   "});"
                 ]
               }
@@ -2492,6 +2496,61 @@
                   "    pm.expect(message, 'the message sent from the project').to.be.an('object');",
                   "    pm.expect(message.direction).to.eql('incoming');",
                   "    pm.expect(message.links.map((link) => link.id)).to.eql(['project-9001']);",
+                  "});",
+                  "pm.test(\"MAIR-1202 The agent may not read the project: its link keeps no title\", function () {",
+                  "    const message = pm.response.json().messages.find((item) => item.id === pm.environment.get('project_message_id'));",
+                  "    pm.expect(message.links[0]).to.not.have.property('title');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "MAIR-1202 The administrator reads the message back: the link carries the project title",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{project_message_conversation_id}}/messages?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{project_message_conversation_id}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"The link of the message carries the title and the kind of the project\", function () {",
+                  "    const message = pm.response.json().messages.find((item) => item.id === pm.environment.get('project_message_id'));",
+                  "    pm.expect(message, 'the message sent from the project').to.be.an('object');",
+                  "    pm.expect(message.direction).to.eql('outgoing');",
+                  "    pm.expect(message.links).to.have.lengthOf(1);",
+                  "    pm.expect(message.links[0]).to.include({ id: 'project-9001', kind: 'project', title: 'Integration linked project' });",
                   "});"
                 ]
               }
@@ -3706,7 +3765,7 @@
           "response": []
         },
         {
-          "name": "The # suggestions degrade without Project API and Calendar API",
+          "name": "The # suggestions degrade without Calendar API",
           "request": {
             "method": "GET",
             "header": [
@@ -3741,8 +3800,10 @@
                   "pm.test(\"Status is 200\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"No item, both sources unavailable\", function () {",
-                  "    pm.expect(pm.response.json()).to.eql({ items: [], sources: { projects: 'unavailable', calendar: 'unavailable' } });",
+                  "pm.test(\"Project API answers, Calendar API is unavailable\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.items).to.be.an('array');",
+                  "    pm.expect(body.sources).to.eql({ projects: 'available', calendar: 'unavailable' });",
                   "});"
                 ]
               }
@@ -4391,7 +4452,7 @@
           "response": []
         },
         {
-          "name": "Business references degrade without Project API and Calendar API",
+          "name": "Business references degrade without Calendar API",
           "request": {
             "method": "GET",
             "header": [
@@ -4424,10 +4485,10 @@
                   "pm.test(\"Answer is not cacheable\", function () {",
                   "    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
                   "});",
-                  "pm.test(\"Empty references, both sources unavailable\", function () {",
+                  "pm.test(\"Project API answers, Calendar API is unavailable\", function () {",
                   "    const body = pm.response.json();",
-                  "    pm.expect(body.references).to.eql([]);",
-                  "    pm.expect(body.sources).to.eql({ projects: 'unavailable', calendar: 'unavailable' });",
+                  "    pm.expect(body.references).to.be.an('array');",
+                  "    pm.expect(body.sources).to.eql({ projects: 'available', calendar: 'unavailable' });",
                   "});"
                 ]
               }

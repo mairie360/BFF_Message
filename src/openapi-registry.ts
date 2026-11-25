@@ -248,7 +248,7 @@ export const MessageLinkDtoSchema = z.object({
   id: IdSchema.openapi({ description: 'Id of the object (`project-<n>`, `task-<n>` or `event-<n>`)', example: 'project-12' }),
   kind: LinkKindSchema,
   title: z.string().optional().openapi({
-    description: 'Title of the object when the BFF knows it (link suggestions); a message does not carry it: its content holds the text its author wrote',
+    description: 'Current title of the object, read from its API with the caller\'s rights (link suggestions, and the links of a message); absent when the caller may not read the object or it is gone',
     example: 'Rénovation de la médiathèque',
   }),
   url: z.string().optional().openapi({

@@ -115,7 +115,9 @@ Inventory extracted from `contracts/openapi.json`. Replace brace parameters with
 - **Messages** carry `kind` (`user` / `system`), `systemEvent` (system notes: `members_added`, `member_removed`,
   `member_left`, with the actor and the agents concerned and their names), `editedAt`, `deleted`, real `mentions`
   (`{ id, name }`), `mentionsEveryone`, `groupMentions` (`{ id: 'group-<n>', name }`), `links`
-  (`{ id: 'project-<n>' | 'task-<n>' | 'event-<n>', kind, url? }`) and `reactions` (`{ emoji, count, reactedByMe, userNames }`).
+  (`{ id: 'project-<n>' | 'task-<n>' | 'event-<n>', kind, title?, url? }`: `title` is read from Project API / Calendar API
+  with the caller's token, one read per distinct object of the answer, at most 50, in one wave of 5; absent when the
+  caller may not read the object, it is gone or its API fails) and `reactions` (`{ emoji, count, reactedByMe, userNames }`).
   Names come from the members of the conversation; the agents a page names without being members any more (former
   members) are read in ONE Core API directory call, and the mentioned groups in ONE Message API call, only when needed:
   a failure there only leaves the names out.
