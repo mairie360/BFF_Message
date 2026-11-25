@@ -520,11 +520,16 @@ export const EditMessageBody = z.object({
   description: 'Request body to edit a message: each tag field present replaces the tags of that kind, an absent one keeps them',
 });
 
+const EMOJI_ONLY = /^(?=.*[\p{Extended_Pictographic}\p{Regional_Indicator}\u20E3])[\p{Extended_Pictographic}\p{Emoji_Component}\u20E3]+$/u;
+
 // Codepoints, like Message API counts them (👍 is one character, two UTF-16 units).
 export const ReactionEmoji = z.string().min(1).max(64)
   .refine((value) => [...value].length <= 32, 'must be at most 32 characters')
   .refine((value) => !/[\s\p{Cc}]/u.test(value), 'must not contain whitespace or control characters')
-  .openapi({ description: 'The emoji: 1 to 32 characters, no whitespace nor control character', example: '👍' });
+  // Emoji only: pictographs, flags and keycaps with their modifiers (variation selectors, skin tones, ZWJ, tags). Any
+  // other text was stored as a reaction and answered back to every member (ZAP 6 and 40014 found a stored script).
+  .refine((value) => EMOJI_ONLY.test(value), 'must be an emoji')
+  .openapi({ description: 'The emoji: 1 to 32 characters of one or more emoji (pictographs, flags, keycaps and their modifiers), no other text', example: '👍' });
 
 export const ReactionBody = z.object({ emoji: ReactionEmoji }).openapi({ description: 'Request body to react to a message' });
 

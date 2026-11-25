@@ -1449,6 +1449,29 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expect(messageApi.requests).toEqual([]);
     });
 
+    // MAIR-1203: ZAP stored `<script>alert(1);</script>` as a reaction, then read it back in the message list.
+    test.each(['<script>alert(1);</script>', '../../etc/passwd', 'abc', '123', '👍x', '‍'])(
+      'MAIR-1203 a reaction refuses the non-emoji text %j before calling Message API, on add and on removal',
+      async (emoji) => {
+        const added = await request(app).post('/conversations/4/messages/41/reactions').set('Authorization', auth()).send({ emoji });
+        const removed = await request(app).delete('/conversations/4/messages/41/reactions').query({ emoji }).set('Authorization', auth());
+
+        expect(added.status).toBe(400);
+        expect(added.body.error.details.map((detail: { path: string }) => detail.path)).toContain('body.emoji');
+        expect(removed.status).toBe(400);
+        expect(messageApi.requests).toEqual([]);
+      },
+    );
+
+    test.each(['👍', '❤️', '👍🏽', '👨‍👩‍👧', '🇫🇷', '1️⃣', '🏴󠁧󠁢󠁳󠁣󠁴󠁿', '👍🎉'])('MAIR-1203 a reaction still accepts the emoji %s', async (emoji) => {
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: [] } });
+      messageApi.on('post', MESSAGE_API.reactions, { body: { reactions: [{ emoji, count: 1, reacted_by_me: true, user_ids: [7] }] } });
+
+      const response = await request(app).post('/conversations/4/messages/41/reactions').set('Authorization', auth()).send({ emoji });
+
+      expect(response.status).not.toBe(400);
+    });
+
     test('GET /conversations/:id/members lists the members, the group administrator and canManage', async () => {
       mockMessageApi({ chats: [chatView(4)], messages: { 4: [] } });
       messageApi.on('get', MESSAGE_API.users, { body: chatUsers([agent.id, sophie.id], false, { 7: ['Agent', 'Test'], 8: ['Sophie', 'Leroy'] }, [agent.id]) });
