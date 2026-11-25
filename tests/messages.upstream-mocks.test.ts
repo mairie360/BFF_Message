@@ -1310,6 +1310,24 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       expect([...projectApi.requests, ...calendarApi.requests].every((call) => call.headers.authorization === auth())).toBe(true);
     });
 
+    test('mair_1202 the titles are read together, at most 5 at once and at most 50 per answer', async () => {
+      // 60 distinct projects over 12 messages: the reads overlap, never more than 5 run at once, and 50 are read.
+      const page = Array.from({ length: 12 }, (_, index) => messageView(41 + index, sophie.id, {
+        links: Array.from({ length: 5 }, (__, link) => ({ kind: 'project' as const, id: 100 + index * 5 + link })),
+      }));
+      mockMessageApi({ chats: [chatView(4)], messages: { 4: page }, members: { 4: [agent.id, sophie.id] } });
+      projectApi.on('get', PROJECT_API.project, ({ pathParams }) => ({ body: projectResult(Number(pathParams.projectId)), delayMs: 20 }));
+
+      const response = await request(app).get('/conversations/4/messages?limit=30').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expect(projectApi.calls(PROJECT_API.project)).toHaveLength(50);
+      expect(projectApi.maxInFlight).toBe(5);
+      const titled = response.body.messages.flatMap((message: { links: Array<{ title?: string }> }) => message.links)
+        .filter((link: { title?: string }) => link.title !== undefined);
+      expect(titled).toHaveLength(50);
+    });
+
     test('mair_1202 a business API down leaves the links without a title and the page answers', async () => {
       mockMessageApi({
         chats: [chatView(4)],
