@@ -152,11 +152,7 @@ async function main() {
   );
   await sleep(SILENCE_MS);
   check('B receives MENTIONED once', b.frames.filter(mentioned(chat.id, mention.id)).length === 1, JSON.stringify(b.frames));
-  check(
-    'B receives NEW_MSG before MENTIONED',
-    b.frames.findIndex(newMsg(chat.id, mention.id)) < b.frames.findIndex(mentioned(chat.id, mention.id)),
-    JSON.stringify(b.frames),
-  );
+  // No order between the two: Message API handles each event in its own task, and NEW_MSG reads the members first.
   check('B receives NEW_MSG of the mention once', b.frames.filter(newMsg(chat.id, mention.id)).length === 1, JSON.stringify(b.frames));
   check('A, the author, receives no MENTIONED', !a.frames.some((frame) => frame.type === 'MENTIONED'), JSON.stringify(a.frames));
   check('C, not a member, receives nothing', c.frames.length === 0, JSON.stringify(c.frames));

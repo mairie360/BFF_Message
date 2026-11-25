@@ -4969,7 +4969,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         /**
-                         * @description The emoji: 1 to 32 characters, no whitespace nor control character
+                         * @description The emoji: 1 to 32 characters of one or more emoji (pictographs, flags, keycaps and their modifiers), no other text
                          * @example 👍
                          */
                         emoji: string;
@@ -5085,7 +5085,7 @@ export interface paths {
         delete: {
             parameters: {
                 query: {
-                    /** @description The emoji: 1 to 32 characters, no whitespace nor control character */
+                    /** @description The emoji: 1 to 32 characters of one or more emoji (pictographs, flags, keycaps and their modifiers), no other text */
                     emoji: string;
                 };
                 header?: never;
@@ -7973,7 +7973,7 @@ export interface components {
         /** @description Request body to react to a message */
         ReactionBody: {
             /**
-             * @description The emoji: 1 to 32 characters, no whitespace nor control character
+             * @description The emoji: 1 to 32 characters of one or more emoji (pictographs, flags, keycaps and their modifiers), no other text
              * @example 👍
              */
             emoji: string;

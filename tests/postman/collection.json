@@ -3317,6 +3317,64 @@
           "response": []
         },
         {
+          "name": "MAIR-1203 A reaction that is not an emoji is refused with a 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_third}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{v2_group_id}}/messages/{{v2_message_id}}/reactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{v2_group_id}}",
+                "messages",
+                "{{v2_message_id}}",
+                "reactions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"emoji\": \"<script>alert(1);</script>\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error envelope names the emoji\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error.code).to.eql('BAD_REQUEST');",
+                  "    pm.expect(body.error.details.map((d) => d.path)).to.include('body.emoji');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "The contact reacts to the message",
           "request": {
             "method": "POST",
