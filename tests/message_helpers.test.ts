@@ -164,6 +164,25 @@ describe('Message API pagination (MAIR-507)', () => {
     expect(message).not.toHaveProperty('authorName');
     expect(message!.direction).toBe('incoming');
   });
+
+  it('MAIR-1220 maps each kind of quote: live, by a former member, by a deleted account, deleted', async () => {
+    jest.mocked(messageClient.getChatUsers).mockResolvedValue(axiosResponse(chatUsers([agent.id, sophie.id], false, { [sophie.id]: ['Sophie', 'Leroy'] })));
+    jest.mocked(messageClient.getChat).mockResolvedValue(axiosResponse(chatResult(chatView(4), [
+      messageView(51, agent.id, { citation: 40, quoted: { id: 40, sender_id: sophie.id, excerpt: 'Le permis ?', deleted: false } }),
+      messageView(52, agent.id, { citation: 41, quoted: { id: 41, sender_id: 99, excerpt: 'Ancien membre', deleted: false } }),
+      messageView(53, agent.id, { citation: 42, quoted: { id: 42, sender_id: null, excerpt: null, deleted: false } }),
+      messageView(54, agent.id, { citation: 43, quoted: { id: 43, deleted: true } }),
+    ])));
+
+    const quotes = (await fetchConversationMessages('conversation-4', {}, context)).messages.map((message) => message.quoted);
+
+    expect(quotes).toEqual([
+      { id: 'message-40', authorId: `user-${sophie.id}`, authorName: 'Sophie Leroy', excerpt: 'Le permis ?', deleted: false },
+      { id: 'message-41', authorId: 'user-99', excerpt: 'Ancien membre', deleted: false },
+      { id: 'message-42', excerpt: '', deleted: false },
+      { id: 'message-43', deleted: true },
+    ]);
+  });
 });
 
 describe('Core API directory ids', () => {
