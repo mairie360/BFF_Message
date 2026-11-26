@@ -136,7 +136,7 @@ describe('upstream fixtures conform to the upstream contracts', () => {
     ['Message API getMentionGroups 200', messageApi, 'get', messageApiUrls.getGetMentionGroupsUrl(4), { groups: [{ id: 3, name: 'Urbanisme' }] }],
     ['Message API acknowledgeRead 200', messageApi, 'post', messageApiUrls.getAcknowledgeReadUrl(4), acknowledgeReadResult(2)],
     ['Core API listDirectoryUsers 200', coreApi, 'get', coreApiUrls.getListDirectoryUsersUrl(), directoryUsers([users.agent, users.thomas])],
-    ['Core API getMe 200', coreApi, 'get', coreApiUrls.getGetMeUrl(), { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: 'User', roles: ['User'] }],
+    ['Core API getMe 200', coreApi, 'get', coreApiUrls.getGetMeUrl(), { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: 'User', roles: ['User'], modules: ['dashboard', 'messages'] }],
     ['Project API getProjects 200', projectApi, 'get', projectApiUrls.getGetProjectsUrl(), projectsResult([projectListItem(1), projectListItem(2, { tasks_total: 0 })])],
     ['Project API getProjectTasks 200', projectApi, 'get', projectApiUrls.getGetProjectTasksUrl(1), tasksResult([taskView(1), taskView(2, { assigned_to: 7 })])],
     ['Calendar API getCalendar 200', calendarApi, 'get', calendarApiUrls.getGetCalendarUrl({ start: '', end: '' }), calendarResult([eventView(1), eventView(2, { is_member: false })])],

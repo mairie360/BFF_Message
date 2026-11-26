@@ -7,6 +7,7 @@ import { logger } from './logger';
 import checkApis from './routes/check_apis';
 import healthRouter from './routes/health';
 import messagesRouter from './routes/Messages';
+import searchRouter from './routes/search';
 
 export const app = express();
 
@@ -27,6 +28,8 @@ app.get(['/openapi.json', '/swagger.json'], (_req, res) => res.json(openApiDocum
 
 app.use('/health', healthRouter);
 app.use('/check_apis', checkApis);
+// The header's global search, over every business API (noStore + requireSession in the router).
+app.use('/search', searchRouter);
 // Session-bound routes: noStore + requireSession (verified token, MAIR-474) are mounted in routes/Messages/index.ts.
 app.use('/', messagesRouter);
 
