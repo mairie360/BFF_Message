@@ -99,8 +99,9 @@ export function createChatResult(id: number): CreateChatResultView {
   return { id };
 }
 
-export function postMessageResult(id: number): PostMessageResultView {
-  return { id };
+/** Answer of a post: the id and the posted message as the history reads it (with its quote). */
+export function postMessageResult(id: number, message: MessageView = messageView(id, 7)): PostMessageResultView {
+  return { id, message: { ...message, id } };
 }
 
 export function acknowledgeReadResult(unread_count: number): AcknowledgeReadResultView {

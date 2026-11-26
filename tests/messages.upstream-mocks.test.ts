@@ -155,7 +155,22 @@ function mockMessageApi({ chats = [], messages = {}, members = {}, createdChatId
     return { body: chatResult(header, page, older.length > page.length ? page[0]!.id : null) };
   });
   messageApi.on('delete', MESSAGE_API.member, { status: 200 });
-  messageApi.on('post', MESSAGE_API.messages, { body: postMessageResult(postedMessageId) });
+  // Like the real API: the posted message comes back as the history reads it, its quote included.
+  messageApi.on('post', MESSAGE_API.messages, ({ pathParams, headers, body }) => {
+    const posted = (body ?? {}) as Partial<Pick<MessageView, 'content' | 'citation' | 'mentions' | 'mentions_everyone' | 'group_mentions' | 'links'>>;
+    const quoted = (messages[Number(pathParams.chatId)] ?? []).find((message) => message.id === posted.citation);
+    return {
+      body: postMessageResult(postedMessageId, messageView(postedMessageId, callerOf(headers.authorization), {
+        content: posted.content ?? '',
+        citation: posted.citation ?? null,
+        mentions: posted.mentions ?? [],
+        mentions_everyone: posted.mentions_everyone ?? false,
+        group_mentions: posted.group_mentions ?? [],
+        links: posted.links ?? [],
+        quoted: quoted ? { id: quoted.id, sender_id: quoted.sender_id, excerpt: quoted.content.slice(0, 100), deleted: false } : null,
+      })),
+    };
+  });
   messageApi.on('get', MESSAGE_API.users, ({ pathParams, url }) => {
     const ids = members[Number(pathParams.chatId)] ?? [];
     const { start, end } = offsetPage(url);
@@ -420,7 +435,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
           messageView(41, agent.id, { content: 'Mon message', created_at: '2026-09-15T09:00:00Z' }),
           messageView(42, sophie.id, {
             content: 'Réponse reçue', created_at: '2026-09-15T09:01:00Z', citation: 40,
-            quoted: { id: 40, sender_id: sophie.id, excerpt: long },
+            quoted: { id: 40, sender_id: sophie.id, excerpt: long, deleted: false },
           }),
         ] },
         members: { 4: [agent.id, sophie.id] },
@@ -448,7 +463,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         { id: 'message-41', conversationId: 'conversation-4', content: 'Mon message', sentAt: '2026-09-15T09:00:00Z', authorId: 'user-7', authorName: 'Agent Test', direction: 'outgoing', attachments: [], mentions: [], ...V2_DEFAULTS },
         {
           id: 'message-42', conversationId: 'conversation-4', content: 'Réponse reçue', sentAt: '2026-09-15T09:01:00Z', authorId: 'user-8', authorName: 'Sophie Leroy', direction: 'incoming', attachments: [], mentions: [], ...V2_DEFAULTS,
-          citation: 'message-40', quoted: { id: 'message-40', authorId: 'user-8', authorName: 'Sophie Leroy', excerpt: long },
+          citation: 'message-40', quoted: { id: 'message-40', authorId: 'user-8', authorName: 'Sophie Leroy', excerpt: long, deleted: false },
         },
       ]);
       // The quoted message (40) is older than the page: it is still there, and the cursor goes back before 41.
@@ -1364,6 +1379,41 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
         id: 'message-50', citation: 'message-41', mentions: [{ id: 'user-8', name: 'Sophie Leroy' }],
         groupMentions: [{ id: 'group-3', name: 'Urbanisme' }], links: [{ id: 'project-12', kind: 'project', title: 'Médiathèque' }, { id: 'task-5', kind: 'task' }],
       });
+    });
+
+    test('MAIR-1220 a sent reply shows its quote at once, with the quoted author and excerpt', async () => {
+      mockMessageApi({
+        chats: [chatView(4)],
+        messages: { 4: [messageView(41, sophie.id, { content: 'Le permis de la rue Pasteur ?' })] },
+        members: { 4: [agent.id, sophie.id] },
+        postedMessageId: 50,
+      });
+
+      const response = await request(app).post('/conversations/conversation-4/messages').set('Authorization', auth())
+        .send({ content: 'Accordé hier.', replyTo: 'message-41' });
+
+      expect(response.status).toBe(201);
+      expectBffContract('post', '/conversations/conversation-4/messages', response);
+      expect(response.body.message).toMatchObject({
+        id: 'message-50', content: 'Accordé hier.', direction: 'outgoing', citation: 'message-41',
+        quoted: { id: 'message-41', authorId: 'user-8', authorName: 'Sophie Leroy', excerpt: 'Le permis de la rue Pasteur ?', deleted: false },
+      });
+    });
+
+    test('MAIR-1220 a reply to a deleted message keeps its citation, marked deleted, without author nor content', async () => {
+      mockMessageApi({
+        chats: [chatView(4, 'Équipe communication', 0, 2)],
+        messages: { 4: [messageView(42, agent.id, { content: 'Accordé hier.', citation: 41, quoted: { id: 41, deleted: true } })] },
+        members: { 4: [agent.id, sophie.id] },
+      });
+
+      const response = await request(app).get('/conversations/conversation-4').set('Authorization', auth());
+
+      expect(response.status).toBe(200);
+      expectBffContract('get', '/conversations/conversation-4', response);
+      const [reply] = response.body.messages;
+      expect(reply).toMatchObject({ id: 'message-42', citation: 'message-41' });
+      expect(reply.quoted).toEqual({ id: 'message-41', deleted: true });
     });
 
     test('POST /conversations/:id/messages refuses an invalid link id before calling Message API', async () => {
