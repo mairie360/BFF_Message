@@ -1706,7 +1706,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
       calendarApi.on('get', CALENDAR_API.calendar, { body: calendarResult(events) });
       coreApi.on('get', CORE_API.me, { body: {
         first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [],
-        role: coreRoles[0] ?? '', roles: coreRoles,
+        role: coreRoles[0] ?? '', roles: coreRoles, modules: ['dashboard', 'messages'],
       } });
     }
     const withClaims = (claims: object) => `Bearer ${sessionToken(agent.id, undefined, undefined, claims)}`;
@@ -1918,7 +1918,7 @@ describe('Message BFF with contract-driven Message API, Core API, Project API an
     ] as const)('GET /business-references marks the source unavailable without %s_URL', async (service, sources) => {
       projectApi.on('get', PROJECT_API.projects, { body: projectsResult([]) });
       calendarApi.on('get', CALENDAR_API.calendar, { body: calendarResult([]) });
-      coreApi.on('get', CORE_API.me, { body: { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: '', roles: [] } });
+      coreApi.on('get', CORE_API.me, { body: { first_name: 'Agent', last_name: 'Test', email: 'agent@mairie.test', status: 'active', groups: [], role: '', roles: [], modules: ['dashboard'] } });
 
       const response = await withoutUrl(service, () => request(app).get('/business-references').set('Authorization', authorizationFor(agent.id)));
 

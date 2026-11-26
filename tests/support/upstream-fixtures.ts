@@ -132,7 +132,7 @@ export function directoryUsers(list: ContactUser[]): DirectoryUsersResultView {
 export function projectListItem(id: number, overrides: Partial<ProjectListItemView> = {}): ProjectListItemView {
   return {
     id, name: `Projet ${id}`, description: `Description du projet ${id}`, status: ProjectStatus.Active,
-    tasks_total: 1, tasks_completed: 0, priority: TaskPriority.Medium, due_date: null, members: [], members_total: 0,
+    tasks_total: 1, tasks_completed: 0, priority: TaskPriority.Medium, due_date: null, members: [], members_total: 0, can_manage: false,
     ...overrides,
   };
 }
@@ -160,8 +160,8 @@ export const tasksResult = (tasks: TaskView[]): GetTasksResultView => ({ tasks, 
 /** One project of `GET /api/v1/projects/{projectId}` (detail view): the BFF reads its `name` as the title of a link. */
 export function projectResult(id: number, name = `Projet ${id}`): GetProjectResultView {
   return {
-    project: { id, name, description: '', priority: TaskPriority.Medium, status: ProjectStatus.Active },
-    tasks: [], tasks_archived: 0, tasks_total: 0, users: [], users_total: 0,
+    project: { id, name, description: '', priority: TaskPriority.Medium, status: ProjectStatus.Active, can_manage: false },
+    tasks: [], tasks_archived: 0, tasks_total: 0, users: [], users_total: 0, milestones: [], milestones_total: 0,
   };
 }
 
@@ -183,7 +183,7 @@ export function eventResult(id: number, name = `Événement ${id}`): GetEventRes
   return {
     id, name, approval_status: ApprovalStatus.approved, category: EventCategory.meeting, visibility: EventVisibility.Public,
     events_start_time: '2026-09-08T08:00:00Z', events_end_time: '2026-09-08T09:00:00Z', members: [],
-    permissions: { can_delete: false, can_edit: false, can_validate: false },
+    permissions: { can_delete: false, can_edit: false, can_validate: false, can_respond: false },
   };
 }
 
