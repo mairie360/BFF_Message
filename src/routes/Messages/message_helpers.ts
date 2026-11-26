@@ -352,7 +352,7 @@ function mapReactions(reactions: ReactionView[], currentUserId: number, names: N
  * `authorName` is the author's name when the author is a current member of the chat, and is left out
  * otherwise (former member): no placeholder name is made up. `authorId` is left out too once the author's
  * account is deleted (Message API `sender_id: null`). A quoted message carries its author and an excerpt, also
- * when it is older than the page; once it is deleted, only its id and `deleted: true`. Mentions, reactions and system notes name the agents the book knows (MAIR-1154).
+ * when it is older than the page; once it is deleted, only its id and `deleted: true`. Mentions, reactions and system notes name the agents the book knows.
  */
 function mapMessageToDto(
   conversationId: string | number,
