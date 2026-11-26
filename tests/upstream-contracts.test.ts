@@ -47,7 +47,6 @@ const CONSUMED = [
   { contract: messageApi, operationId: 'getMentionGroups', method: 'get', url: messageApiUrls.getGetMentionGroupsUrl(4, { q: 'urba' }) },
   { contract: coreApi, operationId: 'listDirectoryUsers', method: 'get', url: coreApiUrls.getListDirectoryUsersUrl({ ids: '7,8' }) },
   { contract: coreApi, operationId: 'health', method: 'get', url: coreApiUrls.getHealthUrl() },
-  { contract: messageApi, operationId: 'sseStreamRoute', method: 'get', url: messageApiUrls.getSseStreamRouteUrl() },
   { contract: coreApi, operationId: 'getMe', method: 'get', url: coreApiUrls.getGetMeUrl() },
   { contract: projectApi, operationId: 'getProjects', method: 'get', url: projectApiUrls.getGetProjectsUrl({ limit: 50 }) },
   { contract: projectApi, operationId: 'getProjectTasks', method: 'get', url: projectApiUrls.getGetProjectTasksUrl(1, { limit: 500 }) },
@@ -119,7 +118,7 @@ describe('upstream fixtures conform to the upstream contracts', () => {
     ['Message API openDirectChat 200', messageApi, 'post', messageApiUrls.getOpenDirectChatUrl(), { id: 21, created: true }],
     [
       'Message API getChat 200', messageApi, 'get', messageApiUrls.getGetChatUrl(4),
-      chatResult(chatView(4, 'Équipe communication'), [messageView(41, 7), messageView(42, 8, { citation: 41, quoted: { id: 41, sender_id: 7, excerpt: 'Message 41' } })]),
+      chatResult(chatView(4, 'Équipe communication'), [messageView(41, 7), messageView(42, 8, { citation: 41, quoted: { id: 41, sender_id: 7, excerpt: 'Message 41', deleted: false } }), messageView(43, 8, { citation: 40, quoted: { id: 40, deleted: true } })]),
     ],
     ['Message API postMessage 200', messageApi, 'post', messageApiUrls.getPostMessageUrl(4), postMessageResult(31)],
     ['Message API getChatUsers 200', messageApi, 'get', messageApiUrls.getGetChatUsersUrl(4), chatUsers([7, 8], false, { 7: ['Agent', 'Test'], 8: ['Sophie', 'Leroy'] })],

@@ -194,9 +194,13 @@ export const QuotedMessageDtoSchema = z.object({
     description: 'Name of the author of the quoted message when they are a current member of the conversation',
     example: 'Alice Dupont',
   }),
-  excerpt: z.string().openapi({
-    description: 'First 100 characters of the quoted message',
+  excerpt: z.string().optional().openapi({
+    description: 'First 100 characters of the quoted message; absent once it is deleted',
     example: 'Any news about the building permit?',
+  }),
+  deleted: z.boolean().openapi({
+    description: '`true` once the quoted message is deleted: only `id` is given, show the quote as deleted',
+    example: false,
   }),
 }).openapi({
   description: 'The message another message answers, with what is needed to display the quote',

@@ -352,7 +352,7 @@ function mapReactions(reactions: ReactionView[], currentUserId: number, names: N
  * `authorName` is the author's name when the author is a current member of the chat, and is left out
  * otherwise (former member): no placeholder name is made up. `authorId` is left out too once the author's
  * account is deleted (Message API `sender_id: null`). A quoted message carries its author and an excerpt, also
- * when it is older than the page. Mentions, reactions and system notes name the agents the book knows (MAIR-1154).
+ * when it is older than the page; once it is deleted, only its id and `deleted: true`. Mentions, reactions and system notes name the agents the book knows.
  */
 function mapMessageToDto(
   conversationId: string | number,
@@ -385,12 +385,16 @@ function mapMessageToDto(
     ...(message.quoted == null
       ? {}
       : {
-        quoted: {
-          id: publicMessageId(message.quoted.id),
-          ...(quotedAuthorId ? { authorId: quotedAuthorId } : {}),
-          ...(quotedAuthorName ? { authorName: quotedAuthorName } : {}),
-          excerpt: message.quoted.excerpt,
-        },
+        // A deleted quoted message keeps only its id: neither its author nor its content.
+        quoted: message.quoted.deleted
+          ? { id: publicMessageId(message.quoted.id), deleted: true }
+          : {
+            id: publicMessageId(message.quoted.id),
+            ...(quotedAuthorId ? { authorId: quotedAuthorId } : {}),
+            ...(quotedAuthorName ? { authorName: quotedAuthorName } : {}),
+            excerpt: message.quoted.excerpt ?? '',
+            deleted: false,
+          },
       }),
     kind: message.kind ?? 'user',
     ...(event
@@ -608,17 +612,8 @@ export async function sendMessageToConversation(
     getChatPage(chatId, { limit: 1 }, context),
     listChatUsers(chatId, context, context.declared),
   ]);
-  const sent: UpstreamMessage = {
-    id: response.data.id,
-    content,
-    created_at: new Date().toISOString(),
-    sender_id: currentUserId,
-    citation: citation ?? null,
-    mentions: body.mentions ?? [],
-    mentions_everyone: body.mentions_everyone ?? false,
-    group_mentions: body.group_mentions ?? [],
-    links: body.links ?? [],
-  };
+  // The Message API answers with the posted message as the history reads it, its quote included.
+  const sent: UpstreamMessage = response.data.message;
   const names = await nameBook(chatId, users, [sent], context);
 
   return {

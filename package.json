@@ -16,7 +16,7 @@
     "@mairie360/bffs-lib": "3.0.0",
     "@mairie360/calendar-api-openapi": "1.3.0",
     "@mairie360/core-api-openapi": "2.3.0",
-    "@mairie360/message-api-openapi": "0.0.0-dev-d11e260",
+    "@mairie360/message-api-openapi": "0.0.0-dev-8b8c629",
     "@mairie360/project-api-openapi": "1.3.0",
     "axios": "1.21.1",
     "dotenv": "18.0.10",

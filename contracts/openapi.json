@@ -498,13 +498,18 @@
               },
               "excerpt": {
                 "type": "string",
-                "description": "First 100 characters of the quoted message",
+                "description": "First 100 characters of the quoted message; absent once it is deleted",
                 "example": "Any news about the building permit?"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                "example": false
               }
             },
             "required": [
               "id",
-              "excerpt"
+              "deleted"
             ],
             "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
           },
@@ -1234,13 +1239,18 @@
                     },
                     "excerpt": {
                       "type": "string",
-                      "description": "First 100 characters of the quoted message",
+                      "description": "First 100 characters of the quoted message; absent once it is deleted",
                       "example": "Any news about the building permit?"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                      "example": false
                     }
                   },
                   "required": [
                     "id",
-                    "excerpt"
+                    "deleted"
                   ],
                   "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                 },
@@ -1769,13 +1779,18 @@
                   },
                   "excerpt": {
                     "type": "string",
-                    "description": "First 100 characters of the quoted message",
+                    "description": "First 100 characters of the quoted message; absent once it is deleted",
                     "example": "Any news about the building permit?"
+                  },
+                  "deleted": {
+                    "type": "boolean",
+                    "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                    "example": false
                   }
                 },
                 "required": [
                   "id",
-                  "excerpt"
+                  "deleted"
                 ],
                 "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               },
@@ -2407,13 +2422,18 @@
                   },
                   "excerpt": {
                     "type": "string",
-                    "description": "First 100 characters of the quoted message",
+                    "description": "First 100 characters of the quoted message; absent once it is deleted",
                     "example": "Any news about the building permit?"
+                  },
+                  "deleted": {
+                    "type": "boolean",
+                    "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                    "example": false
                   }
                 },
                 "required": [
                   "id",
-                  "excerpt"
+                  "deleted"
                 ],
                 "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               },
@@ -3303,13 +3323,18 @@
                     },
                     "excerpt": {
                       "type": "string",
-                      "description": "First 100 characters of the quoted message",
+                      "description": "First 100 characters of the quoted message; absent once it is deleted",
                       "example": "Any news about the building permit?"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                      "example": false
                     }
                   },
                   "required": [
                     "id",
-                    "excerpt"
+                    "deleted"
                   ],
                   "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                 },
@@ -4281,13 +4306,18 @@
                   },
                   "excerpt": {
                     "type": "string",
-                    "description": "First 100 characters of the quoted message",
+                    "description": "First 100 characters of the quoted message; absent once it is deleted",
                     "example": "Any news about the building permit?"
+                  },
+                  "deleted": {
+                    "type": "boolean",
+                    "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                    "example": false
                   }
                 },
                 "required": [
                   "id",
-                  "excerpt"
+                  "deleted"
                 ],
                 "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               },
@@ -4731,13 +4761,18 @@
                   },
                   "excerpt": {
                     "type": "string",
-                    "description": "First 100 characters of the quoted message",
+                    "description": "First 100 characters of the quoted message; absent once it is deleted",
                     "example": "Any news about the building permit?"
+                  },
+                  "deleted": {
+                    "type": "boolean",
+                    "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                    "example": false
                   }
                 },
                 "required": [
                   "id",
-                  "excerpt"
+                  "deleted"
                 ],
                 "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               },
@@ -5374,13 +5409,18 @@
                   },
                   "excerpt": {
                     "type": "string",
-                    "description": "First 100 characters of the quoted message",
+                    "description": "First 100 characters of the quoted message; absent once it is deleted",
                     "example": "Any news about the building permit?"
+                  },
+                  "deleted": {
+                    "type": "boolean",
+                    "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                    "example": false
                   }
                 },
                 "required": [
                   "id",
-                  "excerpt"
+                  "deleted"
                 ],
                 "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
               },
@@ -6925,13 +6965,18 @@
                               },
                               "excerpt": {
                                 "type": "string",
-                                "description": "First 100 characters of the quoted message",
+                                "description": "First 100 characters of the quoted message; absent once it is deleted",
                                 "example": "Any news about the building permit?"
+                              },
+                              "deleted": {
+                                "type": "boolean",
+                                "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                                "example": false
                               }
                             },
                             "required": [
                               "id",
-                              "excerpt"
+                              "deleted"
                             ],
                             "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                           },
@@ -8029,13 +8074,18 @@
                               },
                               "excerpt": {
                                 "type": "string",
-                                "description": "First 100 characters of the quoted message",
+                                "description": "First 100 characters of the quoted message; absent once it is deleted",
                                 "example": "Any news about the building permit?"
+                              },
+                              "deleted": {
+                                "type": "boolean",
+                                "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                                "example": false
                               }
                             },
                             "required": [
                               "id",
-                              "excerpt"
+                              "deleted"
                             ],
                             "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                           },
@@ -9619,13 +9669,18 @@
                             },
                             "excerpt": {
                               "type": "string",
-                              "description": "First 100 characters of the quoted message",
+                              "description": "First 100 characters of the quoted message; absent once it is deleted",
                               "example": "Any news about the building permit?"
+                            },
+                            "deleted": {
+                              "type": "boolean",
+                              "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                              "example": false
                             }
                           },
                           "required": [
                             "id",
-                            "excerpt"
+                            "deleted"
                           ],
                           "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         },
@@ -10257,13 +10312,18 @@
                             },
                             "excerpt": {
                               "type": "string",
-                              "description": "First 100 characters of the quoted message",
+                              "description": "First 100 characters of the quoted message; absent once it is deleted",
                               "example": "Any news about the building permit?"
+                            },
+                            "deleted": {
+                              "type": "boolean",
+                              "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                              "example": false
                             }
                           },
                           "required": [
                             "id",
-                            "excerpt"
+                            "deleted"
                           ],
                           "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         },
@@ -11532,13 +11592,18 @@
                               },
                               "excerpt": {
                                 "type": "string",
-                                "description": "First 100 characters of the quoted message",
+                                "description": "First 100 characters of the quoted message; absent once it is deleted",
                                 "example": "Any news about the building permit?"
+                              },
+                              "deleted": {
+                                "type": "boolean",
+                                "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                                "example": false
                               }
                             },
                             "required": [
                               "id",
-                              "excerpt"
+                              "deleted"
                             ],
                             "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                           },
@@ -12212,13 +12277,18 @@
                             },
                             "excerpt": {
                               "type": "string",
-                              "description": "First 100 characters of the quoted message",
+                              "description": "First 100 characters of the quoted message; absent once it is deleted",
                               "example": "Any news about the building permit?"
+                            },
+                            "deleted": {
+                              "type": "boolean",
+                              "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                              "example": false
                             }
                           },
                           "required": [
                             "id",
-                            "excerpt"
+                            "deleted"
                           ],
                           "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         },
@@ -12973,13 +13043,18 @@
                             },
                             "excerpt": {
                               "type": "string",
-                              "description": "First 100 characters of the quoted message",
+                              "description": "First 100 characters of the quoted message; absent once it is deleted",
                               "example": "Any news about the building permit?"
+                            },
+                            "deleted": {
+                              "type": "boolean",
+                              "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                              "example": false
                             }
                           },
                           "required": [
                             "id",
-                            "excerpt"
+                            "deleted"
                           ],
                           "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         },
@@ -13551,13 +13626,18 @@
                             },
                             "excerpt": {
                               "type": "string",
-                              "description": "First 100 characters of the quoted message",
+                              "description": "First 100 characters of the quoted message; absent once it is deleted",
                               "example": "Any news about the building permit?"
+                            },
+                            "deleted": {
+                              "type": "boolean",
+                              "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                              "example": false
                             }
                           },
                           "required": [
                             "id",
-                            "excerpt"
+                            "deleted"
                           ],
                           "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         },
@@ -14638,13 +14718,18 @@
                             },
                             "excerpt": {
                               "type": "string",
-                              "description": "First 100 characters of the quoted message",
+                              "description": "First 100 characters of the quoted message; absent once it is deleted",
                               "example": "Any news about the building permit?"
+                            },
+                            "deleted": {
+                              "type": "boolean",
+                              "description": "`true` once the quoted message is deleted: only `id` is given, show the quote as deleted",
+                              "example": false
                             }
                           },
                           "required": [
                             "id",
-                            "excerpt"
+                            "deleted"
                           ],
                           "description": "The message `citation` points to (author and excerpt), also when it is older than the loaded page"
                         },

@@ -493,10 +493,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -1227,10 +1232,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -2329,10 +2339,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -2727,10 +2742,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -3561,10 +3581,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -3937,10 +3962,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -4364,10 +4394,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -4738,10 +4773,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -5443,10 +5483,15 @@ export interface paths {
                                      */
                                     authorName?: string;
                                     /**
-                                     * @description First 100 characters of the quoted message
+                                     * @description First 100 characters of the quoted message; absent once it is deleted
                                      * @example Any news about the building permit?
                                      */
-                                    excerpt: string;
+                                    excerpt?: string;
+                                    /**
+                                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                                     * @example false
+                                     */
+                                    deleted: boolean;
                                 };
                                 /**
                                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -5990,10 +6035,15 @@ export interface components {
                  */
                 authorName?: string;
                 /**
-                 * @description First 100 characters of the quoted message
+                 * @description First 100 characters of the quoted message; absent once it is deleted
                  * @example Any news about the building permit?
                  */
-                excerpt: string;
+                excerpt?: string;
+                /**
+                 * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                 * @example false
+                 */
+                deleted: boolean;
             };
             /**
              * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -6437,10 +6487,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -6746,10 +6801,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -7133,10 +7193,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -7649,10 +7714,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -8110,10 +8180,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -8365,10 +8440,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
@@ -8731,10 +8811,15 @@ export interface components {
                      */
                     authorName?: string;
                     /**
-                     * @description First 100 characters of the quoted message
+                     * @description First 100 characters of the quoted message; absent once it is deleted
                      * @example Any news about the building permit?
                      */
-                    excerpt: string;
+                    excerpt?: string;
+                    /**
+                     * @description `true` once the quoted message is deleted: only `id` is given, show the quote as deleted
+                     * @example false
+                     */
+                    deleted: boolean;
                 };
                 /**
                  * @description `user` for a message written by an agent, `system` for a note the conversation writes itself (a membership change)
